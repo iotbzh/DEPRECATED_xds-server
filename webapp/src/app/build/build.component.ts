@@ -44,9 +44,13 @@ export class BuildComponent implements OnInit, AfterViewChecked {
     ngOnInit() {
         this.config$ = this.configSvr.conf;
         this.config$.subscribe((cfg) => {
-            this.curProject = cfg.projects[0];
-
-            this.confValid = (cfg.projects.length && this.curProject.id != null);
+            if ("projects" in cfg) {
+                this.curProject = cfg.projects[0];
+                this.confValid = (cfg.projects.length && this.curProject.id != null);
+            } else {
+                this.curProject = null;
+                this.confValid = false;
+            }
         });
 
         // Command output data tunneling
@@ -78,6 +82,10 @@ export class BuildComponent implements OnInit, AfterViewChecked {
     }
 
     make(args: string) {
+        if (!this.curProject) {
+            this.alertSvr.warning('No active project', true);
+        }
+
         let prjID = this.curProject.id;
 
         this.cmdOutput += this._outputHeader();
@@ -91,7 +99,7 @@ export class BuildComponent implements OnInit, AfterViewChecked {
             },
             err => {
                 this.cmdInfo = 'Last command duration: ' + this._computeTime(t0);
-                this.alertSvr.add({ type: "danger", msg: 'ERROR: ' + err });
+                this.alertSvr.error('ERROR: ' + err);
             });
     }
 

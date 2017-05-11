@@ -23,6 +23,7 @@ export interface ISyncThingStatus {
     ID: string;
     baseURL: string;
     connected: boolean;
+    connectionRetry: number;
     tilde: string;
     rawStatus: any;
 }
@@ -115,10 +116,12 @@ export class SyncthingService {
     private apikey: string;
     private localSTID: string;
     private stCurVersion: number;
+    private connectionMaxRetry: number;
     private _status: ISyncThingStatus = {
         ID: null,
         baseURL: "",
         connected: false,
+        connectionRetry: 0,
         tilde: "",
         rawStatus: null,
     };
@@ -129,6 +132,7 @@ export class SyncthingService {
         this.baseRestUrl = this._status.baseURL + '/rest';
         this.apikey = DEFAULT_GUI_API_KEY;
         this.stCurVersion = -1;
+        this.connectionMaxRetry = 10;   // 10 seconds
 
         this.Status$ = this.statusSubject.asObservable();
     }
@@ -140,41 +144,28 @@ export class SyncthingService {
         }
         this._status.connected = false;
         this._status.ID = null;
-        return this.getStatus(retry);
+        this._status.connectionRetry = 0;
+        this.connectionMaxRetry = retry || 3600;   // 1 hour
+        return this.getStatus();
     }
 
-    getID(retry?: number): Observable<string> {
+    getID(): Observable<string> {
         if (this._status.ID != null) {
             return Observable.of(this._status.ID);
         }
-        return this.getStatus(retry).map(sts => sts.ID);
+        return this.getStatus().map(sts => sts.ID);
     }
 
-    getStatus(retry?: number): Observable<ISyncThingStatus> {
-
-        if (retry == null) {
-            retry = 3600;   // 1 hour
-        }
+    getStatus(): Observable<ISyncThingStatus> {
         return this._get('/system/status')
             .map((status) => {
                 this._status.ID = status["myID"];
                 this._status.tilde = status["tilde"];
-                this._status.connected = true;
                 console.debug('ST local ID', this._status.ID);
 
                 this._status.rawStatus = status;
 
                 return this._status;
-            })
-            .retryWhen((attempts) => {
-                let count = 0;
-                return attempts.flatMap(error => {
-                    if (++count >= retry) {
-                        return this._handleError(error);
-                    } else {
-                        return Observable.timer(count * 1000);
-                    }
-                });
             });
     }
 
@@ -270,12 +261,22 @@ export class SyncthingService {
     }
 
     private _checkAlive(): Observable<boolean> {
+        if (this._status.connected) {
+            return Observable.of(true);
+        }
+
         return this.http.get(this.baseRestUrl + '/system/version', this._attachAuthHeaders())
             .map((r) => this._status.connected = true)
-            .repeatWhen
-            .catch((err) => {
-                this._status.connected = false;
-                throw new Error("Syncthing local daemon not responding (url=" + this._status.baseURL + ")");
+            .retryWhen((attempts) => {
+                this._status.connectionRetry = 0;
+                return attempts.flatMap(error => {
+                    this._status.connected = false;
+                    if (++this._status.connectionRetry >= this.connectionMaxRetry) {
+                        return Observable.throw("Syncthing local daemon not responding (url=" + this._status.baseURL + ")");
+                    } else {
+                        return Observable.timer(1000);
+                    }
+                });
             });
     }
 
@@ -284,8 +285,7 @@ export class SyncthingService {
             return Observable.of(this.stCurVersion);
         }
 
-        return this._checkAlive()
-            .flatMap(() => this.http.get(this.baseRestUrl + '/system/config', this._attachAuthHeaders()))
+        return this.http.get(this.baseRestUrl + '/system/config', this._attachAuthHeaders())
             .map((res: Response) => {
                 let conf: ISTConfiguration = res.json();
                 this.stCurVersion = (conf && conf.version) || -1;
@@ -305,14 +305,16 @@ export class SyncthingService {
     }
 
     private _get(url: string): Observable<any> {
-        return this._checkAPIVersion()
+        return this._checkAlive()
+            .flatMap(() => this._checkAPIVersion())
             .flatMap(() => this.http.get(this.baseRestUrl + url, this._attachAuthHeaders()))
             .map((res: Response) => res.json())
             .catch(this._handleError);
     }
 
     private _post(url: string, body: any): Observable<any> {
-        return this._checkAPIVersion()
+        return this._checkAlive()
+            .flatMap(() => this._checkAPIVersion())
             .flatMap(() => this.http.post(this.baseRestUrl + url, JSON.stringify(body), this._attachAuthHeaders()))
             .map((res: Response) => {
                 if (res && res.status && res.status === 200) {
