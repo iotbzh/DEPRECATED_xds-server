@@ -1,0 +1,17 @@
+.navbar-inverse  {
+    background-color: #330066;
+}
+
+.navbar-brand {
+    background: #330066;
+    color: white;
+    font-size: x-large;
+}
+
+.navbar-nav ul li a {
+    color: #fff;
+}
+
+.menu-text {
+    color: #fff;
+}

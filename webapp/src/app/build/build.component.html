@@ -1,0 +1,50 @@
+<form [formGroup]="buildForm">
+    <div class="row">
+        <div class="col-xs-6">
+            <label>Project </label>
+            <div class="btn-group" dropdown *ngIf="curProject">
+                <button dropdownToggle type="button" class="btn btn-primary dropdown-toggle" style="width: 14em;">
+                    {{curProject.label}} <span class="caret" style="float: right; margin-top: 8px;"></span>
+                </button>
+                <ul *dropdownMenu class="dropdown-menu" role="menu">
+                    <li role="menuitem"><a class="dropdown-item" *ngFor="let prj of (config$ | async)?.projects" (click)="curProject=prj">
+                        {{prj.label}}</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="col-xs-6" style="padding-right: 3em;">
+            <div class="btn-group blocks pull-right">
+                <button class="btn btn-primary " (click)="make() " [disabled]="!confValid ">Build</button>
+                <button class="btn btn-primary " (click)="make('clean') " [disabled]="!confValid ">Clean</button>
+            </div>
+        </div>
+    </div>
+    &nbsp;
+    <div class="row ">
+        <div class="col-xs-8 pull-left ">
+            <label>Sub-directory</label>
+            <input type="text" style="width:70%;" formControlName="subpath">
+        </div>
+    </div>
+</form>
+
+<div style="margin-left: 2em; margin-right: 2em; ">
+    <div class="row ">
+        <div class="col-xs-12 ">
+            <button class="btn btn-link pull-right " (click)="reset() "><span class="fa fa-eraser " style="font-size:20px; "></span></button>
+        </div>
+    </div>
+
+    <div class="row ">
+        <div class="col-xs-12 text-center ">
+            <textarea rows="30 " style="width:100%; overflow-y: scroll; " #scrollOutput>{{ cmdOutput }}</textarea>
+        </div>
+    </div>
+
+    <div class="row ">
+        <div class="col-xs-12 ">
+            {{ cmdInfo }}
+        </div>
+    </div>
+</div>

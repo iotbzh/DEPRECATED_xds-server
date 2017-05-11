@@ -1,0 +1,10 @@
+bin
+tools
+**/glide.lock
+**/vendor
+
+debug
+cmd/*/debug
+
+webapp/dist
+webapp/node_modules

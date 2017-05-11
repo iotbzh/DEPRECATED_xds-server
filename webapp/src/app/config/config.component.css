@@ -1,0 +1,26 @@
+.fa-size-x2 {
+    font-size: 20px;
+}
+
+h2 {
+    font-family: sans-serif;
+    font-variant: small-caps;
+    font-size: x-large;
+}
+
+th span {
+    font-weight: 100;
+}
+
+th label {
+    font-weight: 100;
+    margin-bottom: 0;
+}
+
+tr.info>th {
+    vertical-align: middle;
+}
+
+tr.info>td {
+    vertical-align: middle;
+}

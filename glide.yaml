@@ -1,0 +1,19 @@
+package: github.com/iotbzh/xds-server
+license: Apache-2
+owners:
+- name: Sebastien Douheret
+  email: sebastien@iot.bzh
+import:
+- package: github.com/gin-gonic/gin
+  version: ^1.1.4
+- package: github.com/gin-contrib/static
+- package: github.com/syncthing/syncthing
+  version: ^0.14.27-rc.2
+- package: github.com/codegangsta/cli
+  version: ^1.19.1
+- package: github.com/Sirupsen/logrus
+  version: ^0.11.5
+- package: github.com/googollee/go-socket.io
+- package: github.com/zhouhui8915/go-socket.io-client
+- package: github.com/satori/go.uuid
+  version: ^1.1.0

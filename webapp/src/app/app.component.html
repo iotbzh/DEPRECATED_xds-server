@@ -1,0 +1,21 @@
+<nav class="navbar navbar-fixed-top navbar-inverse">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <a class="navbar-brand" href="#">Cross Development System Dashboard</a>
+        </div>
+
+        <div class="navbar-collapse collapse menu2">
+            <ul class="nav navbar-nav navbar-right">
+                <li><a routerLink="/build"><i class="fa fa-2x fa-play-circle" title="Open build page"></i></a></li>
+                <li><a routerLink="/config"><i class="fa fa-2x fa-cog" title="Open configuration page"></i></a></li>
+                <li><a routerLink="/home"><i class="fa fa-2x fa-home" title="Back to home page"></i></a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<app-alert id="alert"></app-alert>
+
+<div style="margin:10px;">
+    <router-outlet></router-outlet>
+</div>

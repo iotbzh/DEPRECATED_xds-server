@@ -1,0 +1,62 @@
+{
+  "name": "xds-server",
+  "version": "1.0.0",
+  "description": "XDS (Cross Development System) Server",
+  "scripts": {
+    "clean": "gulp clean",
+    "compile": "gulp compile",
+    "build": "gulp build",
+    "start": "concurrently --kill-others \"gulp watch\" \"lite-server\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xds-server"
+  },
+  "author": "Sebastien Douheret [IoT.bzh]",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/xds-server/issues"
+  },
+  "dependencies": {
+    "@angular/common": "2.4.4",
+    "@angular/compiler": "2.4.4",
+    "@angular/core": "2.4.4",
+    "@angular/forms": "2.4.4",
+    "@angular/http": "2.4.4",
+    "@angular/platform-browser": "2.4.4",
+    "@angular/platform-browser-dynamic": "2.4.4",
+    "@angular/router": "3.4.4",
+    "@angular/upgrade": "2.4.4",
+    "@types/core-js": "0.9.35",
+    "@types/node": "7.0.5",
+    "@types/socket.io-client": "^1.4.29",
+    "bootstrap": "^3.3.7",
+    "core-js": "^2.4.1",
+    "font-awesome": "^4.7.0",
+    "font-awesome-animation": "0.0.10",
+    "ngx-bootstrap": "1.6.6",
+    "ngx-cookie": "^1.0.0",
+    "reflect-metadata": "^0.1.8",
+    "rxjs": "5.0.3",
+    "socket.io-client": "^1.7.3",
+    "socketio": "^1.0.0",
+    "systemjs": "0.20.0",
+    "zone.js": "^0.7.6"
+  },
+  "devDependencies": {
+    "concurrently": "^3.1.0",
+    "del": "^2.2.0",
+    "gulp": "^3.9.1",
+    "gulp-if": "2.0.2",
+    "gulp-rsync": "0.0.7",
+    "gulp-sequence": "^0.4.6",
+    "gulp-sourcemaps": "^1.9.1",
+    "gulp-tslint": "^7.0.1",
+    "gulp-typescript": "^3.1.3",
+    "lite-server": "^2.2.2",
+    "ts-node": "^1.7.2",
+    "tslint": "^4.0.2",
+    "typescript": "^2.2.1",
+    "typings": "^2.0.0"
+  }
+}

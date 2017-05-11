@@ -1,0 +1,49 @@
+<html>
+
+<head>
+    <title>
+        XDS Dashboard
+    </title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+
+    <!-- TODO cleanup
+    <link rel="stylesheet" href="lib/foundation-sites/dist/css/foundation.min.css">
+    -->
+    <link <link href="lib/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <link rel="stylesheet" href="lib/font-awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" href="lib/font-awesome-animation/dist/font-awesome-animation.min.css">
+
+    <!-- 1. Load libraries -->
+    <!-- Polyfill(s) for older browsers -->
+    <script src="lib/core-js/client/shim.min.js"></script>
+
+    <script src="lib/zone.js/dist/zone.js"></script>
+    <script src="lib/reflect-metadata/Reflect.js"></script>
+    <script src="lib/systemjs/dist/system.src.js"></script>
+
+    <!-- 2. Configure SystemJS -->
+    <script src="systemjs.config.js"></script>
+    <script>
+        System.import('app')
+            .then(null, console.error.bind(console));
+    </script>
+
+    <script src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+
+</head>
+
+<!-- 3. Display the application -->
+
+<body style="padding-top: 70px;">   <!-- padding needed due to fixed navbar -->
+    <app>
+        <div style="text-align:center; position:absolute; top:50%; width:100%; transform:translate(0,-50%);">
+            Loading...
+            <i class="fa fa-spinner fa-spin fa-fw"></i>
+        </div>
+    </app>
+</body>
+
+</html>

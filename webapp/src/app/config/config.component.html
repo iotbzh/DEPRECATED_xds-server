@@ -1,0 +1,73 @@
+<div class="panel panel-default">
+    <div class="panel-heading clearfix">
+        <h2 class="panel-title pull-left">Global Configuration</h2>
+        <div class="pull-right">
+            <span class="fa fa-fw fa-exchange fa-size-x2" [style.color]="((severStatus$ | async)?.WS_connected)?'green':'red'"></span>
+        </div>
+    </div>
+    <div class="panel-body">
+        <div class="row">
+            <div class="col-xs-12">
+                <table class="table table-condensed">
+                    <tbody>
+                        <tr [ngClass]="{'info': (localSTStatus$ | async)?.connected, 'danger': !(localSTStatus$ | async)?.connected}">
+                            <th><label>Local Sync-tool URL</label></th>
+                            <td> <input type="text" [(ngModel)]="syncToolUrl"></td>
+                            <td>
+                                <button class="btn btn-link" (click)="syncToolRestartConn()"><span class="fa fa-refresh fa-size-x2"></span></button>
+                            </td>
+                        </tr>
+                        <tr class="info">
+                            <th><label>Local Sync-tool connection retry</label></th>
+                            <td> <input type="text" [(ngModel)]="syncToolRetry" (ngModelChange)="showApplyBtn['retry'] = true"></td>
+                            <td>
+                                <button *ngIf="showApplyBtn['retry']" class="btn btn-primary btn-xs" (click)="submitGlobConf('retry')">APPLY</button>
+                            </td>
+                        </tr>
+                        <tr class="info">
+                            <th><label>Local Projects root directory</label></th>
+                            <td> <input type="text" [(ngModel)]="projectsRootDir" (ngModelChange)="showApplyBtn['rootDir'] = true"></td>
+                            <td>
+                                <button *ngIf="showApplyBtn['rootDir']" class="btn btn-primary btn-xs" (click)="submitGlobConf('rootDir')">APPLY</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <h2 class="panel-title">Projects Configuration</h2>
+    </div>
+    <div class="panel-body">
+        <form [formGroup]="addProjectForm" (ngSubmit)="onSubmit()">
+            <div class="row ">
+                <div class="col-xs-2">
+                    <button class="btn btn-primary" type="submit" [disabled]="!addProjectForm.valid"><i class="fa fa-plus"></i>&nbsp;New Folder</button>
+                </div>
+
+                <div class="col-xs-6">
+                    <label>Folder Path </label>
+                    <input type="text" style="width:70%;" formControlName="path" placeholder="myProject">
+                </div>
+                <div class="col-xs-4">
+                    <label>Label </label>
+                    <input type="text" formControlName="label" (keyup)="onKeyLabel($event)">
+                </div>
+            </div>
+        </form>
+
+        <div class="row col-xs-12">
+            <projects-list-accordion [projects]="(config$ | async).projects"></projects-list-accordion>
+        </div>
+    </div>
+</div>
+
+
+<!-- only for debug -->
+<div *ngIf="false" class="row">
+    {{config$ | async | json}}
+</div>
