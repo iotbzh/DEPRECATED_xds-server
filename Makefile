@@ -8,6 +8,13 @@ ifeq ($(origin VERSION), undefined)
 	endif
 endif
 
+# Configurable variables for installation (default /usr/local/...)
+ifeq ($(origin INSTALL_DIR), undefined)
+	INSTALL_DIR := /usr/local/bin
+endif
+ifeq ($(origin INSTALL_WEBAPP_DIR), undefined)
+	INSTALL_WEBAPP_DIR := ${INSTALL_DIR}/xds-server-www
+endif
 
 HOST_GOOS=$(shell go env GOOS)
 HOST_GOARCH=$(shell go env GOARCH)
@@ -76,21 +83,9 @@ webapp/install:
 	(cd webapp && npm install)
 
 
-# FIXME - package webapp
-release: releasetar
-	goxc -d ./release -tasks-=go-vet,go-test -os="linux darwin" -pv=$(VERSION)  -arch="386 amd64 arm arm64" -build-ldflags="-X main.AppVersionGitTag=$(VERSION)" -resources-include="README.md,Documentation,LICENSE,contrib" -main-dirs-exclude="vendor"
-
-releasetar:
-	mkdir -p release/$(VERSION)
-	glide install --strip-vcs --strip-vendor --update-vendored --delete
-	glide-vc --only-code --no-tests --keep="**/*.json.in"
-	git ls-files > /tmp/xds-server-build
-	find vendor >> /tmp/xds-server-build
-	find webapp/ -path webapp/node_modules -prune -o -print >> /tmp/xds-server-build
-	tar -cvf release/$(VERSION)/xds-server_$(VERSION)_src.tar -T /tmp/xds-server-build --transform 's,^,xds-server_$(VERSION)/,'
-	rm /tmp/xds-server-build
-	gzip release/$(VERSION)/xds-server_$(VERSION)_src.tar
-
+install: all
+	mkdir -p ${INSTALL_DIR} && cp bin/xds-server ${INSTALL_DIR}
+	mkdir -p ${INSTALL_WEBAPP_DIR} && cp -a webapp/dist/* ${INSTALL_WEBAPP_DIR}
 
 vendor: tools/glide glide.yaml
 	./tools/glide install --strip-vendor
