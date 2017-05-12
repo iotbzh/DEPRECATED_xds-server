@@ -8,3 +8,7 @@ cmd/*/debug
 
 webapp/dist
 webapp/node_modules
+
+# private (prefixed by 2 underscores) directories or files
+__*/
+__*
