@@ -42,6 +42,11 @@ Clone this repo into your `$GOPATH/src/github.com/iotbzh` and use delivered Make
  make all
 ```
 
+And to install xds-server in /usr/local/bin:
+```bash
+make install
+```
+
 ## How to run
 
 ## Configuration
@@ -69,11 +74,14 @@ Supported fields in configuration file are:
 
 ## Start-up
 
+Use `xds-start-server.sh` script to start all requested tools
 ```bash
-./bin/xds-server -c config.json
+/usr/local/bin/xds-start-server.sh
 ```
 
-**TODO**: add notes about Syncthing setup and startup
+>**NOTE** you can define some environment variables to setup for example
+config file `XDS_CONFFILE` or change logs directory `LOGDIR`.
+See head section of `xds-start-server.sh` file to see all configurable variables.
 
 
 ## Debugging
