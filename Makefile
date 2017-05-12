@@ -61,7 +61,7 @@ clean:
 	rm -rf ./bin/* debug cmd/*/debug $(ROOT_GOPRJ)/pkg/*/$(REPOPATH)
 
 distclean: clean
-	rm -rf bin tools glide.lock vendor cmd/*/vendor webapp/{node_modules,dist}
+	rm -rf bin tools glide.lock vendor cmd/*/vendor webapp/node_modules webapp/dist
 
 run3:
 	goreman start
