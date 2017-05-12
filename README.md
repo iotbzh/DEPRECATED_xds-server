@@ -11,7 +11,7 @@ This powerful webserver (written in [Go](https://golang.org)) exposes a REST
 interface over HTTP and also provides a Web dashboard to configure projects and execute only _(for now)_ basics commands.
 
 XDS-server also uses [Syncthing](https://syncthing.net/) tool to synchronize
-projects files from user machine to build server machine.
+projects files from user machine to build server machine or container.
 
 > **NOTE**: For now, only Syncthing sharing method is supported to synchronize
 projects files.
@@ -28,7 +28,7 @@ xds-server.
 - Install and setup [Go](https://golang.org/doc/install) version 1.7 or
 higher to compile this tool.
 - Install [npm](https://www.npmjs.com/) : `sudo apt install npm`
-- Install [gulp](http://gulpjs.com/) : `sudo npm install -g gulp`
+- Install [gulp](http://gulpjs.com/) : `sudo npm install -g gulp-cli`
 
 
 ### Building
@@ -106,7 +106,7 @@ The server part is written in *Go* and web app / dashboard (client part) in
 +-- webapp/             source client dashboard (Angular2 app)
 ```
 
-VSCode launcher settings can be found into `.vscode/launch.json`.
+Visual Studio Code launcher settings can be found into `.vscode/launch.json`.
 
 
 ## TODO:

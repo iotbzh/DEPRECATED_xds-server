@@ -1,7 +1,7 @@
 {
-  "name": "xds-server",
+  "name": "xds-server-dashboard",
   "version": "1.0.0",
-  "description": "XDS (Cross Development System) Server",
+  "description": "X (cross) Development System dashboard",
   "scripts": {
     "clean": "gulp clean",
     "compile": "gulp compile",
@@ -10,12 +10,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/xds-server"
+    "url": "https://github.com/iotbzh/xds-server"
   },
   "author": "Sebastien Douheret [IoT.bzh]",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/xds-server/issues"
+    "url": "https://github.com/iotbzh/xds-server/issues"
   },
   "dependencies": {
     "@angular/common": "2.4.4",
