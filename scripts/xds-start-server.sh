@@ -41,10 +41,16 @@ pid_sync=$(jobs -p)
 echo "pid=${pid_sync}"
 echo ""
 
-sleep 1
-
-echo "### Start XDS server"
-$BINDIR/xds-server --config $XDS_CONFFILE -log $LOGLEVEL > $LOG_XDS 2>&1 &
-pid_xds=$(jobs -p)
-echo "pid=${pid_xds}"
+if [ "$1" == "-noserver" ]; then
+    echo "## XDS server NOT STARTED"
+    echo "  Command to start it:"
+    echo "  $BINDIR/xds-server --config $XDS_CONFFILE -log $LOGLEVEL > $LOG_XDS 2>&1"
+else
+    # Wait a bit so make connection to Syncthing possible
+    sleep 1
+    echo "### Start XDS server"
+    $BINDIR/xds-server --config $XDS_CONFFILE -log $LOGLEVEL > $LOG_XDS 2>&1 &
+    pid_xds=$(jobs -p)
+    echo "pid=${pid_xds}"
+fi
 echo ""
