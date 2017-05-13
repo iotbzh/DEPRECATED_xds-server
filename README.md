@@ -107,6 +107,8 @@ The server part is written in *Go* and web app / dashboard (client part) in
 |
 +-- README.md           this readme
 |
++-- scripts/            hold various scripts used for installation or startup
+|
 +-- tools/              temporary directory to hold development tools (like glide)
 |
 +-- vendor/             temporary directory to hold Go dependencies packages
