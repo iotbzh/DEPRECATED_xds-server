@@ -186,6 +186,12 @@ func (c *Config) UpdateAll(newCfg Config) error {
 
 // UpdateFolder updates a specific folder into the current configuration
 func (c *Config) UpdateFolder(newFolder FolderConfig) (FolderConfig, error) {
+	// rootPath should not be empty
+	if newFolder.rootPath == "" {
+		newFolder.rootPath = c.ShareRootDir
+	}
+
+	// Sanity check of folder settings
 	if err := FolderVerify(newFolder); err != nil {
 		return FolderConfig{}, err
 	}

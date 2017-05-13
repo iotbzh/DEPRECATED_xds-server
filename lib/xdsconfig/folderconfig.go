@@ -70,6 +70,10 @@ func FolderVerify(fCfg FolderConfig) error {
 		err = fmt.Errorf("device id not set (SyncThingID field)")
 	}
 
+	if fCfg.rootPath == "" {
+		err = fmt.Errorf("rootPath must not be empty")
+	}
+
 	if err != nil {
 		fCfg.Status = FolderStatusErrorConfig
 		log.Printf("ERROR FolderVerify: %v\n", err)
