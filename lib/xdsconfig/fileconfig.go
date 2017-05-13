@@ -2,6 +2,7 @@ package xdsconfig
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"os/user"
 	"path"
@@ -59,6 +60,8 @@ func updateConfigFromFile(c *Config, confFile string) error {
 		return nil
 	}
 
+	c.Log.Infof("Use config file: %s", *cFile)
+
 	// TODO move on viper package to support comments in JSON and also
 	// bind with flags (command line options)
 	// see https://github.com/spf13/viper#working-with-flags
@@ -73,9 +76,21 @@ func updateConfigFromFile(c *Config, confFile string) error {
 
 	// Support environment variables (IOW ${MY_ENV_VAR} syntax) in config.json
 	// TODO: better to use reflect package to iterate on fields and be more generic
-	fCfg.WebAppDir = path.Clean(resolveEnvVar(fCfg.WebAppDir))
-	fCfg.ShareRootDir = path.Clean(resolveEnvVar(fCfg.ShareRootDir))
-	fCfg.SThgConf.Home = path.Clean(resolveEnvVar(fCfg.SThgConf.Home))
+	var rep string
+	if rep, err = resolveEnvVar(fCfg.WebAppDir); err != nil {
+		return err
+	}
+	fCfg.WebAppDir = path.Clean(rep)
+
+	if rep, err = resolveEnvVar(fCfg.ShareRootDir); err != nil {
+		return err
+	}
+	fCfg.ShareRootDir = path.Clean(rep)
+
+	if rep, err = resolveEnvVar(fCfg.SThgConf.Home); err != nil {
+		return err
+	}
+	fCfg.SThgConf.Home = path.Clean(rep)
 
 	// Config file settings overwrite default config
 
@@ -106,18 +121,21 @@ func updateConfigFromFile(c *Config, confFile string) error {
 }
 
 // resolveEnvVar Resolved environment variable regarding the syntax ${MYVAR}
-func resolveEnvVar(s string) string {
+func resolveEnvVar(s string) (string, error) {
 	re := regexp.MustCompile("\\${(.*)}")
 	vars := re.FindAllStringSubmatch(s, -1)
 	res := s
 	for _, v := range vars {
 		val := os.Getenv(v[1])
-		if val != "" {
-			rer := regexp.MustCompile("\\${" + v[1] + "}")
-			res = rer.ReplaceAllString(res, val)
+		if val == "" {
+			return res, fmt.Errorf("ERROR: %s env variable not defined", v[1])
 		}
+
+		rer := regexp.MustCompile("\\${" + v[1] + "}")
+		res = rer.ReplaceAllString(res, val)
 	}
-	return res
+
+	return res, nil
 }
 
 // exists returns whether the given file or directory exists or not
