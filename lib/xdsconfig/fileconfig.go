@@ -28,7 +28,8 @@ type FileConfig struct {
 // Order to determine which config file is used:
 //  1/ from command line option: "--config myConfig.json"
 //  2/ $HOME/.xds/config.json file
-//  3/ <xds-server executable dir>/config.json file
+//  3/ <current_dir>/agent-config.json file
+//  4/ <xds-server executable dir>/config.json file
 
 func updateConfigFromFile(c *Config, confFile string) error {
 

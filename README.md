@@ -56,7 +56,8 @@ xds-server configuration is driven by a JSON config file (`config.json`).
 Here is the logic to determine which `config.json` file will be used:
 1. from command line option: `--config myConfig.json`
 2. `$HOME/.xds/config.json` file
-3. `<xds-server executable dir>/config.json` file
+3. `<current dir>/config.json` file
+4. `<xds-server executable dir>/config.json` file
 
 Supported fields in configuration file are:
 ```json
