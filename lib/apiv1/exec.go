@@ -22,7 +22,7 @@ type ExecArgs struct {
 // ExecOutMsg Message send on each output (stdout+stderr) of executed command
 type ExecOutMsg struct {
 	CmdID     string `json:"cmdID"`
-	Timestamp string `json:timestamp`
+	Timestamp string `json:"timestamp"`
 	Stdout    string `json:"stdout"`
 	Stderr    string `json:"stderr"`
 }
@@ -30,13 +30,15 @@ type ExecOutMsg struct {
 // ExecExitMsg Message send when executed command exited
 type ExecExitMsg struct {
 	CmdID     string `json:"cmdID"`
-	Timestamp string `json:timestamp`
+	Timestamp string `json:"timestamp"`
 	Code      int    `json:"code"`
 	Error     error  `json:"error"`
 }
 
-// Event name send in WS
+// ExecOutEvent Event send in WS when characters are received
 const ExecOutEvent = "exec:output"
+
+// ExecExitEvent Event send in WS when program exited
 const ExecExitEvent = "exec:exit"
 
 var execCommandID = 1

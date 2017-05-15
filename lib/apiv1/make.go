@@ -22,7 +22,7 @@ type MakeArgs struct {
 // MakeOutMsg Message send on each output (stdout+stderr) of make command
 type MakeOutMsg struct {
 	CmdID     string `json:"cmdID"`
-	Timestamp string `json:timestamp`
+	Timestamp string `json:"timestamp"`
 	Stdout    string `json:"stdout"`
 	Stderr    string `json:"stderr"`
 }
@@ -30,13 +30,15 @@ type MakeOutMsg struct {
 // MakeExitMsg Message send on make command exit
 type MakeExitMsg struct {
 	CmdID     string `json:"cmdID"`
-	Timestamp string `json:timestamp`
+	Timestamp string `json:"timestamp"`
 	Code      int    `json:"code"`
 	Error     error  `json:"error"`
 }
 
-// Event name send in WS
+// MakeOutEvent Event send in WS when characters are received on stdout/stderr
 const MakeOutEvent = "make:output"
+
+// MakeExitEvent Event send in WS when command exited
 const MakeExitEvent = "make:exit"
 
 var makeCommandID = 1
