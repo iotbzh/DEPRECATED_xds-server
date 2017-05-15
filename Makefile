@@ -38,11 +38,10 @@ VERBOSE_2 := -v -x
 
 all: build webapp
 
-build: build/xds
+.PHONY: build
+build: xds
 
-xds: build/xds
-
-build/xds: vendor scripts
+xds:vendor scripts
 	@echo "### Build XDS server (version $(VERSION))";
 	@cd $(ROOT_SRCDIR); $(BUILD_ENV_FLAGS) go build $(VERBOSE_$(V)) -i -o $(LOCAL_BINDIR)/xds-server -ldflags "-X main.AppVersionGitTag=$(VERSION)" .
 
@@ -63,14 +62,11 @@ debug: build/xds webapp/debug tools/syncthing
 
 .PHONY: clean
 clean:
-	rm -rf $(LOCAL_BINDIR)/* debug cmd/*/debug $(ROOT_GOPRJ)/pkg/*/$(REPOPATH)
+	rm -rf $(LOCAL_BINDIR)/* debug $(ROOT_GOPRJ)/pkg/*/$(REPOPATH)
 
 .PHONY: distclean
 distclean: clean
-	rm -rf $(LOCAL_BINDIR) tools glide.lock vendor cmd/*/vendor webapp/node_modules webapp/dist
-
-run3:
-	goreman start
+	rm -rf $(LOCAL_BINDIR) tools glide.lock vendor webapp/node_modules webapp/dist
 
 webapp: webapp/install
 	(cd webapp && gulp build)
@@ -111,7 +107,6 @@ help:
 	@echo "Main supported rules:"
 	@echo "  build               (default)"
 	@echo "  build/xds"
-	@echo "  release"
 	@echo "  clean"
 	@echo "  distclean"
 	@echo ""

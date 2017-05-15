@@ -1,4 +1,4 @@
-# XDS - X(cross) Development System
+# XDS - X(cross) Development System Server
 
 XDS-server is a web server that allows user to remotely cross build applications.
 
