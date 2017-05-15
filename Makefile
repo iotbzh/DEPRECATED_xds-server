@@ -5,7 +5,8 @@ VERSION := 0.0.1
 
 # Syncthing version to install
 SYNCTHING_VERSION = 0.14.27
-SYNCTHING_INOTIFY_VERSION = 0.8.5
+# FIXME: use patched version while waiting integration of #165
+#SYNCTHING_INOTIFY_VERSION = 0.8.5
 
 
 # Retrieve git tag/commit to set sub-version string
