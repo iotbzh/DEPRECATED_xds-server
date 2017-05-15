@@ -1,14 +1,18 @@
 # Makefile used to build XDS daemon Web Server
 
+# Application Version
+VERSION := 0.0.1
+
 # Syncthing version to install
-SYNCTHING_VERSION = 0.14.25
+SYNCTHING_VERSION = 0.14.27
 SYNCTHING_INOTIFY_VERSION = 0.8.5
 
+
 # Retrieve git tag/commit to set sub-version string
-ifeq ($(origin VERSION), undefined)
-	VERSION := $(shell git describe --tags --always | sed 's/^v//')
-	ifeq ($(VERSION), )
-		VERSION=unknown-dev
+ifeq ($(origin SUB_VERSION), undefined)
+	SUB_VERSION := $(shell git describe --tags --always | sed 's/^v//')
+	ifeq ($(SUB_VERSION), )
+		SUB_VERSION=unknown-dev
 	endif
 endif
 
@@ -42,8 +46,8 @@ all: build webapp
 build: xds
 
 xds:vendor scripts
-	@echo "### Build XDS server (version $(VERSION))";
-	@cd $(ROOT_SRCDIR); $(BUILD_ENV_FLAGS) go build $(VERBOSE_$(V)) -i -o $(LOCAL_BINDIR)/xds-server -ldflags "-X main.AppVersionGitTag=$(VERSION)" .
+	@echo "### Build XDS server (version $(VERSION), subversion $(SUB_VERSION))";
+	@cd $(ROOT_SRCDIR); $(BUILD_ENV_FLAGS) go build $(VERBOSE_$(V)) -i -o $(LOCAL_BINDIR)/xds-server -ldflags "-X main.AppVersion=$(VERSION) -X main.AppSubVersion=$(SUB_VERSION)" .
 
 test: tools/glide
 	go test --race $(shell ./tools/glide novendor)
@@ -105,8 +109,9 @@ tools/syncthing:
 .PHONY: help
 help:
 	@echo "Main supported rules:"
-	@echo "  build               (default)"
-	@echo "  build/xds"
+	@echo "  all                (default)"
+	@echo "  build"
+	@echo "  install"
 	@echo "  clean"
 	@echo "  distclean"
 	@echo ""
