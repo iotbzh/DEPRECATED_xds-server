@@ -86,7 +86,7 @@ webapp/install:
 
 .PHONY: scripts
 scripts:
-	@mkdir -p $(LOCAL_BINDIR) && cp -f scripts/xds-start-server.sh $(LOCAL_BINDIR)
+	@mkdir -p $(LOCAL_BINDIR) && cp -rf scripts/xds-start-server.sh scripts/agl $(LOCAL_BINDIR)
 
 .PHONY: install
 install: all scripts tools/syncthing

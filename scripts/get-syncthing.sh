@@ -31,7 +31,7 @@ tarball="syncthing-linux-amd64-v${SYNCTHING_VERSION}.tar.gz" \
 	&& grep -E " ${tarball}\$" sha1sum.txt.asc | sha1sum -c - \
 	&& rm sha1sum.txt.asc \
 	&& tar -xvf "$tarball" --strip-components=1 "$(basename "$tarball" .tar.gz)"/syncthing \
-	&& mv syncthing ${DESTDIR}/syncthing
+	&& mv syncthing ${DESTDIR}/syncthing || exit 1
 
 
 echo "Get Syncthing-inotify..."
