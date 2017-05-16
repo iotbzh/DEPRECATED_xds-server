@@ -205,8 +205,8 @@ func (s *Sessions) monitorSessMap() {
 			s.log.Debugln("Stop monitorSessMap")
 			return
 		case <-time.After(sessionMonitorTime * time.Second):
-			s.log.Debugf("Sessions Map size: %d", len(s.sessMap))
 			if dbgFullTrace {
+				s.log.Debugf("Sessions Map size: %d", len(s.sessMap))
 				s.log.Debugf("Sessions Map : %v", s.sessMap)
 			}
 

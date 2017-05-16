@@ -36,7 +36,7 @@ func (s *APIService) setConfig(c *gin.Context) {
 
 	s.log.Debugln("SET config: ", cfgArg)
 
-	if err := s.cfg.UpdateAll(cfgArg); err != nil {
+	if err := s.mfolder.UpdateAll(cfgArg); err != nil {
 		common.APIError(c, err.Error())
 		return
 	}

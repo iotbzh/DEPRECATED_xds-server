@@ -30,8 +30,8 @@ type FolderConfig struct {
 	BuilderSThgID string     `json:"builderSThgID"`
 	Status        string     `json:"status"`
 
-	// Private fields
-	rootPath string
+	// Not exported fields
+	RootPath string `json:"-"`
 }
 
 // NewFolderConfig creates a new folder object
@@ -43,7 +43,7 @@ func NewFolderConfig(id, label, rootDir, path string) FolderConfig {
 		Type:         FolderTypeCloudSync,
 		SyncThingID:  "",
 		Status:       FolderStatusDisable,
-		rootPath:     rootDir,
+		RootPath:     rootDir,
 	}
 }
 
@@ -53,30 +53,30 @@ func (c *FolderConfig) GetFullPath(dir string) string {
 		dir = ""
 	}
 	if filepath.IsAbs(dir) {
-		return filepath.Join(c.rootPath, dir)
+		return filepath.Join(c.RootPath, dir)
 	}
-	return filepath.Join(c.rootPath, c.RelativePath, dir)
+	return filepath.Join(c.RootPath, c.RelativePath, dir)
 }
 
-// FolderVerify is called to verify that a configuration is valid
-func FolderVerify(fCfg FolderConfig) error {
+// Verify is called to verify that a configuration is valid
+func (c *FolderConfig) Verify() error {
 	var err error
 
-	if fCfg.Type != FolderTypeCloudSync {
+	if c.Type != FolderTypeCloudSync {
 		err = fmt.Errorf("Unsupported folder type")
 	}
 
-	if fCfg.SyncThingID == "" {
+	if c.SyncThingID == "" {
 		err = fmt.Errorf("device id not set (SyncThingID field)")
 	}
 
-	if fCfg.rootPath == "" {
-		err = fmt.Errorf("rootPath must not be empty")
+	if c.RootPath == "" {
+		err = fmt.Errorf("RootPath must not be empty")
 	}
 
 	if err != nil {
-		fCfg.Status = FolderStatusErrorConfig
-		log.Printf("ERROR FolderVerify: %v\n", err)
+		c.Status = FolderStatusErrorConfig
+		log.Printf("ERROR Verify: %v\n", err)
 	}
 
 	return err

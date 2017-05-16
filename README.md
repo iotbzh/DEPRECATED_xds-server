@@ -64,7 +64,9 @@ Supported fields in configuration file are:
 {
     "webAppDir": "location of client dashboard (default: webapp/dist)",
     "shareRootDir": "root directory where projects will be copied",
+    "logsDir": "directory to store logs (eg. syncthing output)",
     "syncthing": {
+        "binDir": "syncthing binaries directory (default: executable directory)",
         "home": "syncthing home directory (usually .../syncthing-config)",
         "gui-address": "syncthing gui url (default http://localhost:8384)"
     }

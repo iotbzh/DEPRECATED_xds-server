@@ -33,9 +33,11 @@ mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 ROOT_SRCDIR := $(patsubst %/,%,$(dir $(mkfile_path)))
 ROOT_GOPRJ := $(abspath $(ROOT_SRCDIR)/../../../..)
 LOCAL_BINDIR := $(ROOT_SRCDIR)/bin
+LOCAL_TOOLSDIR := $(ROOT_SRCDIR)/tools
+
 
 export GOPATH := $(shell go env GOPATH):$(ROOT_GOPRJ)
-export PATH := $(PATH):$(ROOT_SRCDIR)/tools
+export PATH := $(PATH):$(LOCAL_TOOLSDIR)
 
 VERBOSE_1 := -v
 VERBOSE_2 := -v -x
@@ -51,13 +53,13 @@ xds:vendor scripts
 	@cd $(ROOT_SRCDIR); $(BUILD_ENV_FLAGS) go build $(VERBOSE_$(V)) -i -o $(LOCAL_BINDIR)/xds-server -ldflags "-X main.AppVersion=$(VERSION) -X main.AppSubVersion=$(SUB_VERSION)" .
 
 test: tools/glide
-	go test --race $(shell ./tools/glide novendor)
+	go test --race $(shell $(LOCAL_TOOLSDIR)/glide novendor)
 
 vet: tools/glide
-	go vet $(shell ./tools/glide novendor)
+	go vet $(shell $(LOCAL_TOOLSDIR)/glide novendor)
 
 fmt: tools/glide
-	go fmt $(shell ./tools/glide novendor)
+	go fmt $(shell $(LOCAL_TOOLSDIR)/glide novendor)
 
 run: build/xds tools/syncthing
 	$(LOCAL_BINDIR)/xds-server --log info -c config.json.in
@@ -71,7 +73,7 @@ clean:
 
 .PHONY: distclean
 distclean: clean
-	rm -rf $(LOCAL_BINDIR) tools glide.lock vendor webapp/node_modules webapp/dist
+	rm -rf $(LOCAL_BINDIR) $(LOCAL_TOOLSDIR) glide.lock vendor webapp/node_modules webapp/dist
 
 webapp: webapp/install
 	(cd webapp && gulp build)
@@ -88,21 +90,24 @@ scripts:
 
 .PHONY: install
 install: all scripts tools/syncthing
-	mkdir -p $(INSTALL_DIR) && cp $(LOCAL_BINDIR)/* $(INSTALL_DIR)
-	mkdir -p $(INSTALL_WEBAPP_DIR) && cp -a webapp/dist/* $(INSTALL_WEBAPP_DIR)
+	mkdir -p $(INSTALL_DIR) \
+		&& cp $(LOCAL_BINDIR)/* $(INSTALL_DIR) \
+		&& cp $(LOCAL_TOOLSDIR)/syncthing* $(INSTALL_DIR)
+	mkdir -p $(INSTALL_WEBAPP_DIR) \
+		&& cp -a webapp/dist/* $(INSTALL_WEBAPP_DIR)
 
 vendor: tools/glide glide.yaml
-	./tools/glide install --strip-vendor
+	$(LOCAL_TOOLSDIR)/glide install --strip-vendor
 
 tools/glide:
 	@echo "Downloading glide"
-	mkdir -p tools
-	curl --silent -L https://glide.sh/get | GOBIN=./tools  sh
+	mkdir -p $(LOCAL_TOOLSDIR)
+	curl --silent -L https://glide.sh/get | GOBIN=$(LOCAL_TOOLSDIR)  sh
 
 .PHONY: tools/syncthing
 tools/syncthing:
-	@(test -s $(LOCAL_BINDIR)/syncthing || \
-	DESTDIR=$(LOCAL_BINDIR) \
+	@(test -s $(LOCAL_TOOLSDIR)/syncthing || \
+	DESTDIR=$(LOCAL_TOOLSDIR) \
 	SYNCTHING_VERSION=$(SYNCTHING_VERSION) \
 	SYNCTHING_INOTIFY_VERSION=$(SYNCTHING_INOTIFY_VERSION) \
 	./scripts/get-syncthing.sh)

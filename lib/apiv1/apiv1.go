@@ -4,6 +4,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/gin-gonic/gin"
 
+	"github.com/iotbzh/xds-server/lib/model"
 	"github.com/iotbzh/xds-server/lib/session"
 	"github.com/iotbzh/xds-server/lib/xdsconfig"
 )
@@ -13,17 +14,19 @@ type APIService struct {
 	router    *gin.Engine
 	apiRouter *gin.RouterGroup
 	sessions  *session.Sessions
-	cfg       xdsconfig.Config
+	cfg       *xdsconfig.Config
+	mfolder   *model.Folder
 	log       *logrus.Logger
 }
 
 // New creates a new instance of API service
-func New(sess *session.Sessions, cfg xdsconfig.Config, r *gin.Engine) *APIService {
+func New(sess *session.Sessions, cfg *xdsconfig.Config, mfolder *model.Folder, r *gin.Engine) *APIService {
 	s := &APIService{
 		router:    r,
 		sessions:  sess,
 		apiRouter: r.Group("/api/v1"),
 		cfg:       cfg,
+		mfolder:   mfolder,
 		log:       cfg.Log,
 	}
 

@@ -12,23 +12,25 @@ import (
 )
 
 type SyncThingConf struct {
+	BinDir     string `json:"binDir"`
 	Home       string `json:"home"`
 	GuiAddress string `json:"gui-address"`
 	GuiAPIKey  string `json:"gui-apikey"`
 }
 
 type FileConfig struct {
-	WebAppDir    string        `json:"webAppDir"`
-	ShareRootDir string        `json:"shareRootDir"`
-	HTTPPort     string        `json:"httpPort"`
-	SThgConf     SyncThingConf `json:"syncthing"`
+	WebAppDir    string         `json:"webAppDir"`
+	ShareRootDir string         `json:"shareRootDir"`
+	HTTPPort     string         `json:"httpPort"`
+	SThgConf     *SyncThingConf `json:"syncthing"`
+	LogsDir      string         `json:"logsDir"`
 }
 
 // getConfigFromFile reads configuration from a config file.
 // Order to determine which config file is used:
 //  1/ from command line option: "--config myConfig.json"
 //  2/ $HOME/.xds/config.json file
-//  3/ <current_dir>/agent-config.json file
+//  3/ <current_dir>/config.json file
 //  4/ <xds-server executable dir>/config.json file
 
 func updateConfigFromFile(c *Config, confFile string) error {
@@ -73,7 +75,7 @@ func updateConfigFromFile(c *Config, confFile string) error {
 	if err := json.NewDecoder(fd).Decode(&fCfg); err != nil {
 		return err
 	}
-	c.fileConf = fCfg
+	c.FileConf = fCfg
 
 	// Support environment variables (IOW ${MY_ENV_VAR} syntax) in config.json
 	// TODO: better to use reflect package to iterate on fields and be more generic

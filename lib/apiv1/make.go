@@ -72,7 +72,7 @@ func (s *APIService) buildMake(c *gin.Context) {
 		return
 	}
 
-	prj := s.cfg.GetFolderFromID(id)
+	prj := s.mfolder.GetFolderFromID(id)
 	if prj == nil {
 		common.APIError(c, "Unknown id")
 		return

@@ -1,4 +1,4 @@
-package xdsserver
+package webserver
 
 import (
 	"net/http"
@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/googollee/go-socket.io"
 	"github.com/iotbzh/xds-server/lib/apiv1"
+	"github.com/iotbzh/xds-server/lib/model"
 	"github.com/iotbzh/xds-server/lib/session"
 	"github.com/iotbzh/xds-server/lib/xdsconfig"
 )
@@ -21,8 +22,9 @@ type ServerService struct {
 	api       *apiv1.APIService
 	sIOServer *socketio.Server
 	webApp    *gin.RouterGroup
-	cfg       xdsconfig.Config
+	cfg       *xdsconfig.Config
 	sessions  *session.Sessions
+	mfolder   *model.Folder
 	log       *logrus.Logger
 	stop      chan struct{} // signals intentional stop
 }
@@ -31,7 +33,7 @@ const indexFilename = "index.html"
 const cookieMaxAge = "3600"
 
 // NewServer creates an instance of ServerService
-func NewServer(cfg xdsconfig.Config) *ServerService {
+func NewServer(cfg *xdsconfig.Config, mfolder *model.Folder, log *logrus.Logger) *ServerService {
 
 	// Setup logging for gin router
 	if cfg.Log.Level == logrus.DebugLevel {
@@ -55,8 +57,9 @@ func NewServer(cfg xdsconfig.Config) *ServerService {
 		sIOServer: nil,
 		webApp:    nil,
 		cfg:       cfg,
-		log:       cfg.Log,
+		log:       log,
 		sessions:  nil,
+		mfolder:   mfolder,
 		stop:      make(chan struct{}),
 	}
 
@@ -77,7 +80,7 @@ func (s *ServerService) Serve() error {
 	s.sessions = session.NewClientSessions(s.router, s.log, cookieMaxAge)
 
 	// Create REST API
-	s.api = apiv1.New(s.sessions, s.cfg, s.router)
+	s.api = apiv1.New(s.sessions, s.cfg, s.mfolder, s.router)
 
 	// Websocket routes
 	s.sIOServer, err = socketio.NewServer(nil)

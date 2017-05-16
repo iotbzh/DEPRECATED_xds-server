@@ -44,7 +44,7 @@ func (s *APIService) addFolder(c *gin.Context) {
 
 	s.log.Debugln("Add folder config: ", cfgArg)
 
-	newFld, err := s.cfg.UpdateFolder(cfgArg)
+	newFld, err := s.mfolder.UpdateFolder(cfgArg)
 	if err != nil {
 		common.APIError(c, err.Error())
 		return
@@ -68,7 +68,7 @@ func (s *APIService) delFolder(c *gin.Context) {
 
 	var delEntry xdsconfig.FolderConfig
 	var err error
-	if delEntry, err = s.cfg.DeleteFolder(id); err != nil {
+	if delEntry, err = s.mfolder.DeleteFolder(id); err != nil {
 		common.APIError(c, err.Error())
 		return
 	}
