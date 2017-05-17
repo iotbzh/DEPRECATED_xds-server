@@ -23,7 +23,7 @@ type SyncThingConf struct {
 type FileConfig struct {
 	WebAppDir    string         `json:"webAppDir"`
 	ShareRootDir string         `json:"shareRootDir"`
-	SdkRootDir   string        `json:"sdkRootDir"`
+	SdkRootDir   string         `json:"sdkRootDir"`
 	HTTPPort     string         `json:"httpPort"`
 	SThgConf     *SyncThingConf `json:"syncthing"`
 	LogsDir      string         `json:"logsDir"`
@@ -86,7 +86,8 @@ func updateConfigFromFile(c *Config, confFile string) error {
 		&fCfg.ShareRootDir,
 		&fCfg.SdkRootDir,
 		&fCfg.LogsDir,
-		&fCfg.SThgConf.Home} {
+		&fCfg.SThgConf.Home,
+		&fCfg.SThgConf.BinDir} {
 
 		rep, err := resolveEnvVar(*field)
 		if err != nil {
@@ -94,7 +95,7 @@ func updateConfigFromFile(c *Config, confFile string) error {
 		}
 		*field = path.Clean(rep)
 	}
-	
+
 	// Config file settings overwrite default config
 
 	if fCfg.WebAppDir != "" {
