@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/iotbzh/xds-server/lib/common"
 )
 
 type SyncThingConf struct {
@@ -21,6 +23,7 @@ type SyncThingConf struct {
 type FileConfig struct {
 	WebAppDir    string         `json:"webAppDir"`
 	ShareRootDir string         `json:"shareRootDir"`
+	SdkRootDir   string        `json:"sdkRootDir"`
 	HTTPPort     string         `json:"httpPort"`
 	SThgConf     *SyncThingConf `json:"syncthing"`
 	LogsDir      string         `json:"logsDir"`
@@ -78,23 +81,20 @@ func updateConfigFromFile(c *Config, confFile string) error {
 	c.FileConf = fCfg
 
 	// Support environment variables (IOW ${MY_ENV_VAR} syntax) in config.json
-	// TODO: better to use reflect package to iterate on fields and be more generic
-	var rep string
-	if rep, err = resolveEnvVar(fCfg.WebAppDir); err != nil {
-		return err
-	}
-	fCfg.WebAppDir = path.Clean(rep)
+	for _, field := range []*string{
+		&fCfg.WebAppDir,
+		&fCfg.ShareRootDir,
+		&fCfg.SdkRootDir,
+		&fCfg.LogsDir,
+		&fCfg.SThgConf.Home} {
 
-	if rep, err = resolveEnvVar(fCfg.ShareRootDir); err != nil {
-		return err
+		rep, err := resolveEnvVar(*field)
+		if err != nil {
+			return err
+		}
+		*field = path.Clean(rep)
 	}
-	fCfg.ShareRootDir = path.Clean(rep)
-
-	if rep, err = resolveEnvVar(fCfg.SThgConf.Home); err != nil {
-		return err
-	}
-	fCfg.SThgConf.Home = path.Clean(rep)
-
+	
 	// Config file settings overwrite default config
 
 	if fCfg.WebAppDir != "" {
@@ -105,7 +105,7 @@ func updateConfigFromFile(c *Config, confFile string) error {
 		// Check first from current directory
 		for _, rootD := range []string{cwd, exePath} {
 			ff := path.Join(rootD, c.WebAppDir, "index.html")
-			if exists(ff) {
+			if common.Exists(ff) {
 				c.WebAppDir = path.Join(rootD, c.WebAppDir)
 				break
 			}
@@ -139,16 +139,4 @@ func resolveEnvVar(s string) (string, error) {
 	}
 
 	return res, nil
-}
-
-// exists returns whether the given file or directory exists or not
-func exists(path string) bool {
-	_, err := os.Stat(path)
-	if err == nil {
-		return true
-	}
-	if os.IsNotExist(err) {
-		return false
-	}
-	return true
 }

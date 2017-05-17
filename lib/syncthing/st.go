@@ -27,13 +27,15 @@ type SyncThing struct {
 	APIKey  string
 	Home    string
 	STCmd   *exec.Cmd
+	STICmd  *exec.Cmd
 
 	// Private fields
-	binDir     string
-	logsDir    string
-	exitSTChan chan ExitChan
-	client     *common.HTTPClient
-	log        *logrus.Logger
+	binDir      string
+	logsDir     string
+	exitSTChan  chan ExitChan
+	exitSTIChan chan ExitChan
+	client      *common.HTTPClient
+	log         *logrus.Logger
 }
 
 // ExitChan Channel used for process exit
@@ -173,6 +175,28 @@ func (s *SyncThing) Start() (*exec.Cmd, error) {
 	return s.STCmd, err
 }
 
+// StartInotify Starts syncthing-inotify process
+func (s *SyncThing) StartInotify() (*exec.Cmd, error) {
+	var err error
+
+	s.log.Infof(" STI home=%s", s.Home)
+	s.log.Infof(" STI  url=%s", s.BaseURL)
+
+	args := []string{
+		"--home=" + s.Home,
+		"-target=" + s.BaseURL,
+	}
+	if s.log.Level == logrus.DebugLevel {
+		args = append(args, "-verbosity=4")
+	}
+
+	env := []string{}
+
+	s.STICmd, err = s.startProc("syncthing-inotify", args, env, &s.exitSTIChan)
+
+	return s.STICmd, err
+}
+
 func (s *SyncThing) stopProc(pname string, proc *os.Process, exit chan ExitChan) {
 	if err := proc.Signal(os.Interrupt); err != nil {
 		s.log.Infof("Proc interrupt %s error: %s", pname, err.Error())
@@ -199,6 +223,15 @@ func (s *SyncThing) Stop() {
 	s.STCmd = nil
 }
 
+// StopInotify Stops syncthing process
+func (s *SyncThing) StopInotify() {
+	if s.STICmd == nil {
+		return
+	}
+	s.stopProc("syncthing-inotify", s.STICmd.Process, s.exitSTIChan)
+	s.STICmd = nil
+}
+
 // Connect Establish HTTP connection with Syncthing
 func (s *SyncThing) Connect() error {
 	var err error
@@ -217,6 +250,9 @@ func (s *SyncThing) Connect() error {
 	if s.client == nil {
 		return fmt.Errorf("ERROR: cannot connect to Syncthing (null client)")
 	}
+
+	s.client.SetLogger(s.log)
+
 	return nil
 }
 

@@ -65,6 +65,7 @@ Supported fields in configuration file are:
     "webAppDir": "location of client dashboard (default: webapp/dist)",
     "shareRootDir": "root directory where projects will be copied",
     "logsDir": "directory to store logs (eg. syncthing output)",
+    "sdkRootDir": "root directory where cross SDKs are installed",
     "syncthing": {
         "binDir": "syncthing binaries directory (default: executable directory)",
         "home": "syncthing home directory (usually .../syncthing-config)",

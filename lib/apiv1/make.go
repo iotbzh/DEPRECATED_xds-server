@@ -138,6 +138,10 @@ func (s *APIService) buildMake(c *gin.Context) {
 	cmdID := makeCommandID
 	makeCommandID++
 
+	/* SEB TODO . /opt/poky-agl/3.90.0+snapshot/environment-setup-aarch64-agl-linux
+	env := os.Environ()
+	*/
+
 	s.log.Debugf("Execute [Cmd ID %d]: %v", cmdID, cmd)
 	err := common.ExecPipeWs(cmd, sop, sess.ID, cmdID, execTmo, s.log, oCB, eCB)
 	if err != nil {

@@ -29,7 +29,7 @@ export interface ISyncThingStatus {
 }
 
 // Private interfaces of Syncthing
-const ISTCONFIG_VERSION = 19;
+const ISTCONFIG_VERSION = 20;
 
 interface ISTFolderDeviceConfiguration {
     deviceID: string;

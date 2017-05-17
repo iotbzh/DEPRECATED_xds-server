@@ -13,6 +13,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
+	"github.com/iotbzh/xds-server/lib/crosssdk"
 	"github.com/iotbzh/xds-server/lib/model"
 	"github.com/iotbzh/xds-server/lib/syncthing"
 	"github.com/iotbzh/xds-server/lib/webserver"
@@ -39,15 +40,17 @@ var AppSubVersion = "unknown-dev"
 
 // Context holds the XDS server context
 type Context struct {
-	ProgName  string
-	Cli       *cli.Context
-	Config    *xdsconfig.Config
-	Log       *logrus.Logger
-	SThg      *st.SyncThing
-	SThgCmd   *exec.Cmd
-	MFolder   *model.Folder
-	WWWServer *webserver.ServerService
-	Exit      chan os.Signal
+	ProgName    string
+	Cli         *cli.Context
+	Config      *xdsconfig.Config
+	Log         *logrus.Logger
+	SThg        *st.SyncThing
+	SThgCmd     *exec.Cmd
+	SThgInotCmd *exec.Cmd
+	MFolder     *model.Folder
+	SDKs        *crosssdk.SDKs
+	WWWServer   *webserver.Server
+	Exit        chan os.Signal
 }
 
 // NewContext Create a new instance of XDS server
@@ -86,9 +89,10 @@ func NewContext(cliCtx *cli.Context) *Context {
 func handlerSigTerm(ctx *Context) {
 	<-ctx.Exit
 	if ctx.SThg != nil {
-		ctx.Log.Infof("Stopping Syncthing... (PID %d)",
-			ctx.SThgCmd.Process.Pid)
+		ctx.Log.Infof("Stoping Syncthing... (PID %d)", ctx.SThgCmd.Process.Pid)
 		ctx.SThg.Stop()
+		ctx.Log.Infof("Stoping Syncthing-inotify... (PID %d)", ctx.SThgInotCmd.Process.Pid)
+		ctx.SThg.StopInotify()
 	}
 	if ctx.WWWServer != nil {
 		ctx.Log.Infof("Stoping Web server...")
@@ -97,7 +101,7 @@ func handlerSigTerm(ctx *Context) {
 	os.Exit(1)
 }
 
-// xdsServer main routine
+// XDS Server application main routine
 func xdsApp(cliCtx *cli.Context) error {
 	var err error
 
@@ -130,7 +134,15 @@ func xdsApp(cliCtx *cli.Context) error {
 		}
 		ctx.Log.Infof("Syncthing started (PID %d)", ctx.SThgCmd.Process.Pid)
 
+		ctx.Log.Infof("Starting Syncthing-inotify...")
+		ctx.SThgInotCmd, err = ctx.SThg.StartInotify()
+		if err != nil {
+			return cli.NewExitError(err, 2)
+		}
+		ctx.Log.Infof("Syncthing-inotify started (PID %d)", ctx.SThgInotCmd.Process.Pid)
+
 		// Establish connection with local Syncthing (retry if connection fail)
+		time.Sleep(2 * time.Second)
 		retry := 10
 		err = nil
 		for retry > 0 {
@@ -177,8 +189,14 @@ func xdsApp(cliCtx *cli.Context) error {
 		return cli.NewExitError(err, 3)
 	}
 
+	// Init cross SDKs
+	ctx.SDKs, err = crosssdk.Init(ctx.Config, ctx.Log)
+	if err != nil {
+		return cli.NewExitError(err, 2)
+	}
+
 	// Create and start Web Server
-	ctx.WWWServer = webserver.NewServer(ctx.Config, ctx.MFolder, ctx.Log)
+	ctx.WWWServer = webserver.New(ctx.Config, ctx.MFolder, ctx.SDKs, ctx.Log)
 	if err = ctx.WWWServer.Serve(); err != nil {
 		ctx.Log.Println(err)
 		return cli.NewExitError(err, 3)

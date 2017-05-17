@@ -11,13 +11,14 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/googollee/go-socket.io"
 	"github.com/iotbzh/xds-server/lib/apiv1"
+	"github.com/iotbzh/xds-server/lib/crosssdk"
 	"github.com/iotbzh/xds-server/lib/model"
 	"github.com/iotbzh/xds-server/lib/session"
 	"github.com/iotbzh/xds-server/lib/xdsconfig"
 )
 
-// ServerService .
-type ServerService struct {
+// Server .
+type Server struct {
 	router    *gin.Engine
 	api       *apiv1.APIService
 	sIOServer *socketio.Server
@@ -25,6 +26,7 @@ type ServerService struct {
 	cfg       *xdsconfig.Config
 	sessions  *session.Sessions
 	mfolder   *model.Folder
+	sdks      *crosssdk.SDKs
 	log       *logrus.Logger
 	stop      chan struct{} // signals intentional stop
 }
@@ -32,11 +34,11 @@ type ServerService struct {
 const indexFilename = "index.html"
 const cookieMaxAge = "3600"
 
-// NewServer creates an instance of ServerService
-func NewServer(cfg *xdsconfig.Config, mfolder *model.Folder, log *logrus.Logger) *ServerService {
+// New creates an instance of Server
+func New(cfg *xdsconfig.Config, mfolder *model.Folder, sdks *crosssdk.SDKs, log *logrus.Logger) *Server {
 
 	// Setup logging for gin router
-	if cfg.Log.Level == logrus.DebugLevel {
+	if log.Level == logrus.DebugLevel {
 		gin.SetMode(gin.DebugMode)
 	} else {
 		gin.SetMode(gin.ReleaseMode)
@@ -51,15 +53,16 @@ func NewServer(cfg *xdsconfig.Config, mfolder *model.Folder, log *logrus.Logger)
 	// Creates gin router
 	r := gin.New()
 
-	svr := &ServerService{
+	svr := &Server{
 		router:    r,
 		api:       nil,
 		sIOServer: nil,
 		webApp:    nil,
 		cfg:       cfg,
-		log:       log,
 		sessions:  nil,
 		mfolder:   mfolder,
+		sdks:      sdks,
+		log:       log,
 		stop:      make(chan struct{}),
 	}
 
@@ -67,7 +70,7 @@ func NewServer(cfg *xdsconfig.Config, mfolder *model.Folder, log *logrus.Logger)
 }
 
 // Serve starts a new instance of the Web Server
-func (s *ServerService) Serve() error {
+func (s *Server) Serve() error {
 	var err error
 
 	// Setup middlewares
@@ -128,17 +131,17 @@ func (s *ServerService) Serve() error {
 }
 
 // Stop web server
-func (s *ServerService) Stop() {
+func (s *Server) Stop() {
 	close(s.stop)
 }
 
 // serveIndexFile provides initial file (eg. index.html) of webapp
-func (s *ServerService) serveIndexFile(c *gin.Context) {
+func (s *Server) serveIndexFile(c *gin.Context) {
 	c.HTML(200, indexFilename, gin.H{})
 }
 
 // Add details in Header
-func (s *ServerService) middlewareXDSDetails() gin.HandlerFunc {
+func (s *Server) middlewareXDSDetails() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Header("XDS-Version", s.cfg.Version)
 		c.Header("XDS-API-Version", s.cfg.APIVersion)
@@ -147,7 +150,7 @@ func (s *ServerService) middlewareXDSDetails() gin.HandlerFunc {
 }
 
 // CORS middleware
-func (s *ServerService) middlewareCORS() gin.HandlerFunc {
+func (s *Server) middlewareCORS() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		if c.Request.Method == "OPTIONS" {
@@ -165,7 +168,7 @@ func (s *ServerService) middlewareCORS() gin.HandlerFunc {
 }
 
 // socketHandler is the handler for the "main" websocket connection
-func (s *ServerService) socketHandler(c *gin.Context) {
+func (s *Server) socketHandler(c *gin.Context) {
 
 	// Retrieve user session
 	sess := s.sessions.Get(c)

@@ -7,6 +7,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
+	"github.com/iotbzh/xds-server/lib/common"
 )
 
 // Config parameters (json format) of /config command
@@ -57,14 +58,14 @@ func Init(cliCtx *cli.Context, log *logrus.Logger) (*Config, error) {
 	}
 
 	// Update location of shared dir if needed
-	if !dirExists(c.ShareRootDir) {
+	if !common.Exists(c.ShareRootDir) {
 		if err := os.MkdirAll(c.ShareRootDir, 0770); err != nil {
 			return nil, fmt.Errorf("No valid shared directory found: %v", err)
 		}
 	}
 	c.Log.Infoln("Share root directory: ", c.ShareRootDir)
 
-	if c.FileConf.LogsDir != "" && !dirExists(c.FileConf.LogsDir) {
+	if c.FileConf.LogsDir != "" && !common.Exists(c.FileConf.LogsDir) {
 		if err := os.MkdirAll(c.FileConf.LogsDir, 0770); err != nil {
 			return nil, fmt.Errorf("Cannot create logs dir: %v", err)
 		}
@@ -72,12 +73,4 @@ func Init(cliCtx *cli.Context, log *logrus.Logger) (*Config, error) {
 	c.Log.Infoln("Logs directory: ", c.FileConf.LogsDir)
 
 	return &c, nil
-}
-
-func dirExists(path string) bool {
-	_, err := os.Stat(path)
-	if os.IsNotExist(err) {
-		return false
-	}
-	return true
 }

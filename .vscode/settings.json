@@ -17,6 +17,7 @@
     "cSpell.words": [
         "apiv", "gonic", "devel", "csrffound", "Syncthing", "STID",
         "ISTCONFIG", "socketio", "ldflags", "SThg", "Intf", "dismissible",
-        "rpath", "WSID", "sess", "IXDS", "xdsconfig", "xdsserver", "mfolder"
+        "rpath", "WSID", "sess", "IXDS", "xdsconfig", "xdsserver", "mfolder", 
+	"inotify", "Inot", "pname", "pkill"
     ]
 }

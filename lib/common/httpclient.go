@@ -9,6 +9,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+
+	"github.com/Sirupsen/logrus"
 )
 
 type HTTPClient struct {
@@ -20,6 +22,7 @@ type HTTPClient struct {
 	id         string
 	csrf       string
 	conf       HTTPClientConfig
+	logger     *logrus.Logger
 }
 
 type HTTPClientConfig struct {
@@ -29,6 +32,13 @@ type HTTPClientConfig struct {
 	HeaderClientKeyName string
 	CsrfDisable         bool
 }
+
+const (
+	logError   = 1
+	logWarning = 2
+	logInfo    = 3
+	logDebug   = 4
+)
 
 // Inspired by syncthing/cmd/cli
 
@@ -62,6 +72,30 @@ func HTTPNewClient(baseURL string, cfg HTTPClientConfig) (*HTTPClient, error) {
 		}
 	}
 	return &client, nil
+}
+
+// SetLogger Define the logger to use
+func (c *HTTPClient) SetLogger(log *logrus.Logger) {
+	c.logger = log
+}
+
+func (c *HTTPClient) log(level int, format string, args ...interface{}) {
+	if c.logger != nil {
+		switch level {
+		case logError:
+			c.logger.Errorf(format, args...)
+			break
+		case logWarning:
+			c.logger.Warningf(format, args...)
+			break
+		case logInfo:
+			c.logger.Infof(format, args...)
+			break
+		default:
+			c.logger.Debugf(format, args...)
+			break
+		}
+	}
 }
 
 // Send request to retrieve Client id and/or CSRF token
@@ -170,6 +204,8 @@ func (c *HTTPClient) handleRequest(request *http.Request) (*http.Response, error
 	if c.csrf != "" {
 		request.Header.Set("X-CSRF-Token-"+c.id[:5], c.csrf)
 	}
+
+	c.log(logDebug, "HTTP %s %v", request.Method, request.URL)
 
 	response, err := c.httpClient.Do(request)
 	if err != nil {
