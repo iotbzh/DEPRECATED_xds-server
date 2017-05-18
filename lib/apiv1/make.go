@@ -14,8 +14,9 @@ import (
 // MakeArgs is the parameters (json format) of /make command
 type MakeArgs struct {
 	ID         string `json:"id"`
-	RPath      string `json:"rpath"` // relative path into project
-	Args       string `json:"args"`
+	RPath      string `json:"rpath"`   // relative path into project
+	Args       string `json:"args"`    // args to pass to make command
+	SdkID      string `json:"sdkid"`   // sdk ID to use for setting env
 	CmdTimeout int    `json:"timeout"` // command completion timeout in Second
 }
 
@@ -138,9 +139,10 @@ func (s *APIService) buildMake(c *gin.Context) {
 	cmdID := makeCommandID
 	makeCommandID++
 
-	/* SEB TODO . /opt/poky-agl/3.90.0+snapshot/environment-setup-aarch64-agl-linux
-	env := os.Environ()
-	*/
+	// Retrieve env command regarding Sdk ID
+	if envCmd := s.sdks.GetEnvCmd(args.SdkID, prj.DefaultSdk); envCmd != "" {
+		cmd = envCmd + " && " + cmd
+	}
 
 	s.log.Debugf("Execute [Cmd ID %d]: %v", cmdID, cmd)
 	err := common.ExecPipeWs(cmd, sop, sess.ID, cmdID, execTmo, s.log, oCB, eCB)

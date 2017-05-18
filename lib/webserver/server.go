@@ -83,7 +83,7 @@ func (s *Server) Serve() error {
 	s.sessions = session.NewClientSessions(s.router, s.log, cookieMaxAge)
 
 	// Create REST API
-	s.api = apiv1.New(s.sessions, s.cfg, s.mfolder, s.router)
+	s.api = apiv1.New(s.router, s.sessions, s.cfg, s.mfolder, s.sdks)
 
 	// Websocket routes
 	s.sIOServer, err = socketio.NewServer(nil)

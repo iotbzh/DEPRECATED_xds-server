@@ -168,6 +168,10 @@ func xdsApp(cliCtx *cli.Context) error {
 		}
 
 		// Retrieve initial Syncthing config
+
+		// FIXME: cannot retrieve default SDK, need to save on disk or somewhere
+		// else all config to be able to restore it.
+		defaultSdk := ""
 		stCfg, err := ctx.SThg.ConfigGet()
 		if err != nil {
 			return cli.NewExitError(err, 2)
@@ -177,7 +181,8 @@ func xdsApp(cliCtx *cli.Context) error {
 			if relativePath == "" {
 				relativePath = stFld.RawPath
 			}
-			newFld := xdsconfig.NewFolderConfig(stFld.ID, stFld.Label, ctx.Config.ShareRootDir, strings.Trim(relativePath, "/"))
+
+			newFld := xdsconfig.NewFolderConfig(stFld.ID, stFld.Label, ctx.Config.ShareRootDir, strings.Trim(relativePath, "/"), defaultSdk)
 			ctx.Config.Folders = ctx.Config.Folders.Update(xdsconfig.FoldersConfig{newFld})
 		}
 

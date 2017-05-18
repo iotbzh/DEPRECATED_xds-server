@@ -35,6 +35,7 @@ export interface IProject {
     localPrjDef?: any;
     isExpanded?: boolean;
     visible?: boolean;
+    defaultSdkID?: string;
 }
 
 export interface ILocalSTConfig {
@@ -213,6 +214,7 @@ export class ConfigService {
             label: prj.label,
             path: prj.path,
             hostSyncThingID: this.confStore.localSThg.ID,
+            defaultSdkID: prj.defaultSdkID,
         };
 
         // Send config to XDS server

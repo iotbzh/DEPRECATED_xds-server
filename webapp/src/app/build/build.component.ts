@@ -8,6 +8,7 @@ import 'rxjs/add/operator/startWith';
 import { XDSServerService, ICmdOutput } from "../common/xdsserver.service";
 import { ConfigService, IConfig, IProject } from "../common/config.service";
 import { AlertService, IAlert } from "../common/alert.service";
+import { SdkService } from "../common/sdk.service";
 
 @Component({
     selector: 'build',
@@ -32,8 +33,11 @@ export class BuildComponent implements OnInit, AfterViewChecked {
     private startTime: Map<string, number> = new Map<string, number>();
 
     // I initialize the app component.
-    constructor(private configSvr: ConfigService, private sdkSvr: XDSServerService,
-        private fb: FormBuilder, private alertSvr: AlertService
+    constructor(private configSvr: ConfigService,
+        private xdsSvr: XDSServerService,
+        private fb: FormBuilder,
+        private alertSvr: AlertService,
+        private sdkSvr: SdkService
     ) {
         this.cmdOutput = "";
         this.confValid = false;
@@ -54,12 +58,12 @@ export class BuildComponent implements OnInit, AfterViewChecked {
         });
 
         // Command output data tunneling
-        this.sdkSvr.CmdOutput$.subscribe(data => {
+        this.xdsSvr.CmdOutput$.subscribe(data => {
             this.cmdOutput += data.stdout + "\n";
         });
 
         // Command exit
-        this.sdkSvr.CmdExit$.subscribe(exit => {
+        this.xdsSvr.CmdExit$.subscribe(exit => {
             if (this.startTime.has(exit.cmdID)) {
                 this.cmdInfo = 'Last command duration: ' + this._computeTime(this.startTime.get(exit.cmdID));
                 this.startTime.delete(exit.cmdID);
@@ -93,7 +97,9 @@ export class BuildComponent implements OnInit, AfterViewChecked {
         let t0 = performance.now();
         this.cmdInfo = 'Start build of ' + prjID + ' at ' + t0;
 
-        this.sdkSvr.make(prjID, this.buildForm.value.subpath, args)
+        let sdkid = this.sdkSvr.getCurrentId();
+
+        this.xdsSvr.make(prjID, this.buildForm.value.subpath, args, sdkid)
             .subscribe(res => {
                 this.startTime.set(String(res.cmdID), t0);
             },

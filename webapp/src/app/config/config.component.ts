@@ -11,6 +11,7 @@ import { ConfigService, IConfig, IProject, ProjectType } from "../common/config.
 import { XDSServerService, IServerStatus } from "../common/xdsserver.service";
 import { SyncthingService, ISyncThingStatus } from "../common/syncthing.service";
 import { AlertService } from "../common/alert.service";
+import { ISdk, SdkService } from "../common/sdk.service";
 
 @Component({
     templateUrl: './app/config/config.component.html',
@@ -23,6 +24,7 @@ import { AlertService } from "../common/alert.service";
 export class ConfigComponent implements OnInit {
 
     config$: Observable<IConfig>;
+    sdks$: Observable<ISdk[]>;
     severStatus$: Observable<IServerStatus>;
     localSTStatus$: Observable<ISyncThingStatus>;
 
@@ -44,8 +46,9 @@ export class ConfigComponent implements OnInit {
 
     constructor(
         private configSvr: ConfigService,
-        private sdkSvr: XDSServerService,
+        private xdsSvr: XDSServerService,
         private stSvr: SyncthingService,
+        private sdkSvr: SdkService,
         private alert: AlertService,
         private fb: FormBuilder
     ) {
@@ -59,7 +62,8 @@ export class ConfigComponent implements OnInit {
 
     ngOnInit() {
         this.config$ = this.configSvr.conf;
-        this.severStatus$ = this.sdkSvr.Status$;
+        this.sdks$ = this.sdkSvr.Sdks$;
+        this.severStatus$ = this.xdsSvr.Status$;
         this.localSTStatus$ = this.stSvr.Status$;
 
         // Bind syncToolUrl to baseURL
@@ -117,6 +121,7 @@ export class ConfigComponent implements OnInit {
             label: formVal['label'],
             path: formVal['path'],
             type: ProjectType.SYNCTHING,
+            // FIXME: allow to set defaultSdkID from New Project config panel
         });
     }
 

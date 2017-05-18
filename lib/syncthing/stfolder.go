@@ -4,21 +4,13 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/iotbzh/xds-server/lib/xdsconfig"
 	"github.com/syncthing/syncthing/lib/config"
 	"github.com/syncthing/syncthing/lib/protocol"
 )
 
-// FIXME remove and use an interface on xdsconfig.FolderConfig
-type FolderChangeArg struct {
-	ID           string
-	Label        string
-	RelativePath string
-	SyncThingID  string
-	ShareRootDir string
-}
-
 // FolderChange is called when configuration has changed
-func (s *SyncThing) FolderChange(f FolderChangeArg) error {
+func (s *SyncThing) FolderChange(f xdsconfig.FolderConfig) error {
 
 	// Get current config
 	stCfg, err := s.ConfigGet()
@@ -63,7 +55,7 @@ func (s *SyncThing) FolderChange(f FolderChangeArg) error {
 	folder := config.FolderConfiguration{
 		ID:      id,
 		Label:   label,
-		RawPath: filepath.Join(f.ShareRootDir, f.RelativePath),
+		RawPath: filepath.Join(s.conf.ShareRootDir, f.RelativePath),
 	}
 
 	folder.Devices = append(folder.Devices, config.FolderDeviceConfiguration{

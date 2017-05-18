@@ -2,17 +2,20 @@ package crosssdk
 
 import (
 	"fmt"
-	"path"
 	"path/filepath"
 )
 
 // SDK Define a cross tool chain used to build application
 type SDK struct {
-	Profile string
-	Version string
-	Arch    string
-	Path    string
-	EnvFile string
+	ID      string `json:"id" binding:"required"`
+	Name    string `json:"name"`
+	Profile string `json:"profile"`
+	Version string `json:"version"`
+	Arch    string `json:"arch"`
+	Path    string `json:"path"`
+
+	// Not exported fields
+	EnvFile string `json:"-"`
 }
 
 // NewCrossSDK creates a new instance of Syncthing
@@ -28,6 +31,9 @@ func NewCrossSDK(path string) (*SDK, error) {
 	d = filepath.Dir(d)
 	s.Profile = filepath.Base(d)
 
+	s.ID = s.Profile + "_" + s.Arch + "_" + s.Version
+	s.Name = s.Arch + "   (" + s.Version + ")"
+
 	envFile := filepath.Join(path, "environment-setup*")
 	ef, err := filepath.Glob(envFile)
 	if err != nil {
@@ -41,7 +47,7 @@ func NewCrossSDK(path string) (*SDK, error) {
 	return &s, nil
 }
 
-// GetEnvCmd returns the command to initialized the environment to use a cross SDK
+// GetEnvCmd returns the command used to initialized the environment
 func (s *SDK) GetEnvCmd() string {
-	return ". " + path.Join(s.Path, s.EnvFile)
+	return ". " + s.EnvFile
 }

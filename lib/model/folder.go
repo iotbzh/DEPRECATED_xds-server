@@ -71,13 +71,8 @@ func (c *Folder) UpdateFolder(newFolder xdsconfig.FolderConfig) (xdsconfig.Folde
 
 	c.Conf.Folders = c.Conf.Folders.Update(xdsconfig.FoldersConfig{newFolder})
 
-	err := c.SThg.FolderChange(st.FolderChangeArg{
-		ID:           newFolder.ID,
-		Label:        newFolder.Label,
-		RelativePath: newFolder.RelativePath,
-		SyncThingID:  newFolder.SyncThingID,
-		ShareRootDir: c.Conf.ShareRootDir,
-	})
+	err := c.SThg.FolderChange(newFolder)
+
 	newFolder.BuilderSThgID = c.Conf.Builder.SyncThingID // FIXME - should be removed after local ST config rework
 	newFolder.Status = xdsconfig.FolderStatusEnable
 

@@ -29,13 +29,14 @@ type FolderConfig struct {
 	SyncThingID   string     `json:"syncThingID"`
 	BuilderSThgID string     `json:"builderSThgID"`
 	Status        string     `json:"status"`
+	DefaultSdk    string     `json:"defaultSdk"`
 
 	// Not exported fields
 	RootPath string `json:"-"`
 }
 
 // NewFolderConfig creates a new folder object
-func NewFolderConfig(id, label, rootDir, path string) FolderConfig {
+func NewFolderConfig(id, label, rootDir, path string, defaultSdk string) FolderConfig {
 	return FolderConfig{
 		ID:           id,
 		Label:        label,
@@ -44,6 +45,7 @@ func NewFolderConfig(id, label, rootDir, path string) FolderConfig {
 		SyncThingID:  "",
 		Status:       FolderStatusDisable,
 		RootPath:     rootDir,
+		DefaultSdk:   defaultSdk,
 	}
 }
 

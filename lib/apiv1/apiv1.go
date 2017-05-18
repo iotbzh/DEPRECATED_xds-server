@@ -4,6 +4,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/gin-gonic/gin"
 
+	"github.com/iotbzh/xds-server/lib/crosssdk"
 	"github.com/iotbzh/xds-server/lib/model"
 	"github.com/iotbzh/xds-server/lib/session"
 	"github.com/iotbzh/xds-server/lib/xdsconfig"
@@ -16,17 +17,19 @@ type APIService struct {
 	sessions  *session.Sessions
 	cfg       *xdsconfig.Config
 	mfolder   *model.Folder
+	sdks      *crosssdk.SDKs
 	log       *logrus.Logger
 }
 
 // New creates a new instance of API service
-func New(sess *session.Sessions, cfg *xdsconfig.Config, mfolder *model.Folder, r *gin.Engine) *APIService {
+func New(r *gin.Engine, sess *session.Sessions, cfg *xdsconfig.Config, mfolder *model.Folder, sdks *crosssdk.SDKs) *APIService {
 	s := &APIService{
 		router:    r,
 		sessions:  sess,
 		apiRouter: r.Group("/api/v1"),
 		cfg:       cfg,
 		mfolder:   mfolder,
+		sdks:      sdks,
 		log:       cfg.Log,
 	}
 
@@ -39,6 +42,9 @@ func New(sess *session.Sessions, cfg *xdsconfig.Config, mfolder *model.Folder, r
 	s.apiRouter.GET("/folder/:id", s.getFolder)
 	s.apiRouter.POST("/folder", s.addFolder)
 	s.apiRouter.DELETE("/folder/:id", s.delFolder)
+
+	s.apiRouter.GET("/sdks", s.getSdks)
+	s.apiRouter.GET("/sdk/:id", s.getSdk)
 
 	s.apiRouter.POST("/make", s.buildMake)
 	s.apiRouter.POST("/make/:id", s.buildMake)

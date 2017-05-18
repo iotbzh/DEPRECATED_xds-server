@@ -19,12 +19,17 @@ import { ConfigComponent } from "./config/config.component";
 import { ProjectCardComponent } from "./projects/projectCard.component";
 import { ProjectReadableTypePipe } from "./projects/projectCard.component";
 import { ProjectsListAccordionComponent } from "./projects/projectsListAccordion.component";
+import { SdkCardComponent } from "./sdks/sdkCard.component";
+import { SdksListAccordionComponent } from "./sdks/sdksListAccordion.component";
+import { SdkSelectDropdownComponent } from "./sdks/sdkSelectDropdown.component";
+
 import { HomeComponent } from "./home/home.component";
 import { BuildComponent } from "./build/build.component";
 import { XDSServerService } from "./common/xdsserver.service";
 import { SyncthingService } from "./common/syncthing.service";
 import { ConfigService } from "./common/config.service";
 import { AlertService } from './common/alert.service';
+import { SdkService } from "./common/sdk.service";
 
 
 
@@ -51,6 +56,9 @@ import { AlertService } from './common/alert.service';
         ProjectCardComponent,
         ProjectReadableTypePipe,
         ProjectsListAccordionComponent,
+        SdkCardComponent,
+        SdksListAccordionComponent,
+        SdkSelectDropdownComponent,
     ],
     providers: [
         AppRoutingProviders,
@@ -61,7 +69,8 @@ import { AlertService } from './common/alert.service';
         XDSServerService,
         ConfigService,
         SyncthingService,
-        AlertService
+        AlertService,
+        SdkService,
     ],
     bootstrap: [AppComponent]
 })

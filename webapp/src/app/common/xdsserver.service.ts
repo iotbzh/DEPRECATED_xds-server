@@ -7,6 +7,8 @@ import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import * as io from 'socket.io-client';
 
 import { AlertService } from './alert.service';
+import { ISdk } from './sdk.service';
+
 
 // Import RxJs required methods
 import 'rxjs/add/operator/map';
@@ -20,6 +22,7 @@ export interface IXDSConfigProject {
     path: string;
     hostSyncThingID: string;
     label?: string;
+    defaultSdkID?: string;
 }
 
 interface IXDSBuilderConfig {
@@ -36,6 +39,7 @@ interface IXDSFolderConfig {
     syncThingID: string;
     builderSThgID?: string;
     status?: string;
+    defaultSdkID: string;
 }
 
 interface IXDSConfig {
@@ -136,6 +140,10 @@ export class XDSServerService {
 
     }
 
+    getSdks(): Observable<ISdk[]> {
+        return this._get('/sdks');
+    }
+
     getProjects(): Observable<IXDSFolderConfig[]> {
         return this._get('/folders');
     }
@@ -146,7 +154,8 @@ export class XDSServerService {
             label: cfg.label || "",
             path: cfg.path,
             type: FOLDER_TYPE_CLOUDSYNC,
-            syncThingID: cfg.hostSyncThingID
+            syncThingID: cfg.hostSyncThingID,
+            defaultSdkID: cfg.defaultSdkID || "",
         };
         return this._post('/folder', folder);
     }
@@ -163,8 +172,8 @@ export class XDSServerService {
             });
     }
 
-    make(prjID: string, dir: string, args: string): Observable<any> {
-        return this._post('/make', { id: prjID, rpath: dir, args: args });
+    make(prjID: string, dir: string, args: string, sdkid?: string): Observable<any> {
+        return this._post('/make', { id: prjID, rpath: dir, args: args, sdkid: sdkid });
     }
 
 

@@ -38,6 +38,7 @@ type SyncThing struct {
 	logsDir     string
 	exitSTChan  chan ExitChan
 	exitSTIChan chan ExitChan
+	conf        *xdsconfig.Config
 	client      *common.HTTPClient
 	log         *logrus.Logger
 }
@@ -85,6 +86,7 @@ func NewSyncThing(conf *xdsconfig.Config, log *logrus.Logger) *SyncThing {
 		binDir:  binDir,
 		logsDir: conf.FileConf.LogsDir,
 		log:     log,
+		conf:    conf,
 	}
 
 	return &s
