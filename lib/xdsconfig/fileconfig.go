@@ -2,12 +2,10 @@ package xdsconfig
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"os/user"
 	"path"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/iotbzh/xds-server/lib/common"
@@ -89,11 +87,10 @@ func updateConfigFromFile(c *Config, confFile string) error {
 		&fCfg.SThgConf.Home,
 		&fCfg.SThgConf.BinDir} {
 
-		rep, err := resolveEnvVar(*field)
-		if err != nil {
+		var err error
+		if *field, err = common.ResolveEnvVar(*field); err != nil {
 			return err
 		}
-		*field = path.Clean(rep)
 	}
 
 	// Config file settings overwrite default config
@@ -122,22 +119,4 @@ func updateConfigFromFile(c *Config, confFile string) error {
 	}
 
 	return nil
-}
-
-// resolveEnvVar Resolved environment variable regarding the syntax ${MYVAR}
-func resolveEnvVar(s string) (string, error) {
-	re := regexp.MustCompile("\\${(.*)}")
-	vars := re.FindAllStringSubmatch(s, -1)
-	res := s
-	for _, v := range vars {
-		val := os.Getenv(v[1])
-		if val == "" {
-			return res, fmt.Errorf("ERROR: %s env variable not defined", v[1])
-		}
-
-		rer := regexp.MustCompile("\\${" + v[1] + "}")
-		res = rer.ReplaceAllString(res, val)
-	}
-
-	return res, nil
 }
