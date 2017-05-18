@@ -5,8 +5,9 @@ VERSION := 0.0.1
 
 # Syncthing version to install
 SYNCTHING_VERSION = 0.14.27
-# FIXME: use patched version while waiting integration of #165
+# FIXME: use master while waiting a release that include #164
 #SYNCTHING_INOTIFY_VERSION = 0.8.5
+SYNCTHING_INOTIFY_VERSION=master
 
 
 # Retrieve git tag/commit to set sub-version string
@@ -43,10 +44,10 @@ VERBOSE_1 := -v
 VERBOSE_2 := -v -x
 
 
-all: build webapp
+all: build tools/syncthing
 
 .PHONY: build
-build: xds
+build: xds webapp
 
 xds:vendor scripts
 	@echo "### Build XDS server (version $(VERSION), subversion $(SUB_VERSION))";
@@ -89,7 +90,10 @@ scripts:
 	@mkdir -p $(LOCAL_BINDIR) && cp -rf scripts/xds-start-server.sh scripts/agl $(LOCAL_BINDIR)
 
 .PHONY: install
-install: all scripts tools/syncthing
+install:
+	@test -e $(LOCAL_BINDIR)/xds-server -a -d webapp/dist || { echo "Please execute first: make build\n"; exit 1; }
+	@test -e $(LOCAL_BINDIR)/xds-start-server.sh -a -d $(LOCAL_BINDIR)/agl || { echo "Please execute first: scripts\n"; exit 1; }
+	@test -e $(LOCAL_TOOLSDIR)/syncthing -a -e $(LOCAL_TOOLSDIR)/syncthing-inotify || { echo "Please execute first: make tools/syncthing\n"; exit 1; }
 	mkdir -p $(INSTALL_DIR) \
 		&& cp $(LOCAL_BINDIR)/* $(INSTALL_DIR) \
 		&& cp $(LOCAL_TOOLSDIR)/syncthing* $(INSTALL_DIR)
@@ -106,11 +110,11 @@ tools/glide:
 
 .PHONY: tools/syncthing
 tools/syncthing:
-	@(test -s $(LOCAL_TOOLSDIR)/syncthing || \
+	@test -e $(LOCAL_TOOLSDIR)/syncthing -a -e $(LOCAL_TOOLSDIR)/syncthing-inotify  || { \
 	DESTDIR=$(LOCAL_TOOLSDIR) \
 	SYNCTHING_VERSION=$(SYNCTHING_VERSION) \
 	SYNCTHING_INOTIFY_VERSION=$(SYNCTHING_INOTIFY_VERSION) \
-	./scripts/get-syncthing.sh)
+	./scripts/get-syncthing.sh; }
 
 .PHONY: help
 help:
