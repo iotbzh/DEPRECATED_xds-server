@@ -29,15 +29,19 @@ export class SdkSelectDropdownComponent {
     constructor(private sdkSvr: SdkService) { }
 
     ngOnInit() {
+        this.curSdk = this.sdkSvr.getCurrent();
         this.sdkSvr.Sdks$.subscribe((s) => {
-            this.sdks = s;
-            this.curSdk = this.sdks.length ? this.sdks[0] : null;
-            this.sdkSvr.setCurrent(this.curSdk);
+            if (s) {
+                this.sdks = s;
+                if (this.curSdk === null || s.indexOf(this.curSdk) === -1) {
+                    this.sdkSvr.setCurrent(this.curSdk = s.length ? s[0] : null);
+                }
+            }
         });
     }
 
     select(s) {
-         this.sdkSvr.setCurrent(this.curSdk = s);
+        this.sdkSvr.setCurrent(this.curSdk = s);
     }
 }
 

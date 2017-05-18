@@ -34,6 +34,10 @@ export class SdkService {
         this.current = s;
     }
 
+    public getCurrent(): ISdk {
+        return this.current;
+    }
+
     public getCurrentId(): string {
         if (this.current && this.current.id) {
             return this.current.id;
