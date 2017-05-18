@@ -5,7 +5,7 @@
 
 # FIXME: temporary HACK while waiting merge of #165
 #[ -z "$SYNCTHING_INOTIFY_VERSION" ] && SYNCTHING_INOTIFY_VERSION=0.8.5
-[ -z "$SYNCTHING_INOTIFY_VERSION" ] && SYNCTHING_INOTIFY_VERSION=master_and_patch165
+[ -z "$SYNCTHING_INOTIFY_VERSION" ] && { SYNCTHING_INOTIFY_VERSION=master; SYNCTHING_INOTIFY_CMID=af6fbf9d63f95a0; }
 [ -z "$DESTDIR" ] && DESTDIR=/usr/local/bin
 [ -z "$TMPDIR" ] && TMPDIR=/tmp
 
@@ -33,33 +33,17 @@ tarball="syncthing-linux-amd64-v${SYNCTHING_VERSION}.tar.gz" \
 	&& tar -xvf "$tarball" --strip-components=1 "$(basename "$tarball" .tar.gz)"/syncthing \
 	&& mv syncthing ${DESTDIR}/syncthing || exit 1
 
-
 echo "Get Syncthing-inotify..."
-if [ "$SYNCTHING_INOTIFY_VERSION" = "master_and_patch165" ]; then
+if [ "$SYNCTHING_INOTIFY_VERSION" = "master" ]; then
     mkdir -p ${TEMPDIR}/syncthing-inotify-build/src/github.com/syncthing || exit 1
     cd ${TEMPDIR}/syncthing-inotify-build/src/github.com/syncthing
     git clone https://github.com/syncthing/syncthing || exit 1
     git clone https://github.com/syncthing/syncthing-inotify || exit 1
     cd syncthing-inotify
-    cat <<EOF > 165.patch
-    diff --git a/syncwatcher.go b/syncwatcher.go
-index c36b034..5175c12 100644
---- a/syncwatcher.go
-+++ b/syncwatcher.go
-@@ -677,7 +677,10 @@ func accumulateChanges(debounceTimeout time.Duration,
- 		if flushTimerNeedsReset {
- 			flushTimerNeedsReset = false
- 			if !flushTimer.Stop() {
--				<-flushTimer.C
-+				select {
-+				case <-flushTimer.C:
-+				default:
-+				}
- 			}
- 			flushTimer.Reset(currInterval)
- 		}
-EOF
-    git apply 165.patch || exit 1
+    if [ "$SYNCTHING_INOTIFY_CMID" != "" ]; then
+        git checkout -q $SYNCTHING_INOTIFY_CMID || exit 1
+    fi
+    git status
     export GOPATH=$(realpath `pwd`/../../../..)
     version=$(git describe --tags --always | sed 's/^v//')__patch_165
     go build -v -i -ldflags "-w -X main.Version=$version" -o ${DESTDIR}/syncthing-inotify || exit 1
