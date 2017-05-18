@@ -24,9 +24,12 @@ func Exists(path string) bool {
 // ResolveEnvVar Resolved environment variable regarding the syntax ${MYVAR}
 // or $MYVAR following by a slash or a backslash
 func ResolveEnvVar(s string) (string, error) {
+	if s == "" {
+		return s, nil
+	}
 
 	// Resolved tilde : ~/
-	if s[:2] == "~/" {
+	if len(s) > 2 && s[:2] == "~/" {
 		if usr, err := user.Current(); err == nil {
 			s = filepath.Join(usr.HomeDir, s[2:])
 		}
