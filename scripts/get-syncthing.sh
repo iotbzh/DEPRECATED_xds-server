@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configurable variables
-[ -z "$SYNCTHING_VERSION" ] && SYNCTHING_VERSION=0.14.25
+[ -z "$SYNCTHING_VERSION" ] && SYNCTHING_VERSION=0.14.28
 
 # FIXME: temporary HACK while waiting merge of #165
 #[ -z "$SYNCTHING_INOTIFY_VERSION" ] && SYNCTHING_INOTIFY_VERSION=0.8.5
