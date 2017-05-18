@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 
+	"github.com/iotbzh/xds-server/lib/common"
 	"github.com/iotbzh/xds-server/lib/syncthing"
 	"github.com/iotbzh/xds-server/lib/xdsconfig"
 )
@@ -69,8 +70,13 @@ func (c *Folder) UpdateFolder(newFolder xdsconfig.FolderConfig) (xdsconfig.Folde
 		return xdsconfig.FolderConfig{}, err
 	}
 
+	// Normalize path (needed for Windows path including bashlashes)
+	newFolder.RelativePath = common.PathNormalize(newFolder.RelativePath)
+
+	// Update config folder
 	c.Conf.Folders = c.Conf.Folders.Update(xdsconfig.FoldersConfig{newFolder})
 
+	// Update Syncthing folder
 	err := c.SThg.FolderChange(newFolder)
 
 	newFolder.BuilderSThgID = c.Conf.Builder.SyncThingID // FIXME - should be removed after local ST config rework

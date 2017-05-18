@@ -7,6 +7,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"strings"
 )
 
 // Exists returns whether the given file or directory exists or not
@@ -54,4 +55,19 @@ func ResolveEnvVar(s string) (string, error) {
 	//re := regexp.MustCompile("\\$([^\\/])+/")
 
 	return path.Clean(res), nil
+}
+
+// PathNormalize
+func PathNormalize(p string) string {
+	sep := string(filepath.Separator)
+	if sep != "/" {
+		return p
+	}
+	// Replace drive like C: by C/
+	res := p
+	if p[1:2] == ":" {
+		res = p[0:1] + sep + p[2:]
+	}
+	res = strings.Replace(res, "\\", "/", -1)
+	return filepath.Clean(res)
 }
