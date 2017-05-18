@@ -132,16 +132,17 @@ func xdsApp(cliCtx *cli.Context) error {
 		if err != nil {
 			return cli.NewExitError(err, 2)
 		}
-		ctx.Log.Infof("Syncthing started (PID %d)", ctx.SThgCmd.Process.Pid)
+		fmt.Printf("Syncthing started (PID %d)\n", ctx.SThgCmd.Process.Pid)
 
 		ctx.Log.Infof("Starting Syncthing-inotify...")
 		ctx.SThgInotCmd, err = ctx.SThg.StartInotify()
 		if err != nil {
 			return cli.NewExitError(err, 2)
 		}
-		ctx.Log.Infof("Syncthing-inotify started (PID %d)", ctx.SThgInotCmd.Process.Pid)
+		fmt.Printf("Syncthing-inotify started (PID %d)\n", ctx.SThgInotCmd.Process.Pid)
 
 		// Establish connection with local Syncthing (retry if connection fail)
+		fmt.Printf("Establishing connection with Syncthing...\n")
 		time.Sleep(2 * time.Second)
 		retry := 10
 		err = nil

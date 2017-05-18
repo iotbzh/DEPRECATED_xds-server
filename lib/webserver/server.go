@@ -1,6 +1,7 @@
 package webserver
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 
@@ -113,6 +114,7 @@ func (s *Server) Serve() error {
 	// Serve in the background
 	serveError := make(chan error, 1)
 	go func() {
+		fmt.Printf("Web Server running on localhost:%s ...\n", s.cfg.HTTPPort)
 		serveError <- http.ListenAndServe(":"+s.cfg.HTTPPort, s.router)
 	}()
 
