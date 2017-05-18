@@ -44,12 +44,12 @@ VERBOSE_1 := -v
 VERBOSE_2 := -v -x
 
 
-all: build tools/syncthing
+all: tools/syncthing build
 
 .PHONY: build
 build: xds webapp
 
-xds:vendor scripts
+xds:vendor scripts tools/syncthing/copytobin
 	@echo "### Build XDS server (version $(VERSION), subversion $(SUB_VERSION))";
 	@cd $(ROOT_SRCDIR); $(BUILD_ENV_FLAGS) go build $(VERBOSE_$(V)) -i -o $(LOCAL_BINDIR)/xds-server -ldflags "-X main.AppVersion=$(VERSION) -X main.AppSubVersion=$(SUB_VERSION)" .
 
@@ -62,10 +62,10 @@ vet: tools/glide
 fmt: tools/glide
 	go fmt $(shell $(LOCAL_TOOLSDIR)/glide novendor)
 
-run: build/xds tools/syncthing
+run: build/xds tools/syncthing/copytobin
 	$(LOCAL_BINDIR)/xds-server --log info -c config.json.in
 
-debug: build/xds webapp/debug tools/syncthing
+debug: build/xds webapp/debug tools/syncthing/copytobin
 	$(LOCAL_BINDIR)/xds-server --log debug -c config.json.in
 
 .PHONY: clean
@@ -91,12 +91,11 @@ scripts:
 
 .PHONY: install
 install:
-	@test -e $(LOCAL_BINDIR)/xds-server -a -d webapp/dist || { echo "Please execute first: make build\n"; exit 1; }
-	@test -e $(LOCAL_BINDIR)/xds-start-server.sh -a -d $(LOCAL_BINDIR)/agl || { echo "Please execute first: scripts\n"; exit 1; }
-	@test -e $(LOCAL_TOOLSDIR)/syncthing -a -e $(LOCAL_TOOLSDIR)/syncthing-inotify || { echo "Please execute first: make tools/syncthing\n"; exit 1; }
+	@test -e $(LOCAL_BINDIR)/xds-server -a -d webapp/dist || { echo "Please execute first: make all\n"; exit 1; }
+	@test -e $(LOCAL_BINDIR)/xds-start-server.sh -a -d $(LOCAL_BINDIR)/agl || { echo "Please execute first: make all\n"; exit 1; }
+	@test -e $(LOCAL_BINDIR)/syncthing -a -e $(LOCAL_BINDIR)/syncthing-inotify || { echo "Please execute first: make all\n"; exit 1; }
 	mkdir -p $(INSTALL_DIR) \
 		&& cp -a $(LOCAL_BINDIR)/* $(INSTALL_DIR) \
-		&& cp $(LOCAL_TOOLSDIR)/syncthing* $(INSTALL_DIR)
 	mkdir -p $(INSTALL_WEBAPP_DIR) \
 		&& cp -a webapp/dist/* $(INSTALL_WEBAPP_DIR)
 
@@ -115,6 +114,11 @@ tools/syncthing:
 	SYNCTHING_VERSION=$(SYNCTHING_VERSION) \
 	SYNCTHING_INOTIFY_VERSION=$(SYNCTHING_INOTIFY_VERSION) \
 	./scripts/get-syncthing.sh; }
+
+.PHONY:
+tools/syncthing/copytobin:
+	@test -e $(LOCAL_TOOLSDIR)/syncthing -a -e $(LOCAL_TOOLSDIR)/syncthing-inotify || { echo "Please execute first: make tools/syncthing\n"; exit 1; }
+	@cp -f $(LOCAL_TOOLSDIR)/syncthing* $(LOCAL_BINDIR)
 
 .PHONY: help
 help:
