@@ -95,7 +95,7 @@ install:
 	@test -e $(LOCAL_BINDIR)/xds-start-server.sh -a -d $(LOCAL_BINDIR)/agl || { echo "Please execute first: make all\n"; exit 1; }
 	@test -e $(LOCAL_BINDIR)/syncthing -a -e $(LOCAL_BINDIR)/syncthing-inotify || { echo "Please execute first: make all\n"; exit 1; }
 	mkdir -p $(INSTALL_DIR) \
-		&& cp -a $(LOCAL_BINDIR)/* $(INSTALL_DIR) \
+		&& cp -a $(LOCAL_BINDIR)/* $(INSTALL_DIR)
 	mkdir -p $(INSTALL_WEBAPP_DIR) \
 		&& cp -a webapp/dist/* $(INSTALL_WEBAPP_DIR)
 
@@ -110,6 +110,7 @@ tools/glide:
 .PHONY: tools/syncthing
 tools/syncthing:
 	@test -e $(LOCAL_TOOLSDIR)/syncthing -a -e $(LOCAL_TOOLSDIR)/syncthing-inotify  || { \
+	mkdir -p $(LOCAL_TOOLSDIR); \
 	DESTDIR=$(LOCAL_TOOLSDIR) \
 	SYNCTHING_VERSION=$(SYNCTHING_VERSION) \
 	SYNCTHING_INOTIFY_VERSION=$(SYNCTHING_INOTIFY_VERSION) \
