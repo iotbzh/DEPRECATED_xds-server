@@ -42,7 +42,10 @@ export class BuildComponent implements OnInit, AfterViewChecked {
         this.cmdOutput = "";
         this.confValid = false;
         this.cmdInfo = "";      // TODO: to be remove (only for debug)
-        this.buildForm = fb.group({ subpath: this.subpathCtrl });
+        this.buildForm = fb.group({
+            subpath: this.subpathCtrl,
+            makeArgs: ["", Validators.nullValidator],
+        });
     }
 
     ngOnInit() {
@@ -94,12 +97,14 @@ export class BuildComponent implements OnInit, AfterViewChecked {
 
         this.cmdOutput += this._outputHeader();
 
+        let sdkid = this.sdkSvr.getCurrentId();
+
+        let cmdArgs = args ? args : this.buildForm.value.makeArgs;
+
         let t0 = performance.now();
         this.cmdInfo = 'Start build of ' + prjID + ' at ' + t0;
 
-        let sdkid = this.sdkSvr.getCurrentId();
-
-        this.xdsSvr.make(prjID, this.buildForm.value.subpath, args, sdkid)
+        this.xdsSvr.make(prjID, this.buildForm.value.subpath, cmdArgs, sdkid)
             .subscribe(res => {
                 this.startTime.set(String(res.cmdID), t0);
             },
