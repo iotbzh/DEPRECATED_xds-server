@@ -58,6 +58,10 @@ func (s *SyncThing) FolderChange(f xdsconfig.FolderConfig) error {
 		RawPath: filepath.Join(s.conf.ShareRootDir, f.RelativePath),
 	}
 
+	if s.conf.FileConf.SThgConf.RescanIntervalS > 0 {
+		folder.RescanIntervalS = s.conf.FileConf.SThgConf.RescanIntervalS
+	}
+
 	folder.Devices = append(folder.Devices, config.FolderDeviceConfiguration{
 		DeviceID: newDevice.DeviceID,
 	})

@@ -18,6 +18,6 @@
         "apiv", "gonic", "devel", "csrffound", "Syncthing", "STID",
         "ISTCONFIG", "socketio", "ldflags", "SThg", "Intf", "dismissible",
         "rpath", "WSID", "sess", "IXDS", "xdsconfig", "xdsserver", "mfolder",
-	"inotify", "Inot", "pname", "pkill", "sdkid", "CLOUDSYNC"
+	"inotify", "Inot", "pname", "pkill", "sdkid", "CLOUDSYNC", "xdsagent"
     ]
 }

@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Http, Headers, RequestOptionsArgs, Response } from '@angular/http';
+import { CookieService } from 'ngx-cookie';
 import { Location } from '@angular/common';
 import { Observable } from 'rxjs/Observable';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
@@ -105,6 +106,7 @@ interface ISTConfiguration {
 // Default settings
 const DEFAULT_GUI_PORT = 8384;
 const DEFAULT_GUI_API_KEY = "1234abcezam";
+const DEFAULT_RESCAN_INTERV = 0;    // 0: use syncthing-inotify to detect changes
 
 
 @Injectable()
@@ -127,7 +129,7 @@ export class SyncthingService {
     };
     private statusSubject = <BehaviorSubject<ISyncThingStatus>>new BehaviorSubject(this._status);
 
-    constructor(private http: Http, private _window: Window) {
+    constructor(private http: Http, private _window: Window, private cookie: CookieService) {
         this._status.baseURL = 'http://localhost:' + DEFAULT_GUI_PORT;
         this.baseRestUrl = this._status.baseURL + '/rest';
         this.apikey = DEFAULT_GUI_API_KEY;
@@ -194,12 +196,14 @@ export class SyncthingService {
 
                 // Add or update Folder settings
                 let label = prj.label || "";
+                let scanInterval = parseInt(this.cookie.get("st-rescanInterval"), 10) || DEFAULT_RESCAN_INTERV;
                 let folder: ISTFolderConfiguration = {
                     id: prj.id,
                     label: label,
                     path: prj.path,
                     devices: [{ deviceID: newDevID, introducedBy: "" }],
                     autoNormalize: true,
+                    rescanIntervalS: scanInterval,
                 };
 
                 let idx = stCfg.folders.findIndex(item => item.id === prj.id);

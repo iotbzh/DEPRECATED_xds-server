@@ -12,10 +12,11 @@ import (
 )
 
 type SyncThingConf struct {
-	BinDir     string `json:"binDir"`
-	Home       string `json:"home"`
-	GuiAddress string `json:"gui-address"`
-	GuiAPIKey  string `json:"gui-apikey"`
+	BinDir          string `json:"binDir"`
+	Home            string `json:"home"`
+	GuiAddress      string `json:"gui-address"`
+	GuiAPIKey       string `json:"gui-apikey"`
+	RescanIntervalS int    `json:"rescanIntervalS"`
 }
 
 type FileConfig struct {
