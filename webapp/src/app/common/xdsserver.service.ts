@@ -48,6 +48,15 @@ interface IXDSConfig {
     folders: IXDSFolderConfig[];
 }
 
+export interface IXDSAgentTarball {
+    os: string;
+    fileUrl: string;
+}
+
+export interface IXDSAgentInfo {
+    tarballs: IXDSAgentTarball[];
+}
+
 export interface ISdkMessage {
     wsID: string;
     msgType: string;
@@ -142,6 +151,10 @@ export class XDSServerService {
 
     getSdks(): Observable<ISdk[]> {
         return this._get('/sdks');
+    }
+
+    getXdsAgentInfo(): Observable<IXDSAgentInfo> {
+        return this._get('/xdsagent/info');
     }
 
     getProjects(): Observable<IXDSFolderConfig[]> {

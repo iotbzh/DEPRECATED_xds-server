@@ -8,7 +8,8 @@ import 'rxjs/add/operator/filter';
 import 'rxjs/add/operator/debounceTime';
 
 import { ConfigService, IConfig, IProject, ProjectType } from "../common/config.service";
-import { XDSServerService, IServerStatus } from "../common/xdsserver.service";
+import { XDSServerService, IServerStatus, IXDSAgentInfo } from "../common/xdsserver.service";
+import { XDSAgentService, IAgentStatus } from "../common/xdsagent.service";
 import { SyncthingService, ISyncThingStatus } from "../common/syncthing.service";
 import { AlertService } from "../common/alert.service";
 import { ISdk, SdkService } from "../common/sdk.service";
@@ -25,15 +26,18 @@ export class ConfigComponent implements OnInit {
 
     config$: Observable<IConfig>;
     sdks$: Observable<ISdk[]>;
-    severStatus$: Observable<IServerStatus>;
+    serverStatus$: Observable<IServerStatus>;
+    agentStatus$: Observable<IAgentStatus>;
     localSTStatus$: Observable<ISyncThingStatus>;
 
     curProj: number;
     userEditedLabel: boolean = false;
+    xdsAgentZipUrl: string = "";
 
     // TODO replace by reactive FormControl + add validation
     syncToolUrl: string;
-    syncToolRetry: string;
+    xdsAgentUrl: string;
+    xdsAgentRetry: string;
     projectsRootDir: string;
     showApplyBtn = {    // Used to show/hide Apply buttons
         "retry": false,
@@ -46,7 +50,8 @@ export class ConfigComponent implements OnInit {
 
     constructor(
         private configSvr: ConfigService,
-        private xdsSvr: XDSServerService,
+        private xdsServerSvr: XDSServerService,
+        private xdsAgentSvr: XDSAgentService,
         private stSvr: SyncthingService,
         private sdkSvr: SdkService,
         private alert: AlertService,
@@ -63,14 +68,17 @@ export class ConfigComponent implements OnInit {
     ngOnInit() {
         this.config$ = this.configSvr.conf;
         this.sdks$ = this.sdkSvr.Sdks$;
-        this.severStatus$ = this.xdsSvr.Status$;
+        this.serverStatus$ = this.xdsServerSvr.Status$;
+        this.agentStatus$ = this.xdsAgentSvr.Status$;
         this.localSTStatus$ = this.stSvr.Status$;
 
-        // Bind syncToolUrl to baseURL
+        // Bind xdsAgentUrl to baseURL
         this.config$.subscribe(cfg => {
             this.syncToolUrl = cfg.localSThg.URL;
-            this.syncToolRetry = String(cfg.localSThg.retry);
+            this.xdsAgentUrl = cfg.xdsAgent.URL;
+            this.xdsAgentRetry = String(cfg.xdsAgent.retry);
             this.projectsRootDir = cfg.projectsRootDir;
+            this.xdsAgentZipUrl = cfg.xdsAgentZipUrl;
         });
 
         // Auto create label name
@@ -93,9 +101,9 @@ export class ConfigComponent implements OnInit {
         switch (field) {
             case "retry":
                 let re = new RegExp('^[0-9]+$');
-                let rr = parseInt(this.syncToolRetry, 10);
-                if (re.test(this.syncToolRetry) && rr >= 0) {
-                    this.configSvr.syncToolRetry = rr;
+                let rr = parseInt(this.xdsAgentRetry, 10);
+                if (re.test(this.xdsAgentRetry) && rr >= 0) {
+                    this.configSvr.xdsAgentRetry = rr;
                 } else {
                     this.alert.warning("Not a valid number", true);
                 }
@@ -109,8 +117,10 @@ export class ConfigComponent implements OnInit {
         this.showApplyBtn[field] = false;
     }
 
-    syncToolRestartConn() {
+    xdsAgentRestartConn() {
+        let aurl = this.xdsAgentUrl;
         this.configSvr.syncToolURL = this.syncToolUrl;
+        this.configSvr.xdsAgentUrl = aurl;
         this.configSvr.loadProjects();
     }
 

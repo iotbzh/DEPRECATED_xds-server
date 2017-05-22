@@ -9,7 +9,7 @@ import {AlertService, IAlert} from '../common/alert.service';
         <div style="width:80%; margin-left:auto; margin-right:auto;" *ngFor="let alert of (alerts$ | async)">
             <alert *ngIf="alert.show" [type]="alert.type" [dismissible]="alert.dismissible" [dismissOnTimeout]="alert.dismissTimeout"
             (onClose)="onClose(alert)">
-                <span [innerHtml]="alert.msg"></span>
+                <div style="text-align:center;" [innerHtml]="alert.msg"></div>
             </alert>
         </div>
     `

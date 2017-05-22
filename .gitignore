@@ -8,6 +8,7 @@ cmd/*/debug
 
 webapp/dist
 webapp/node_modules
+webapp/assets/xds-agent-tarballs/*.zip
 
 # private (prefixed by 2 underscores) directories or files
 __*/

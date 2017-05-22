@@ -26,9 +26,11 @@ import { SdkSelectDropdownComponent } from "./sdks/sdkSelectDropdown.component";
 import { HomeComponent } from "./home/home.component";
 import { BuildComponent } from "./build/build.component";
 import { XDSServerService } from "./common/xdsserver.service";
+import { XDSAgentService } from "./common/xdsagent.service";
 import { SyncthingService } from "./common/syncthing.service";
 import { ConfigService } from "./common/config.service";
 import { AlertService } from './common/alert.service';
+import { UtilsService } from './common/utils.service';
 import { SdkService } from "./common/sdk.service";
 
 
@@ -67,9 +69,11 @@ import { SdkService } from "./common/sdk.service";
             useValue: window
         },
         XDSServerService,
+        XDSAgentService,
         ConfigService,
         SyncthingService,
         AlertService,
+        UtilsService,
         SdkService,
     ],
     bootstrap: [AppComponent]

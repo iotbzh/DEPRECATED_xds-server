@@ -39,7 +39,7 @@ export class AlertService {
     }
 
     public info(msg: string) {
-        this.add({ type: "warning", msg: msg, dismissible: true, dismissTimeout: this.defaultDissmissTmo });
+        this.add({ type: "info", msg: msg, dismissible: true, dismissTimeout: this.defaultDissmissTmo });
     }
 
     public add(al: IAlert) {

@@ -14,8 +14,10 @@ import 'rxjs/add/operator/mergeMap';
 
 
 import { XDSServerService, IXDSConfigProject } from "../common/xdsserver.service";
+import { XDSAgentService } from "../common/xdsagent.service";
 import { SyncthingService, ISyncThingProject, ISyncThingStatus } from "../common/syncthing.service";
 import { AlertService, IAlert } from "../common/alert.service";
+import { UtilsService } from "../common/utils.service";
 
 export enum ProjectType {
     NATIVE = 1,
@@ -38,6 +40,11 @@ export interface IProject {
     defaultSdkID?: string;
 }
 
+export interface IXDSAgentConfig {
+    URL: string;
+    retry: number;
+}
+
 export interface ILocalSTConfig {
     ID: string;
     URL: string;
@@ -47,6 +54,8 @@ export interface ILocalSTConfig {
 
 export interface IConfig {
     xdsServerURL: string;
+    xdsAgent: IXDSAgentConfig;
+    xdsAgentZipUrl: string;
     projectsRootDir: string;
     projects: IProject[];
     localSThg: ILocalSTConfig;
@@ -59,13 +68,17 @@ export class ConfigService {
 
     private confSubject: BehaviorSubject<IConfig>;
     private confStore: IConfig;
+    private AgentConnectObs = null;
     private stConnectObs = null;
+    private xdsAgentZipUrl = "";
 
     constructor(private _window: Window,
         private cookie: CookieService,
-        private sdkSvr: XDSServerService,
+        private xdsServerSvr: XDSServerService,
+        private xdsAgentSvr: XDSAgentService,
         private stSvr: SyncthingService,
         private alert: AlertService,
+        private utils: UtilsService,
     ) {
         this.load();
         this.confSubject = <BehaviorSubject<IConfig>>new BehaviorSubject(this.confStore);
@@ -85,6 +98,11 @@ export class ConfigService {
             // Set default config
             this.confStore = {
                 xdsServerURL: this._window.location.origin + '/api/v1',
+                xdsAgent: {
+                    URL: 'http://localhost:8000',
+                    retry: 10,
+                },
+                xdsAgentZipUrl: "",
                 projectsRootDir: "",
                 projects: [],
                 localSThg: {
@@ -95,6 +113,13 @@ export class ConfigService {
                 }
             };
         }
+
+        // Update XDS Agent tarball url
+        this.xdsServerSvr.getXdsAgentInfo().subscribe(nfo => {
+            let os = this.utils.getOSName(true);
+            let zurl = nfo.tarballs.filter(elem => elem.os === os);
+            this.confStore.xdsAgentZipUrl = zurl && zurl[0].fileUrl;
+        });
     }
 
     // Save config into cookie
@@ -104,11 +129,26 @@ export class ConfigService {
 
         // Don't save projects in cookies (too big!)
         let cfg = this.confStore;
-        delete(cfg.projects);
+        delete (cfg.projects);
         this.cookie.putObject("xds-config", cfg);
     }
 
     loadProjects() {
+        // Setup connection with local XDS agent
+        if (this.AgentConnectObs) {
+            try {
+                this.AgentConnectObs.unsubscribe();
+            } catch (err) { }
+            this.AgentConnectObs = null;
+        }
+
+        let cfg = this.confStore.xdsAgent;
+        this.AgentConnectObs = this.xdsAgentSvr.connect(cfg.retry, cfg.URL)
+            .subscribe((sts) => {
+                console.log("Agent sts", sts);
+            }, error => this.alert.error(error)
+            );
+
         // Remove previous subscriber if existing
         if (this.stConnectObs) {
             try {
@@ -117,7 +157,8 @@ export class ConfigService {
             this.stConnectObs = null;
         }
 
-        // First setup connection with local SyncThing
+        // FIXME: move this code and all logic about syncthing inside XDS Agent
+        // Setup connection with local SyncThing
         let retry = this.confStore.localSThg.retry;
         let url = this.confStore.localSThg.URL;
         this.stConnectObs = this.stSvr.connect(retry, url).subscribe((sts) => {
@@ -130,7 +171,7 @@ export class ConfigService {
             // Rebuild projects definition from local and remote syncthing
             this.confStore.projects = [];
 
-            this.sdkSvr.getProjects().subscribe(remotePrj => {
+            this.xdsServerSvr.getProjects().subscribe(remotePrj => {
                 this.stSvr.getProjects().subscribe(localPrj => {
                     remotePrj.forEach(rPrj => {
                         let lPrj = localPrj.filter(item => item.id === rPrj.id);
@@ -150,7 +191,18 @@ export class ConfigService {
                 }), error => this.alert.error('Could not load initial state of local projects.');
             }), error => this.alert.error('Could not load initial state of remote projects.');
 
-        }, error => this.alert.error(error));
+        }, error => {
+            if (error.indexOf("Syncthing local daemon not responding") !== -1) {
+                let msg = "<span><strong>" + error + "<br></strong>";
+                msg += "You may need to download and execute XDS-Agent.<br>";
+                msg += "<a class=\"fa fa-download\" href=\"" + this.confStore.xdsAgentZipUrl + "\" target=\"_blank\"></a>";
+                msg += " Download XDS-Agent tarball.";
+                msg += "</span>";
+                this.alert.error(msg);
+            } else {
+                this.alert.error(error);
+            }
+        });
     }
 
     set syncToolURL(url: string) {
@@ -158,10 +210,17 @@ export class ConfigService {
         this.save();
     }
 
-    set syncToolRetry(r: number) {
+    set xdsAgentRetry(r: number) {
         this.confStore.localSThg.retry = r;
+        this.confStore.xdsAgent.retry = r;
         this.save();
     }
+
+    set xdsAgentUrl(url: string) {
+        this.confStore.xdsAgent.URL = url;
+        this.save();
+    }
+
 
     set projectsRootDir(p: string) {
         if (p.charAt(0) === '~') {
@@ -219,7 +278,7 @@ export class ConfigService {
 
         // Send config to XDS server
         let newPrj = prj;
-        this.sdkSvr.addProject(sdkPrj)
+        this.xdsServerSvr.addProject(sdkPrj)
             .subscribe(resStRemotePrj => {
                 newPrj.remotePrjDef = resStRemotePrj;
 
@@ -258,7 +317,7 @@ export class ConfigService {
         if (idx === -1) {
             throw new Error("Invalid project id (id=" + prj.id + ")");
         }
-        this.sdkSvr.deleteProject(prj.id)
+        this.xdsServerSvr.deleteProject(prj.id)
             .subscribe(res => {
                 this.stSvr.deleteProject(prj.id)
                     .subscribe(res => {
