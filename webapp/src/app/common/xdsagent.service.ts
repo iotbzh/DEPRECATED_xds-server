@@ -59,20 +59,12 @@ export class XDSAgentService {
         this.Status$ = this.statusSubject.asObservable();
 
         this.apikey = DEFAULT_API_KEY; // FIXME Add dynamic allocated key
-        this._status.baseURL = 'http://localhost:' + DEFAULT_PORT;
-        this.baseRestUrl = this._status.baseURL + '/api/' + API_VERSION;
-        let re = this._window.location.origin.match(/http[s]?:\/\/([^\/]*)[\/]?/);
-        if (re === null || re.length < 2) {
-            console.error('ERROR: cannot determine Websocket url');
-        } else {
-            this.wsUrl = 'ws://' + re[1];
-        }
+        this._initURLs('http://localhost:' + DEFAULT_PORT);
     }
 
     connect(retry: number, url?: string): Observable<IAgentStatus> {
         if (url) {
-            this._status.baseURL = url;
-            this.baseRestUrl = this._status.baseURL + '/api/' + API_VERSION;
+            this._initURLs(url);
         }
         //FIXME [XDS-Agent]: not implemented yet, set always as connected
         //this._status.connected = false;
@@ -101,6 +93,18 @@ export class XDSAgentService {
             apiVersion: "NOT_IMPLEMENTED",
             gitTag: "NOT_IMPLEMENTED"
         });
+    }
+
+    private _initURLs(url: string) {
+        this._status.baseURL = url;
+        this.baseRestUrl = this._status.baseURL + '/api/' + API_VERSION;
+        let re = this._status.baseURL.match(/http[s]?:\/\/([^\/]*)[\/]?/);
+        if (re === null || re.length < 2) {
+            this.wsUrl = '';
+            console.error('ERROR: cannot determine Websocket url');
+            return;
+        }
+        this.wsUrl = 'ws://' + re[1];
     }
 
     private _WSState(sts: boolean) {

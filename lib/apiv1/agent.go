@@ -2,15 +2,21 @@ package apiv1
 
 import (
 	"net/http"
+	"path"
+	"strings"
 
 	"path/filepath"
 
 	"github.com/gin-gonic/gin"
+	"github.com/iotbzh/xds-agent/lib/common"
 )
 
 type XDSAgentTarball struct {
-	OS      string `json:"os"`
-	FileURL string `json:"fileUrl"`
+	OS         string `json:"os"`
+	Arch       string `json:"arch"`
+	Version    string `json:"version"`
+	RawVersion string `json:"raw-version"`
+	FileURL    string `json:"fileUrl"`
 }
 type XDSAgentInfo struct {
 	Tarballs []XDSAgentTarball `json:"tarballs"`
@@ -18,20 +24,44 @@ type XDSAgentInfo struct {
 
 // getXdsAgentInfo : return various information about Xds Agent
 func (s *APIService) getXdsAgentInfo(c *gin.Context) {
-	// TODO: retrieve link dynamically by reading assets/xds-agent-tarballs
-	tarballDir := "assets/xds-agent-tarballs"
-	response := XDSAgentInfo{
-		Tarballs: []XDSAgentTarball{
-			XDSAgentTarball{
-				OS:      "linux",
-				FileURL: filepath.Join(tarballDir, "xds-agent_linux-amd64-v0.0.1_3cdf92c.zip"),
-			},
-			XDSAgentTarball{
-				OS:      "windows",
-				FileURL: filepath.Join(tarballDir, "xds-agent_windows-386-v0.0.1_3cdf92c.zip"),
-			},
-		},
+
+	res := XDSAgentInfo{}
+	tarballURL := "assets/xds-agent-tarballs"
+	tarballDir := filepath.Join(s.cfg.WebAppDir, "assets", "xds-agent-tarballs")
+	if common.Exists(tarballDir) {
+		files, err := filepath.Glob(path.Join(tarballDir, "xds-agent_*.zip"))
+		if err != nil {
+			s.log.Debugf("Error while retrieving xds-agent tarballs: dir=%s, error=%v", tarballDir, err)
+		}
+		for _, ff := range files {
+			file := filepath.Base(ff)
+			// Assume that tarball name format is: xds-agent_OS-ARCH-RAWVERSION.zip
+			fs := strings.TrimSuffix(strings.TrimPrefix(file, "xds-agent_"), ".zip")
+			f := strings.Split(fs, "-")
+
+			if len(f) >= 3 {
+				vers := strings.Split(f[2], "_")
+				ver := f[2]
+				if len(vers) > 1 {
+					ver = vers[0]
+				}
+
+				newT := XDSAgentTarball{
+					OS:         f[0],
+					Arch:       f[1],
+					Version:    ver,
+					RawVersion: f[2],
+					FileURL:    filepath.Join(tarballURL, file),
+				}
+
+				s.log.Infof("Added XDS-Agent tarball: %s", file)
+				res.Tarballs = append(res.Tarballs, newT)
+
+			} else {
+				s.log.Debugf("Error while retrieving xds-agent, decoding failure: file:%v", ff)
+			}
+		}
 	}
 
-	c.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, res)
 }

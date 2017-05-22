@@ -10,17 +10,12 @@
             <div class="col-xs-12">
                 <table class="table table-condensed">
                     <tbody>
-                        <!-- FIXME [XDS-Agent]
                         <tr [ngClass]="{'info': (agentStatus$ | async)?.connected, 'danger': !(agentStatus$ | async)?.connected}">
-                        -->
-                        <tr [ngClass]="{'info': (localSTStatus$ | async)?.connected, 'danger': !(localSTStatus$ | async)?.connected}">
                             <th><label>XDS local Agent URL</label></th>
                             <td> <input type="text" [(ngModel)]="xdsAgentUrl"></td>
                             <td>
                                 <button class="btn btn-link" (click)="xdsAgentRestartConn()"><span class="fa fa-refresh fa-size-x2"></span></button>
-                                <!-- FIXME [XDS-Agent]
-                                <button  *ngIf="!(agentStatus$ | async)?.connected"  -->
-                                <button  *ngIf="!(localSTStatus$ | async)?.connected" [disabled]="xdsAgentZipUrl==''" class="btn btn-link">
+                                <button [disabled]="xdsAgentZipUrl==''" class="btn btn-link">
                                     <a *ngIf="xdsAgentZipUrl!=''" class="fa fa-download fa-size-x2" [href]="xdsAgentZipUrl" target="_blank"></a>
                                     <a *ngIf="xdsAgentZipUrl==''" class="fa fa-download fa-size-x2" href="javascript:void(0);" target="_blank"></a>
                                 </button>
