@@ -115,10 +115,14 @@ export class ConfigService {
         }
 
         // Update XDS Agent tarball url
+        this.confStore.xdsAgentZipUrl = "";
         this.xdsServerSvr.getXdsAgentInfo().subscribe(nfo => {
             let os = this.utils.getOSName(true);
             let zurl = nfo.tarballs.filter(elem => elem.os === os);
-            this.confStore.xdsAgentZipUrl = zurl && zurl[0].fileUrl;
+            if (zurl && zurl.length) {
+                this.confStore.xdsAgentZipUrl = zurl[0].fileUrl;
+                this.confSubject.next(Object.assign({}, this.confStore));
+            }
         });
     }
 
@@ -128,7 +132,7 @@ export class ConfigService {
         this.confSubject.next(Object.assign({}, this.confStore));
 
         // Don't save projects in cookies (too big!)
-        let cfg = this.confStore;
+        let cfg = Object.assign({}, this.confStore);
         delete (cfg.projects);
         this.cookie.putObject("xds-config", cfg);
     }
@@ -145,7 +149,7 @@ export class ConfigService {
         let cfg = this.confStore.xdsAgent;
         this.AgentConnectObs = this.xdsAgentSvr.connect(cfg.retry, cfg.URL)
             .subscribe((sts) => {
-                console.log("Agent sts", sts);
+                //console.log("Agent sts", sts);
             }, error => this.alert.error(error)
             );
 
@@ -195,8 +199,10 @@ export class ConfigService {
             if (error.indexOf("Syncthing local daemon not responding") !== -1) {
                 let msg = "<span><strong>" + error + "<br></strong>";
                 msg += "You may need to download and execute XDS-Agent.<br>";
-                msg += "<a class=\"fa fa-download\" href=\"" + this.confStore.xdsAgentZipUrl + "\" target=\"_blank\"></a>";
-                msg += " Download XDS-Agent tarball.";
+                if (this.confStore.xdsAgentZipUrl !== "") {
+                    msg += "<a class=\"fa fa-download\" href=\"" + this.confStore.xdsAgentZipUrl + "\" target=\"_blank\"></a>";
+                    msg += " Download XDS-Agent tarball.";
+                }
                 msg += "</span>";
                 this.alert.error(msg);
             } else {

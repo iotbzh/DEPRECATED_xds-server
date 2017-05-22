@@ -20,7 +20,10 @@
                                 <button class="btn btn-link" (click)="xdsAgentRestartConn()"><span class="fa fa-refresh fa-size-x2"></span></button>
                                 <!-- FIXME [XDS-Agent]
                                 <button  *ngIf="!(agentStatus$ | async)?.connected"  -->
-                                <button  *ngIf="!(localSTStatus$ | async)?.connected"  class="btn btn-link"><a class="fa fa-download fa-size-x2" [href]="xdsAgentZipUrl" target="_blank"></a></button>
+                                <button  *ngIf="!(localSTStatus$ | async)?.connected" [disabled]="xdsAgentZipUrl==''" class="btn btn-link">
+                                    <a *ngIf="xdsAgentZipUrl!=''" class="fa fa-download fa-size-x2" [href]="xdsAgentZipUrl" target="_blank"></a>
+                                    <a *ngIf="xdsAgentZipUrl==''" class="fa fa-download fa-size-x2" href="javascript:void(0);" target="_blank"></a>
+                                </button>
                             </td>
                         </tr>
                         <tr class="info">
