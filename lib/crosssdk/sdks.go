@@ -39,6 +39,7 @@ func Init(cfg *xdsconfig.Config, log *logrus.Logger) (*SDKs, error) {
 			sdk, err := NewCrossSDK(d)
 			if err != nil {
 				log.Debugf("Error while processing SDK dir=%s, err=%s", d, err.Error())
+				continue
 			}
 			s.Sdks = append(s.Sdks, *sdk)
 		}
