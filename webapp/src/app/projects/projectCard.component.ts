@@ -1,5 +1,5 @@
 import { Component, Input, Pipe, PipeTransform } from '@angular/core';
-import { ConfigService, IProject, ProjectType } from "../common/config.service";
+import { ConfigService, IProject, ProjectType } from "../services/config.service";
 
 @Component({
     selector: 'project-card',

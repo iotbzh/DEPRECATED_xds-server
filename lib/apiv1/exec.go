@@ -12,10 +12,12 @@ import (
 
 // ExecArgs JSON parameters of /exec command
 type ExecArgs struct {
-	ID         string   `json:"id"`
-	RPath      string   `json:"rpath"` // relative path into project
+	ID         string   `json:"id" binding:"required"`
+	SdkID      string   `json:"sdkid"` // sdk ID to use for setting env
 	Cmd        string   `json:"cmd" binding:"required"`
 	Args       []string `json:"args"`
+	Env        []string `json:"env"`
+	RPath      string   `json:"rpath"`   // relative path into project
 	CmdTimeout int      `json:"timeout"` // command completion timeout in Second
 }
 
@@ -51,7 +53,7 @@ func (s *APIService) execCmd(c *gin.Context) {
 		return
 	}
 
-	// TODO: add permission
+	// TODO: add permission ?
 
 	// Retrieve session info
 	sess := s.sessions.Get(c)
@@ -89,14 +91,23 @@ func (s *APIService) execCmd(c *gin.Context) {
 
 	// Define callback for output
 	var oCB common.EmitOutputCB
-	oCB = func(sid string, id int, stdout, stderr string) {
+	oCB = func(sid string, id int, stdout, stderr string, data *map[string]interface{}) {
 		// IO socket can be nil when disconnected
 		so := s.sessions.IOSocketGet(sid)
 		if so == nil {
 			s.log.Infof("%s not emitted: WS closed - sid: %s - msg id:%d", ExecOutEvent, sid, id)
 			return
 		}
-		s.log.Debugf("%s emitted - WS sid %s - id:%d", ExecOutEvent, sid, id)
+
+		// Retrieve project ID and RootPath
+		prjID := (*data)["ID"].(string)
+		prjRootPath := (*data)["RootPath"].(string)
+
+		// Cleanup any references to internal rootpath in stdout & stderr
+		stdout = strings.Replace(stdout, prjRootPath, "", -1)
+		stderr = strings.Replace(stderr, prjRootPath, "", -1)
+
+		s.log.Debugf("%s emitted - WS sid %s - id:%d - prjID:%s", ExecOutEvent, sid, id, prjID)
 
 		// FIXME replace by .BroadcastTo a room
 		err := (*so).Emit(ExecOutEvent, ExecOutMsg{
@@ -135,14 +146,26 @@ func (s *APIService) execCmd(c *gin.Context) {
 
 	cmdID := execCommandID
 	execCommandID++
+	cmd := []string{}
 
-	cmd := "cd " + prj.GetFullPath(args.RPath) + " && " + args.Cmd
-	if len(args.Args) > 0 {
-		cmd += " " + strings.Join(args.Args, " ")
+	// Setup env var regarding Sdk ID (used for example to setup cross toolchain)
+	if envCmd := s.sdks.GetEnvCmd(args.SdkID, prj.DefaultSdk); len(envCmd) > 0 {
+		cmd = append(cmd, envCmd...)
+		cmd = append(cmd, "&&")
 	}
 
-	s.log.Debugf("Execute [Cmd ID %d]: %v %v", cmdID, cmd)
-	err := common.ExecPipeWs(cmd, sop, sess.ID, cmdID, execTmo, s.log, oCB, eCB)
+	cmd = append(cmd, "cd", prj.GetFullPath(args.RPath), "&&", args.Cmd)
+	if len(args.Args) > 0 {
+		cmd = append(cmd, args.Args...)
+	}
+
+	s.log.Debugf("Execute [Cmd ID %d]: %v", cmdID, cmd)
+
+	data := make(map[string]interface{})
+	data["ID"] = prj.ID
+	data["RootPath"] = prj.RootPath
+
+	err := common.ExecPipeWs(cmd, args.Env, sop, sess.ID, cmdID, execTmo, s.log, oCB, eCB, &data)
 	if err != nil {
 		common.APIError(c, err.Error())
 		return

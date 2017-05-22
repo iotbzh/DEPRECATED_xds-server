@@ -1,6 +1,6 @@
 import { Component, Input } from "@angular/core";
 
-import { ISdk, SdkService } from "../common/sdk.service";
+import { ISdk, SdkService } from "../services/sdk.service";
 
 @Component({
     selector: 'sdk-select-dropdown',

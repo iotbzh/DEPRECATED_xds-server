@@ -1,6 +1,6 @@
 import { Component, Input } from "@angular/core";
 
-import { IProject } from "../common/config.service";
+import { IProject } from "../services/config.service";
 
 @Component({
     selector: 'projects-list-accordion',

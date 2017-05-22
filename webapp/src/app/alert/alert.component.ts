@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import {AlertService, IAlert} from '../common/alert.service';
+import {AlertService, IAlert} from '../services/alert.service';
 
 @Component({
     selector: 'app-alert',

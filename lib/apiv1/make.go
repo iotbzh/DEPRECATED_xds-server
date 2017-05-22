@@ -13,11 +13,12 @@ import (
 
 // MakeArgs is the parameters (json format) of /make command
 type MakeArgs struct {
-	ID         string `json:"id"`
-	RPath      string `json:"rpath"`   // relative path into project
-	Args       string `json:"args"`    // args to pass to make command
-	SdkID      string `json:"sdkid"`   // sdk ID to use for setting env
-	CmdTimeout int    `json:"timeout"` // command completion timeout in Second
+	ID         string   `json:"id"`
+	SdkID      string   `json:"sdkid"` // sdk ID to use for setting env
+	Args       []string `json:"args"`  // args to pass to make command
+	Env        []string `json:"env"`
+	RPath      string   `json:"rpath"`   // relative path into project
+	CmdTimeout int      `json:"timeout"` // command completion timeout in Second
 }
 
 // MakeOutMsg Message send on each output (stdout+stderr) of make command
@@ -85,14 +86,9 @@ func (s *APIService) buildMake(c *gin.Context) {
 		execTmo = 24 * 60 * 60 // 1 day
 	}
 
-	cmd := "cd " + prj.GetFullPath(args.RPath) + " && make"
-	if args.Args != "" {
-		cmd += " " + args.Args
-	}
-
 	// Define callback for output
 	var oCB common.EmitOutputCB
-	oCB = func(sid string, id int, stdout, stderr string) {
+	oCB = func(sid string, id int, stdout, stderr string, data *map[string]interface{}) {
 		// IO socket can be nil when disconnected
 		so := s.sessions.IOSocketGet(sid)
 		if so == nil {
@@ -138,14 +134,21 @@ func (s *APIService) buildMake(c *gin.Context) {
 
 	cmdID := makeCommandID
 	makeCommandID++
+	cmd := []string{}
 
 	// Retrieve env command regarding Sdk ID
-	if envCmd := s.sdks.GetEnvCmd(args.SdkID, prj.DefaultSdk); envCmd != "" {
-		cmd = envCmd + " && " + cmd
+	if envCmd := s.sdks.GetEnvCmd(args.SdkID, prj.DefaultSdk); len(envCmd) > 0 {
+		cmd = append(cmd, envCmd...)
+		cmd = append(cmd, "&&")
+	}
+
+	cmd = append(cmd, "cd", prj.GetFullPath(args.RPath), "&&", "make")
+	if len(args.Args) > 0 {
+		cmd = append(cmd, args.Args...)
 	}
 
 	s.log.Debugf("Execute [Cmd ID %d]: %v", cmdID, cmd)
-	err := common.ExecPipeWs(cmd, sop, sess.ID, cmdID, execTmo, s.log, oCB, eCB)
+	err := common.ExecPipeWs(cmd, args.Env, sop, sess.ID, cmdID, execTmo, s.log, oCB, eCB, nil)
 	if err != nil {
 		common.APIError(c, err.Error())
 		return

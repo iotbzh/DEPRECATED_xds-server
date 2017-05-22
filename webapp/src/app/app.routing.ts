@@ -2,7 +2,7 @@ import {Routes, RouterModule} from "@angular/router";
 import {ModuleWithProviders} from "@angular/core";
 import {ConfigComponent} from "./config/config.component";
 import {HomeComponent} from "./home/home.component";
-import {BuildComponent} from "./build/build.component";
+import {DevelComponent} from "./devel/devel.component";
 
 
 const appRoutes: Routes = [
@@ -10,7 +10,7 @@ const appRoutes: Routes = [
 
     {path: 'config', component: ConfigComponent, data: {title: 'Config'}},
     {path: 'home', component: HomeComponent, data: {title: 'Home'}},
-    {path: 'build', component: BuildComponent, data: {title: 'Build'}}
+    {path: 'devel', component: DevelComponent, data: {title: 'Build & Deploy'}}
 ];
 
 export const AppRoutingProviders: any[] = [];

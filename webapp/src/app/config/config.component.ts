@@ -7,12 +7,12 @@ import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/filter';
 import 'rxjs/add/operator/debounceTime';
 
-import { ConfigService, IConfig, IProject, ProjectType } from "../common/config.service";
-import { XDSServerService, IServerStatus, IXDSAgentInfo } from "../common/xdsserver.service";
-import { XDSAgentService, IAgentStatus } from "../common/xdsagent.service";
-import { SyncthingService, ISyncThingStatus } from "../common/syncthing.service";
-import { AlertService } from "../common/alert.service";
-import { ISdk, SdkService } from "../common/sdk.service";
+import { ConfigService, IConfig, IProject, ProjectType } from "../services/config.service";
+import { XDSServerService, IServerStatus, IXDSAgentInfo } from "../services/xdsserver.service";
+import { XDSAgentService, IAgentStatus } from "../services/xdsagent.service";
+import { SyncthingService, ISyncThingStatus } from "../services/syncthing.service";
+import { AlertService } from "../services/alert.service";
+import { ISdk, SdkService } from "../services/sdk.service";
 
 @Component({
     templateUrl: './app/config/config.component.html',

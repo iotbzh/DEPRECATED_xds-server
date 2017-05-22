@@ -21,6 +21,11 @@ export interface IXDSVersion {
 
 }
 
+export interface IXDSDeploy {
+    boardIP: string;
+    file: string;
+}
+
 export interface IAgentStatus {
     baseURL: string;
     connected: boolean;
@@ -66,9 +71,7 @@ export class XDSAgentService {
         if (url) {
             this._initURLs(url);
         }
-        //FIXME [XDS-Agent]: not implemented yet, set always as connected
-        //this._status.connected = false;
-        this._status.connected = true;
+        this._status.connected = false;
         this._status.connectionRetry = 0;
         this.connectionMaxRetry = retry || 3600;   // 1 hour
 
@@ -85,14 +88,11 @@ export class XDSAgentService {
     }
 
     public getVersion(): Observable<IXDSVersion> {
-        /*FIXME [XDS-Agent]: Not implemented for now
         return this._get('/version');
-        */
-        return Observable.of({
-            version: "NOT_IMPLEMENTED",
-            apiVersion: "NOT_IMPLEMENTED",
-            gitTag: "NOT_IMPLEMENTED"
-        });
+    }
+
+    public deploy(dpy: IXDSDeploy) {
+        return this._post('/deploy', dpy);
     }
 
     private _initURLs(url: string) {
@@ -139,7 +139,6 @@ export class XDSAgentService {
         options = options || {};
         let headers = options.headers || new Headers();
         // headers.append('Authorization', 'Basic ' + btoa('username:password'));
-        headers.append('Access-Control-Allow-Origin', '*');
         headers.append('Accept', 'application/json');
         headers.append('Content-Type', 'application/json');
         if (this.apikey !== "") {
@@ -156,7 +155,7 @@ export class XDSAgentService {
             return Observable.of(true);
         }
 
-        return this.http.get(this._status.baseURL, this._attachAuthHeaders())
+        return this.http.get(this.baseRestUrl + "/version", this._attachAuthHeaders())
             .map((r) => this._status.connected = true)
             .retryWhen((attempts) => {
                 this._status.connectionRetry = 0;
@@ -181,9 +180,7 @@ export class XDSAgentService {
         return this._checkAlive()
             .flatMap(() => this.http.post(this.baseRestUrl + url, JSON.stringify(body), this._attachAuthHeaders()))
             .map((res: Response) => res.json())
-            .catch((error) => {
-                return this._decodeError(error);
-            });
+            .catch(this._decodeError);
     }
     private _delete(url: string): Observable<any> {
         return this._checkAlive()
@@ -197,7 +194,13 @@ export class XDSAgentService {
         if (this._status) {
             this._status.connected = false;
         }
-        if (typeof err === "object") {
+        if (err instanceof Response) {
+            const body = err.json() || 'Server error';
+            e = body.error || JSON.stringify(body);
+            if (!e || e === "") {
+                e = `${err.status} - ${err.statusText || 'Unknown error'}`;
+            }
+        } else if (typeof err === "object") {
             if (err.statusText) {
                 e = err.statusText;
             } else if (err.error) {
@@ -205,10 +208,6 @@ export class XDSAgentService {
             } else {
                 e = JSON.stringify(err);
             }
-        } else if (err instanceof Response) {
-            const body = err.json() || 'Server error';
-            const error = body.error || JSON.stringify(body);
-            e = `${err.status} - ${err.statusText || ''} ${error}`;
         } else {
             e = err.message ? err.message : err.toString();
         }

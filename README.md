@@ -128,3 +128,5 @@ Visual Studio Code launcher settings can be found into `.vscode/launch.json`.
 - replace makefile by build.go to make Windows build support easier
 - add more tests
 - add more documentation
+- add authentication / login (oauth) + HTTPS
+- enable syncthing user/password + HTTPS

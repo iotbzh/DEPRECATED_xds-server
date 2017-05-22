@@ -183,7 +183,7 @@ func xdsApp(cliCtx *cli.Context) error {
 				relativePath = stFld.RawPath
 			}
 
-			newFld := xdsconfig.NewFolderConfig(stFld.ID, stFld.Label, ctx.Config.ShareRootDir, strings.Trim(relativePath, "/"), defaultSdk)
+			newFld := xdsconfig.NewFolderConfig(stFld.ID, stFld.Label, ctx.Config.ShareRootDir, strings.TrimRight(relativePath, "/"), defaultSdk)
 			ctx.Config.Folders = ctx.Config.Folders.Update(xdsconfig.FoldersConfig{newFld})
 		}
 

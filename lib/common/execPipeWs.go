@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"time"
 
 	"syscall"
@@ -14,7 +15,7 @@ import (
 )
 
 // EmitOutputCB is the function callback used to emit data
-type EmitOutputCB func(sid string, cmdID int, stdout, stderr string)
+type EmitOutputCB func(sid string, cmdID int, stdout, stderr string, data *map[string]interface{})
 
 // EmitExitCB is the function callback used to emit exit proc code
 type EmitExitCB func(sid string, cmdID int, code int, err error)
@@ -23,8 +24,8 @@ type EmitExitCB func(sid string, cmdID int, code int, err error)
 // https://github.com/gorilla/websocket/blob/master/examples/command/main.go
 
 // ExecPipeWs executes a command and redirect stdout/stderr into a WebSocket
-func ExecPipeWs(cmd string, so *socketio.Socket, sid string, cmdID int,
-	cmdExecTimeout int, log *logrus.Logger, eoCB EmitOutputCB, eeCB EmitExitCB) error {
+func ExecPipeWs(cmd []string, env []string, so *socketio.Socket, sid string, cmdID int,
+	cmdExecTimeout int, log *logrus.Logger, eoCB EmitOutputCB, eeCB EmitExitCB, data *map[string]interface{}) error {
 
 	outr, outw, err := os.Pipe()
 	if err != nil {
@@ -39,9 +40,10 @@ func ExecPipeWs(cmd string, so *socketio.Socket, sid string, cmdID int,
 		return fmt.Errorf("Pipe stdin error: " + err.Error())
 	}
 
-	bashArgs := []string{"/bin/bash", "-c", cmd}
+	bashArgs := []string{"/bin/bash", "-c", strings.Join(cmd, " ")}
 	proc, err := os.StartProcess("/bin/bash", bashArgs, &os.ProcAttr{
 		Files: []*os.File{inr, outw, outw},
+		Env:   append(os.Environ(), env...),
 	})
 	if err != nil {
 		outr.Close()
@@ -58,7 +60,7 @@ func ExecPipeWs(cmd string, so *socketio.Socket, sid string, cmdID int,
 		defer inw.Close()
 
 		stdoutDone := make(chan struct{})
-		go cmdPumpStdout(so, outr, stdoutDone, sid, cmdID, log, eoCB)
+		go cmdPumpStdout(so, outr, stdoutDone, sid, cmdID, log, eoCB, data)
 
 		// Blocking function that poll input or wait for end of process
 		cmdPumpStdin(so, inw, proc, sid, cmdID, cmdExecTimeout, log, eeCB)
@@ -133,13 +135,13 @@ func cmdPumpStdin(so *socketio.Socket, w io.Writer, proc *os.Process,
 }
 
 func cmdPumpStdout(so *socketio.Socket, r io.Reader, done chan struct{},
-	sid string, cmdID int, log *logrus.Logger, emitFuncCB EmitOutputCB) {
+	sid string, cmdID int, log *logrus.Logger, emitFuncCB EmitOutputCB, data *map[string]interface{}) {
 	defer func() {
 	}()
 
 	sc := bufio.NewScanner(r)
 	for sc.Scan() {
-		emitFuncCB(sid, cmdID, string(sc.Bytes()), "")
+		emitFuncCB(sid, cmdID, string(sc.Bytes()), "", data)
 	}
 	if sc.Err() != nil {
 		log.Errorln("scan:", sc.Err())

@@ -24,14 +24,16 @@ import { SdksListAccordionComponent } from "./sdks/sdksListAccordion.component";
 import { SdkSelectDropdownComponent } from "./sdks/sdkSelectDropdown.component";
 
 import { HomeComponent } from "./home/home.component";
-import { BuildComponent } from "./build/build.component";
-import { XDSServerService } from "./common/xdsserver.service";
-import { XDSAgentService } from "./common/xdsagent.service";
-import { SyncthingService } from "./common/syncthing.service";
-import { ConfigService } from "./common/config.service";
-import { AlertService } from './common/alert.service';
-import { UtilsService } from './common/utils.service';
-import { SdkService } from "./common/sdk.service";
+import { DevelComponent } from "./devel/devel.component";
+import { BuildComponent } from "./devel/build/build.component";
+import { DeployComponent } from "./devel/deploy/deploy.component";
+import { XDSServerService } from "./services/xdsserver.service";
+import { XDSAgentService } from "./services/xdsagent.service";
+import { SyncthingService } from "./services/syncthing.service";
+import { ConfigService } from "./services/config.service";
+import { AlertService } from './services/alert.service';
+import { UtilsService } from './services/utils.service';
+import { SdkService } from "./services/sdk.service";
 
 
 
@@ -54,6 +56,8 @@ import { SdkService } from "./common/sdk.service";
         AlertComponent,
         HomeComponent,
         BuildComponent,
+        DevelComponent,
+        DeployComponent,
         ConfigComponent,
         ProjectCardComponent,
         ProjectReadableTypePipe,

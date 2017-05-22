@@ -50,10 +50,8 @@ func New(r *gin.Engine, sess *session.Sessions, cfg *xdsconfig.Config, mfolder *
 	s.apiRouter.POST("/make", s.buildMake)
 	s.apiRouter.POST("/make/:id", s.buildMake)
 
-	/* TODO: to be tested and then enabled
 	s.apiRouter.POST("/exec", s.execCmd)
 	s.apiRouter.POST("/exec/:id", s.execCmd)
-	*/
 
 	return s
 }

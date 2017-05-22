@@ -1,17 +1,18 @@
-import { Component, AfterViewChecked, ElementRef, ViewChild, OnInit } from '@angular/core';
+import { Component, AfterViewChecked, ElementRef, ViewChild, OnInit, Input } from '@angular/core';
 import { Observable } from 'rxjs';
 import { FormControl, FormGroup, Validators, FormBuilder } from '@angular/forms';
+import { CookieService } from 'ngx-cookie';
 
 import 'rxjs/add/operator/scan';
 import 'rxjs/add/operator/startWith';
 
-import { XDSServerService, ICmdOutput } from "../common/xdsserver.service";
-import { ConfigService, IConfig, IProject } from "../common/config.service";
-import { AlertService, IAlert } from "../common/alert.service";
-import { SdkService } from "../common/sdk.service";
+import { XDSServerService, ICmdOutput } from "../../services/xdsserver.service";
+import { ConfigService, IConfig, IProject } from "../../services/config.service";
+import { AlertService, IAlert } from "../../services/alert.service";
+import { SdkService } from "../../services/sdk.service";
 
 @Component({
-    selector: 'build',
+    selector: 'panel-build',
     moduleId: module.id,
     templateUrl: './build.component.html',
     styleUrls: ['./build.component.css']
@@ -20,46 +21,34 @@ import { SdkService } from "../common/sdk.service";
 export class BuildComponent implements OnInit, AfterViewChecked {
     @ViewChild('scrollOutput') private scrollContainer: ElementRef;
 
-    config$: Observable<IConfig>;
+    @Input() curProject: IProject;
 
     buildForm: FormGroup;
     subpathCtrl = new FormControl("", Validators.required);
+    debugEnable: boolean = false;
 
     public cmdOutput: string;
-    public confValid: boolean;
-    public curProject: IProject;
     public cmdInfo: string;
 
     private startTime: Map<string, number> = new Map<string, number>();
 
-    // I initialize the app component.
     constructor(private configSvr: ConfigService,
         private xdsSvr: XDSServerService,
         private fb: FormBuilder,
         private alertSvr: AlertService,
-        private sdkSvr: SdkService
+        private sdkSvr: SdkService,
+        private cookie: CookieService,
     ) {
         this.cmdOutput = "";
-        this.confValid = false;
         this.cmdInfo = "";      // TODO: to be remove (only for debug)
         this.buildForm = fb.group({
             subpath: this.subpathCtrl,
-            makeArgs: ["", Validators.nullValidator],
+            cmdArgs: ["", Validators.nullValidator],
+            envVars: ["", Validators.nullValidator],
         });
     }
 
     ngOnInit() {
-        this.config$ = this.configSvr.conf;
-        this.config$.subscribe((cfg) => {
-            if ("projects" in cfg) {
-                this.curProject = cfg.projects[0];
-                this.confValid = (cfg.projects.length && this.curProject.id != null);
-            } else {
-                this.curProject = null;
-                this.confValid = false;
-            }
-        });
-
         // Command output data tunneling
         this.xdsSvr.CmdOutput$.subscribe(data => {
             this.cmdOutput += data.stdout + "\n";
@@ -78,6 +67,9 @@ export class BuildComponent implements OnInit, AfterViewChecked {
         });
 
         this._scrollToBottom();
+
+        // only use for debug
+        this.debugEnable = (this.cookie.get("debug_build") !== "");
     }
 
     ngAfterViewChecked() {
@@ -86,6 +78,69 @@ export class BuildComponent implements OnInit, AfterViewChecked {
 
     reset() {
         this.cmdOutput = '';
+    }
+
+    preBuild() {
+        this._exec(
+            "mkdir -p build && cd build && cmake ..",
+            this.buildForm.value.subpath,
+            [],
+            this.buildForm.value.envVars);
+    }
+
+    build() {
+        this._exec(
+            "cd build && make",
+            this.buildForm.value.subpath,
+            this.buildForm.value.cmdArgs,
+            this.buildForm.value.envVars
+        );
+    }
+
+    populate() {
+        this._exec(
+            "SEB_TODO_script_populate",
+            this.buildForm.value.subpath,
+            [], // args
+            this.buildForm.value.envVars
+        );
+    }
+
+    execCmd() {
+        this._exec(
+            this.buildForm.value.cmdArgs,
+            this.buildForm.value.subpath,
+            [],
+            this.buildForm.value.envVars
+        );
+    }
+
+    private _exec(cmd: string, dir: string, args: string[], env: string) {
+        if (!this.curProject) {
+            this.alertSvr.warning('No active project', true);
+        }
+
+        let prjID = this.curProject.id;
+
+        this.cmdOutput += this._outputHeader();
+
+        let sdkid = this.sdkSvr.getCurrentId();
+
+        // Detect key=value in env string to build array of string
+        let envArr = [];
+        env.split(';').forEach(v => envArr.push(v.trim()));
+
+        let t0 = performance.now();
+        this.cmdInfo = 'Start build of ' + prjID + ' at ' + t0;
+
+        this.xdsSvr.exec(prjID, dir, cmd, sdkid, args, envArr)
+            .subscribe(res => {
+                this.startTime.set(String(res.cmdID), t0);
+            },
+            err => {
+                this.cmdInfo = 'Last command duration: ' + this._computeTime(t0);
+                this.alertSvr.error('ERROR: ' + err);
+            });
     }
 
     make(args: string) {
@@ -99,12 +154,16 @@ export class BuildComponent implements OnInit, AfterViewChecked {
 
         let sdkid = this.sdkSvr.getCurrentId();
 
-        let cmdArgs = args ? args : this.buildForm.value.makeArgs;
+        let argsArr = args ? args.split(' ') : this.buildForm.value.cmdArgs.split(' ');
+
+        // Detect key=value in env string to build array of string
+        let envArr = [];
+        this.buildForm.value.envVars.split(';').forEach(v => envArr.push(v.trim()));
 
         let t0 = performance.now();
         this.cmdInfo = 'Start build of ' + prjID + ' at ' + t0;
 
-        this.xdsSvr.make(prjID, this.buildForm.value.subpath, cmdArgs, sdkid)
+        this.xdsSvr.make(prjID, this.buildForm.value.subpath, sdkid, argsArr, envArr)
             .subscribe(res => {
                 this.startTime.set(String(res.cmdID), t0);
             },

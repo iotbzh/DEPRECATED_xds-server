@@ -147,6 +147,14 @@ export class XDSServerService {
             this.CmdExit$.next(Object.assign({}, <ICmdExit>data));
         });
 
+        this.socket.on('exec:output', data => {
+            this.CmdOutput$.next(Object.assign({}, <ICmdOutput>data));
+        });
+
+        this.socket.on('exec:exit', data => {
+            this.CmdExit$.next(Object.assign({}, <ICmdExit>data));
+        });
+
     }
 
     getSdks(): Observable<ISdk[]> {
@@ -177,16 +185,27 @@ export class XDSServerService {
         return this._delete('/folder/' + id);
     }
 
-    exec(cmd: string, args?: string[], options?: any): Observable<any> {
+    exec(prjID: string, dir: string, cmd: string, sdkid?: string, args?: string[], env?: string[]): Observable<any> {
         return this._post('/exec',
             {
+                id: prjID,
+                rpath: dir,
                 cmd: cmd,
-                args: args || []
+                sdkid: sdkid || "",
+                args: args || [],
+                env: env || [],
             });
     }
 
-    make(prjID: string, dir: string, args: string, sdkid?: string): Observable<any> {
-        return this._post('/make', { id: prjID, rpath: dir, args: args, sdkid: sdkid });
+    make(prjID: string, dir: string, sdkid?: string, args?: string[], env?: string[]): Observable<any> {
+        return this._post('/make',
+            {
+                id: prjID,
+                rpath: dir,
+                sdkid: sdkid,
+                args: args || [],
+                env: env || [],
+            });
     }
 
 

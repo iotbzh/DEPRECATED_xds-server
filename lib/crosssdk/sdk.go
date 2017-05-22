@@ -48,6 +48,6 @@ func NewCrossSDK(path string) (*SDK, error) {
 }
 
 // GetEnvCmd returns the command used to initialized the environment
-func (s *SDK) GetEnvCmd() string {
-	return ". " + s.EnvFile
+func (s *SDK) GetEnvCmd() []string {
+	return []string{"source", s.EnvFile}
 }

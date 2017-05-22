@@ -2,7 +2,7 @@ import { Injectable, SecurityContext } from '@angular/core';
 import { Observable } from 'rxjs/Observable';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 
-import { XDSServerService } from "../common/xdsserver.service";
+import { XDSServerService } from "../services/xdsserver.service";
 
 export interface ISdk {
     id: string;

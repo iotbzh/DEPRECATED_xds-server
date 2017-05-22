@@ -154,12 +154,10 @@ func (s *Server) middlewareXDSDetails() gin.HandlerFunc {
 // CORS middleware
 func (s *Server) middlewareCORS() gin.HandlerFunc {
 	return func(c *gin.Context) {
-
 		if c.Request.Method == "OPTIONS" {
 			c.Header("Access-Control-Allow-Origin", "*")
 			c.Header("Access-Control-Allow-Headers", "Content-Type")
-			c.Header("Access-Control-Allow-Methods", "POST, DELETE, GET, PUT")
-			c.Header("Content-Type", "application/json")
+			c.Header("Access-Control-Allow-Methods", "GET, POST, DELETE")
 			c.Header("Access-Control-Max-Age", cookieMaxAge)
 			c.AbortWithStatus(204)
 			return

@@ -1,6 +1,6 @@
 import { Component, Input } from "@angular/core";
 
-import { ISdk } from "../common/sdk.service";
+import { ISdk } from "../services/sdk.service";
 
 @Component({
     selector: 'sdks-list-accordion',

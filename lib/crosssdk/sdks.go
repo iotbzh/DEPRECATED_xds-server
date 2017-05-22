@@ -71,15 +71,15 @@ func (s *SDKs) Get(id int) SDK {
 }
 
 // GetEnvCmd returns the command used to initialized the environment for an SDK
-func (s *SDKs) GetEnvCmd(id string, defaultID string) string {
+func (s *SDKs) GetEnvCmd(id string, defaultID string) []string {
 	if id == "" && defaultID == "" {
 		// no env cmd
-		return ""
+		return []string{}
 	}
 
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	defaultEnv := ""
+	defaultEnv := []string{}
 	for _, sdk := range s.Sdks {
 		if sdk.ID == id {
 			return sdk.GetEnvCmd()

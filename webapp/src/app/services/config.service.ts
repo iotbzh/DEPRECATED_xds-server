@@ -13,11 +13,11 @@ import 'rxjs/add/observable/throw';
 import 'rxjs/add/operator/mergeMap';
 
 
-import { XDSServerService, IXDSConfigProject } from "../common/xdsserver.service";
-import { XDSAgentService } from "../common/xdsagent.service";
-import { SyncthingService, ISyncThingProject, ISyncThingStatus } from "../common/syncthing.service";
-import { AlertService, IAlert } from "../common/alert.service";
-import { UtilsService } from "../common/utils.service";
+import { XDSServerService, IXDSConfigProject } from "../services/xdsserver.service";
+import { XDSAgentService } from "../services/xdsagent.service";
+import { SyncthingService, ISyncThingProject, ISyncThingStatus } from "../services/syncthing.service";
+import { AlertService, IAlert } from "../services/alert.service";
+import { UtilsService } from "../services/utils.service";
 
 export enum ProjectType {
     NATIVE = 1,
@@ -150,9 +150,27 @@ export class ConfigService {
         this.AgentConnectObs = this.xdsAgentSvr.connect(cfg.retry, cfg.URL)
             .subscribe((sts) => {
                 //console.log("Agent sts", sts);
-            }, error => this.alert.error(error)
-            );
+                // FIXME: load projects from local XDS Agent and
+                //  not directly from local syncthing
+                this._loadProjectFromLocalST();
 
+            }, error => {
+                if (error.indexOf("XDS local Agent not responding") !== -1) {
+                    let msg = "<span><strong>" + error + "<br></strong>";
+                    msg += "You may need to download and execute XDS-Agent.<br>";
+                    if (this.confStore.xdsAgentZipUrl !== "") {
+                        msg += "<a class=\"fa fa-download\" href=\"" + this.confStore.xdsAgentZipUrl + "\" target=\"_blank\"></a>";
+                        msg += " Download XDS-Agent tarball.";
+                    }
+                    msg += "</span>";
+                    this.alert.error(msg);
+                } else {
+                    this.alert.error(error);
+                }
+            });
+    }
+
+    private _loadProjectFromLocalST() {
         // Remove previous subscriber if existing
         if (this.stConnectObs) {
             try {
@@ -198,11 +216,7 @@ export class ConfigService {
         }, error => {
             if (error.indexOf("Syncthing local daemon not responding") !== -1) {
                 let msg = "<span><strong>" + error + "<br></strong>";
-                msg += "You may need to download and execute XDS-Agent.<br>";
-                if (this.confStore.xdsAgentZipUrl !== "") {
-                    msg += "<a class=\"fa fa-download\" href=\"" + this.confStore.xdsAgentZipUrl + "\" target=\"_blank\"></a>";
-                    msg += " Download XDS-Agent tarball.";
-                }
+                msg += "Please check that local XDS-Agent is running.<br>";
                 msg += "</span>";
                 this.alert.error(msg);
             } else {
