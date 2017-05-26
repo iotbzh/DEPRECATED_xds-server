@@ -88,6 +88,74 @@ Use `xds-start-server.sh` script to start all requested tools
 config file `XDS_CONFFILE` or change logs directory `LOGDIR`.
 See head section of `xds-start-server.sh` file to see all configurable variables.
 
+## Install XDS-server in AGL SDK docker container
+
+XDS-server has been designed to easily cross compile
+[AGL](https://www.automotivelinux.org/) applications. That's why XDS-server is
+integrated in AGL SDK docker container.
+
+>**NOTE** For more info about AGL SDK docker container, please refer to
+[AGL SDK Quick Setup](http://docs.automotivelinux.org/docs/getting_started/en/dev/reference/setup-sdk-environment.html)
+
+### Create XDS AGL docker worker container
+
+Execute following commands to build docker image:
+```bash
+git clone https://git.automotivelinux.org/AGL/docker-worker-generator
+cd docker-worker-generator
+make build FLAVOUR=xds
+```
+
+You should get `docker.automotivelinux.org/agl/worker-xds:X.Y` image
+
+```bash
+docker images
+REPOSITORY                                      TAG                 IMAGE ID            CREATED             SIZE
+docker.automotivelinux.org/agl/worker-xds       3.2                 786d65b2792c        6 days ago          602MB
+```
+
+### Start XDS AGL docker worker container
+
+Use provided script to create a new docker image and start a new container:
+```bash
+> ./docker-worker-generator/contrib/create_container 0 docker.automotivelinux.org/agl/worker-xds:3.2
+
+> docker ps
+CONTAINER ID        IMAGE                                               COMMAND                  CREATED              STATUS              PORTS                                                                                         NAMES
+b985d81af40c        docker.automotivelinux.org/agl/worker-xds:3.2       "/usr/bin/wait_for..."   6 days ago           Up 4 hours          0.0.0.0:8000->8000/tcp, 0.0.0.0:69->69/udp, 0.0.0.0:10809->10809/tcp, 0.0.0.0:2222->22/tcp    agl-worker-seb-laptop-0-seb
+```
+
+This container exposes following ports:
+  - 8000 : XDS-server to serve XDS Dashboard
+  - 69   : TFTP
+  - 2222 : ssh
+
+Now start xds-server inside this container:
+```bash
+> ssh -p 2222 devel@localhost
+[15:59:58] devel@agl-worker-seb-laptop-0-seb:~$ /usr/local/bin/xds-start-server.sh
+### Configuration in config.json:
+{
+    "webAppDir": "/usr/local/bin/www-xds-server",
+    "shareRootDir": "/home/devel/.xds/share",
+    "logsDir": "/tmp/xds-server/logs",
+    "sdkRootDir": "/xdt/sdk",
+    "syncthing": {
+        "binDir": "/usr/local/bin",
+        "home": "/home/devel/.xds/syncthing-config",
+        "gui-address": "http://localhost:8384",
+        "gui-apikey": "1234abcezam"
+    }
+}
+
+### Start XDS server
+nohup /usr/local/bin/xds-server --config /home/devel/.xds/config.json -log warn > /tmp/xds-server/logs/xds-server.log 2>&1
+pid=22379
+```
+
+You can now connect your browser to XDS-server (running by default on port 8000):
+[http://localhost:8000](http://localhost:8000)
+
 
 ## Debugging
 

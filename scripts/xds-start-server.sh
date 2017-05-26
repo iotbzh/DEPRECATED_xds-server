@@ -14,7 +14,7 @@
 [[ -f $BINDIR/xds-server ]] || { echo "Cannot find xds-server in BINDIR !"; exit 1; }
 
 # Create config.json file when needed
-if [ -f "${XDS_CONFFILE}" ]; then
+if [ ! -f "${XDS_CONFFILE}" ]; then
     mv ${XDS_CONFFILE} ${XDS_CONFFILE}.old
     [ ! -f "$XDS_WWWDIR/index.html" ] && XDS_WWWDIR=$BINDIR/www-xds-server
     [ ! -f "$XDS_WWWDIR/index.html" ] && XDS_WWWDIR=/var/www/xds-server
