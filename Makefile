@@ -23,7 +23,7 @@ ifeq ($(origin INSTALL_DIR), undefined)
 	INSTALL_DIR := /usr/local/bin
 endif
 ifeq ($(origin INSTALL_WEBAPP_DIR), undefined)
-	INSTALL_WEBAPP_DIR := $(INSTALL_DIR)/xds-server-www
+	INSTALL_WEBAPP_DIR := $(INSTALL_DIR)/www-xds-server
 endif
 
 HOST_GOOS=$(shell go env GOOS)
