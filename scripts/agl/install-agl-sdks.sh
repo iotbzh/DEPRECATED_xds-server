@@ -8,10 +8,25 @@
 # Support only poky_agl profile for now
 PROFILE="poky-agl"
 
+SDKS=$(curl -s ${SDK_BASEURL} | grep -oP  'href="[^"]*.sh"' | cut -d '"' -f 2)
+
 usage() {
-    echo "Usage: $(basename $0) [-h|--help] [-noclean] -a|--arch <arch name>"
-	echo "Sdk arch name is: aarch64 or arm32 or x86-64"
+    echo "Usage: $(basename $0) [-h|--help] [-noclean] [-a|--arch <arch name>] [-l|--list]"
+	echo "For example, arch name is: aarch64, armv7vehf or x86-64"
 	exit 1
+}
+
+getFile() {
+    arch=$1
+    for sdk in ${SDKS}; do
+        echo $sdk | grep "${PROFILE}.*${arch}.*.sh" > /dev/null 2>&1
+        if [ "$?" = "0" ]; then
+            echo $sdk
+            return 0
+        fi
+    done
+    echo "No SDK tarball found for arch $arch"
+    return 1
 }
 
 do_cleanup=true
@@ -25,11 +40,15 @@ while [ $# -ne 0 ]; do
         -a|--arch)
             shift
             ARCH=$1
-            case $1 in
-                aarch64)    FILE="poky-agl-glibc-x86_64-agl-demo-platform-crosssdk-aarch64-toolchain-3.90.0+snapshot.sh";;
-                arm32)      FILE="poky-agl-glibc-x86_64-agl-demo-platform-crosssdk-armv7vehf-neon-vfpv4-toolchain-3.90.0+snapshot.sh";;
-                x86-64)     FILE="poky-agl-glibc-x86_64-agl-demo-platform-crosssdk-corei7-64-toolchain-3.90.0+snapshot.sh";;
-            esac
+            FILE=$(getFile $ARCH)
+            if [ "$?" != 0 ]; then
+                exit 1
+            fi
+            ;;
+        -l|--list)
+            echo "Available SDKs tarballs:"
+            for sdk in $SDKS; do echo " $sdk"; done
+            exit 0
             ;;
         -noclean)
             do_cleanup=false
@@ -58,7 +77,7 @@ trap "cleanExit" 0 1 2 15
 cleanExit ()
 {
     if ($do_cleanup); then
-        rm -f ${XDT_SDK}/${FILE}
+        [[ -f ${XDT_SDK}/${FILE} ]] && rm -f ${XDT_SDK}/${FILE}
     fi
 }
 
