@@ -25,6 +25,10 @@
     border: none;
 }
 
+.table-in-accordion>tbody>tr>th {
+    width: 30%
+}
+
 .btn-large {
     width: 10em;
 }

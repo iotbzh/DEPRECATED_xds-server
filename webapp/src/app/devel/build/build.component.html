@@ -25,12 +25,45 @@
                             <td> <input type="text" style="width:99%;" formControlName="subpath"> </td>
                         </tr>
                         <tr>
-                            <th>Command arguments</th>
-                            <td> <input type="text" style="width:99%;" formControlName="cmdArgs"> </td>
-                        </tr>
-                        <tr>
-                            <th>Env variables</th>
-                            <td> <input type="text" style="width:99%;" formControlName="envVars"> </td>
+                            <td colspan="2">
+                            <accordion>
+                                <accordion-group #group>
+                                    <div accordion-heading>
+                                        Advanced Settings
+                                        <i class="pull-right float-xs-right fa" [ngClass]="{'fa-chevron-down': group.isOpen, 'fa-chevron-right': !group.isOpen}"></i>
+                                    </div>
+
+                                    <table class="table table-borderless table-in-accordion">
+                                        <tbody>
+                                            <tr>
+                                                <th>Clean Command</th>
+                                                <td> <input type="text" style="width:99%;" formControlName="cmdClean"> </td>
+                                            </tr>
+                                            <tr>
+                                                <th>Pre-Build Command</th>
+                                                <td> <input type="text" style="width:99%;" formControlName="cmdPrebuild"> </td>
+                                            </tr>
+                                            <tr>
+                                                <th>Build Command</th>
+                                                <td> <input type="text" style="width:99%;" formControlName="cmdBuild"> </td>
+                                            </tr>
+                                            <tr>
+                                                <th>Populate Command</th>
+                                                <td> <input type="text" style="width:99%;" formControlName="cmdPopulate"> </td>
+                                            </tr>
+                                            <tr>
+                                                <th>Env variables</th>
+                                                <td> <input type="text" style="width:99%;" formControlName="envVars"> </td>
+                                            </tr>
+                                            <tr *ngIf="debugEnable">
+                                                <th>Args variables</th>
+                                                <td> <input type="text" style="width:99%;" formControlName="cmdArgs"> </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </accordion-group>
+                            </accordion>
+                            </td>
                         </tr>
                     </tbody>
                 </table>
@@ -38,6 +71,7 @@
             <div class="row">
                 <div class="col-xs-12 text-center">
                     <div class="btn-group blocks">
+                        <button class="btn btn-primary btn-large" (click)="clean()" [disabled]="!curProject ">Clean</button>
                         <button class="btn btn-primary btn-large" (click)="preBuild()" [disabled]="!curProject">Pre-Build</button>
                         <button class="btn btn-primary btn-large" (click)="build()" [disabled]="!curProject">Build</button>
                         <button class="btn btn-primary btn-large" (click)="populate()" [disabled]="!curProject ">Populate</button>

@@ -118,7 +118,7 @@ export class ConfigService {
         this.confStore.xdsAgentZipUrl = "";
         this.xdsServerSvr.getXdsAgentInfo().subscribe(nfo => {
             let os = this.utils.getOSName(true);
-            let zurl = nfo.tarballs.filter(elem => elem.os === os);
+            let zurl = nfo.tarballs && nfo.tarballs.filter(elem => elem.os === os);
             if (zurl && zurl.length) {
                 this.confStore.xdsAgentZipUrl = zurl[0].fileUrl;
                 this.confSubject.next(Object.assign({}, this.confStore));

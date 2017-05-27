@@ -43,12 +43,28 @@ export class BuildComponent implements OnInit, AfterViewChecked {
         this.cmdInfo = "";      // TODO: to be remove (only for debug)
         this.buildForm = fb.group({
             subpath: this.subpathCtrl,
+            cmdClean: ["", Validators.nullValidator],
+            cmdPrebuild: ["", Validators.nullValidator],
+            cmdBuild: ["", Validators.nullValidator],
+            cmdPopulate: ["", Validators.nullValidator],
             cmdArgs: ["", Validators.nullValidator],
             envVars: ["", Validators.nullValidator],
         });
     }
 
     ngOnInit() {
+        // Set default settings
+        // TODO save & restore values from cookies
+        this.buildForm.patchValue({
+            subpath: "",
+            cmdClean: "rm -rf build",
+            cmdPrebuild: "mkdir -p build && cd build && cmake ..",
+            cmdBuild: "cd build && make",
+            cmdPopulate: "cd build && make remote-target-populate",
+            cmdArgs: "",
+            envVars: "",
+        });
+
         // Command output data tunneling
         this.xdsSvr.CmdOutput$.subscribe(data => {
             this.cmdOutput += data.stdout + "\n";
@@ -69,7 +85,7 @@ export class BuildComponent implements OnInit, AfterViewChecked {
         this._scrollToBottom();
 
         // only use for debug
-        this.debugEnable = (this.cookie.get("debug_build") !== "");
+        this.debugEnable = (this.cookie.get("debug_build") === "1");
     }
 
     ngAfterViewChecked() {
@@ -80,9 +96,17 @@ export class BuildComponent implements OnInit, AfterViewChecked {
         this.cmdOutput = '';
     }
 
+    clean() {
+        this._exec(
+            this.buildForm.value.cmdClean,
+            this.buildForm.value.subpath,
+            [],
+            this.buildForm.value.envVars);
+    }
+
     preBuild() {
         this._exec(
-            "mkdir -p build && cd build && cmake ..",
+            this.buildForm.value.cmdPrebuild,
             this.buildForm.value.subpath,
             [],
             this.buildForm.value.envVars);
@@ -90,16 +114,16 @@ export class BuildComponent implements OnInit, AfterViewChecked {
 
     build() {
         this._exec(
-            "cd build && make",
+            this.buildForm.value.cmdBuild,
             this.buildForm.value.subpath,
-            this.buildForm.value.cmdArgs,
+            [],
             this.buildForm.value.envVars
         );
     }
 
     populate() {
         this._exec(
-            "SEB_TODO_script_populate",
+            this.buildForm.value.cmdPopulate,
             this.buildForm.value.subpath,
             [], // args
             this.buildForm.value.envVars
