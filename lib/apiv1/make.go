@@ -2,6 +2,7 @@ package apiv1
 
 import (
 	"net/http"
+	"strings"
 
 	"time"
 
@@ -95,7 +96,16 @@ func (s *APIService) buildMake(c *gin.Context) {
 			s.log.Infof("%s not emitted: WS closed - sid: %s - msg id:%d", MakeOutEvent, sid, id)
 			return
 		}
-		s.log.Debugf("%s emitted - WS sid %s - id:%d", MakeOutEvent, sid, id)
+
+		// Retrieve project ID and RootPath
+		prjID := (*data)["ID"].(string)
+		prjRootPath := (*data)["RootPath"].(string)
+
+		// Cleanup any references to internal rootpath in stdout & stderr
+		stdout = strings.Replace(stdout, prjRootPath, "", -1)
+		stderr = strings.Replace(stderr, prjRootPath, "", -1)
+
+		s.log.Debugf("%s emitted - WS sid %s - id:%d - prjID:%s", MakeOutEvent, sid, id, prjID)
 
 		// FIXME replace by .BroadcastTo a room
 		err := (*so).Emit(MakeOutEvent, MakeOutMsg{
@@ -110,7 +120,7 @@ func (s *APIService) buildMake(c *gin.Context) {
 	}
 
 	// Define callback for output
-	eCB := func(sid string, id int, code int, err error) {
+	eCB := func(sid string, id int, code int, err error, data *map[string]interface{}) {
 		s.log.Debugf("Command [Cmd ID %d] exited: code %d, error: %v", id, code, err)
 
 		// IO socket can be nil when disconnected
@@ -118,6 +128,14 @@ func (s *APIService) buildMake(c *gin.Context) {
 		if so == nil {
 			s.log.Infof("%s not emitted - WS closed (id:%d", MakeExitEvent, id)
 			return
+		}
+
+		// Retrieve project ID and RootPath
+		prjID := (*data)["ID"].(string)
+
+		// XXX - workaround to be sure that Syncthing detected all changes
+		if err := s.mfolder.ForceSync(prjID); err != nil {
+			s.log.Errorf("Error while syncing folder %s: %v", prjID, err)
 		}
 
 		// FIXME replace by .BroadcastTo a room
@@ -148,6 +166,11 @@ func (s *APIService) buildMake(c *gin.Context) {
 	}
 
 	s.log.Debugf("Execute [Cmd ID %d]: %v", cmdID, cmd)
+
+	data := make(map[string]interface{})
+	data["ID"] = prj.ID
+	data["RootPath"] = prj.RootPath
+
 	err := common.ExecPipeWs(cmd, args.Env, sop, sess.ID, cmdID, execTmo, s.log, oCB, eCB, nil)
 	if err != nil {
 		common.APIError(c, err.Error())

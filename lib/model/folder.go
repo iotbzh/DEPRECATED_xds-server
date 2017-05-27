@@ -98,3 +98,13 @@ func (c *Folder) DeleteFolder(id string) (xdsconfig.FolderConfig, error) {
 
 	return fld, err
 }
+
+// ForceSync Force the synchronization of a folder
+func (c *Folder) ForceSync(id string) error {
+	return c.SThg.FolderScan(id, "")
+}
+
+// IsFolderInSync Returns true when folder is in sync
+func (c *Folder) IsFolderInSync(id string) (bool, error) {
+	return c.SThg.IsFolderInSync(id)
+}

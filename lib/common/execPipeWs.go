@@ -18,7 +18,7 @@ import (
 type EmitOutputCB func(sid string, cmdID int, stdout, stderr string, data *map[string]interface{})
 
 // EmitExitCB is the function callback used to emit exit proc code
-type EmitExitCB func(sid string, cmdID int, code int, err error)
+type EmitExitCB func(sid string, cmdID int, code int, err error, data *map[string]interface{})
 
 // Inspired by :
 // https://github.com/gorilla/websocket/blob/master/examples/command/main.go
@@ -63,7 +63,7 @@ func ExecPipeWs(cmd []string, env []string, so *socketio.Socket, sid string, cmd
 		go cmdPumpStdout(so, outr, stdoutDone, sid, cmdID, log, eoCB, data)
 
 		// Blocking function that poll input or wait for end of process
-		cmdPumpStdin(so, inw, proc, sid, cmdID, cmdExecTimeout, log, eeCB)
+		cmdPumpStdin(so, inw, proc, sid, cmdID, cmdExecTimeout, log, eeCB, data)
 
 		// Some commands will exit when stdin is closed.
 		inw.Close()
@@ -94,7 +94,8 @@ func ExecPipeWs(cmd []string, env []string, so *socketio.Socket, sid string, cmd
 }
 
 func cmdPumpStdin(so *socketio.Socket, w io.Writer, proc *os.Process,
-	sid string, cmdID int, tmo int, log *logrus.Logger, exitFuncCB EmitExitCB) {
+	sid string, cmdID int, tmo int, log *logrus.Logger, exitFuncCB EmitExitCB,
+	data *map[string]interface{}) {
 	/* XXX - code to add to support stdin through WS
 	for {
 		_, message, err := so. ?? ReadMessage()
@@ -127,10 +128,10 @@ func cmdPumpStdin(so *socketio.Socket, w io.Writer, proc *os.Process,
 	// Wait cmd complete
 	select {
 	case dC := <-done:
-		exitFuncCB(sid, cmdID, dC.status, dC.err)
+		exitFuncCB(sid, cmdID, dC.status, dC.err, data)
 	case <-time.After(time.Duration(tmo) * time.Second):
 		exitFuncCB(sid, cmdID, -99,
-			fmt.Errorf("Exit Timeout for command ID %v", cmdID))
+			fmt.Errorf("Exit Timeout for command ID %v", cmdID), data)
 	}
 }
 

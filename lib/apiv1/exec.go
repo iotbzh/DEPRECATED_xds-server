@@ -12,13 +12,14 @@ import (
 
 // ExecArgs JSON parameters of /exec command
 type ExecArgs struct {
-	ID         string   `json:"id" binding:"required"`
-	SdkID      string   `json:"sdkid"` // sdk ID to use for setting env
-	Cmd        string   `json:"cmd" binding:"required"`
-	Args       []string `json:"args"`
-	Env        []string `json:"env"`
-	RPath      string   `json:"rpath"`   // relative path into project
-	CmdTimeout int      `json:"timeout"` // command completion timeout in Second
+	ID            string   `json:"id" binding:"required"`
+	SdkID         string   `json:"sdkid"` // sdk ID to use for setting env
+	Cmd           string   `json:"cmd" binding:"required"`
+	Args          []string `json:"args"`
+	Env           []string `json:"env"`
+	RPath         string   `json:"rpath"`         // relative path into project
+	ExitImmediate bool     `json:"exitImmediate"` // when true, exit event sent immediately when command exited (IOW, don't wait file synchronization)
+	CmdTimeout    int      `json:"timeout"`       // command completion timeout in Second
 }
 
 // ExecOutMsg Message send on each output (stdout+stderr) of executed command
@@ -122,7 +123,7 @@ func (s *APIService) execCmd(c *gin.Context) {
 	}
 
 	// Define callback for output
-	eCB := func(sid string, id int, code int, err error) {
+	eCB := func(sid string, id int, code int, err error, data *map[string]interface{}) {
 		s.log.Debugf("Command [Cmd ID %d] exited: code %d, error: %v", id, code, err)
 
 		// IO socket can be nil when disconnected
@@ -130,6 +131,30 @@ func (s *APIService) execCmd(c *gin.Context) {
 		if so == nil {
 			s.log.Infof("%s not emitted - WS closed (id:%d", ExecExitEvent, id)
 			return
+		}
+
+		// Retrieve project ID and RootPath
+		prjID := (*data)["ID"].(string)
+		exitImm := (*data)["ExitImmediate"].(bool)
+
+		// XXX - workaround to be sure that Syncthing detected all changes
+		if err := s.mfolder.ForceSync(prjID); err != nil {
+			s.log.Errorf("Error while syncing folder %s: %v", prjID, err)
+		}
+		if !exitImm {
+			// Wait end of file sync
+			// FIXME pass as argument
+			tmo := 60
+			for t := tmo; t > 0; t-- {
+				s.log.Debugf("Wait file insync for %s (%d/%d)", prjID, t, tmo)
+				if sync, err := s.mfolder.IsFolderInSync(prjID); sync || err != nil {
+					if err != nil {
+						s.log.Errorf("ERROR IsFolderInSync (%s): %v", prjID, err)
+					}
+					break
+				}
+				time.Sleep(time.Second)
+			}
 		}
 
 		// FIXME replace by .BroadcastTo a room
@@ -164,6 +189,7 @@ func (s *APIService) execCmd(c *gin.Context) {
 	data := make(map[string]interface{})
 	data["ID"] = prj.ID
 	data["RootPath"] = prj.RootPath
+	data["ExitImmediate"] = args.ExitImmediate
 
 	err := common.ExecPipeWs(cmd, args.Env, sop, sess.ID, cmdID, execTmo, s.log, oCB, eCB, &data)
 	if err != nil {

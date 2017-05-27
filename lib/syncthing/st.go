@@ -49,6 +49,42 @@ type ExitChan struct {
 	err    error
 }
 
+// ConfigInSync Check whether if Syncthing configuration is in sync
+type configInSync struct {
+	ConfigInSync bool `json:"configInSync"`
+}
+
+// FolderStatus Information about the current status of a folder.
+type FolderStatus struct {
+	GlobalFiles       int   `json:"globalFiles"`
+	GlobalDirectories int   `json:"globalDirectories"`
+	GlobalSymlinks    int   `json:"globalSymlinks"`
+	GlobalDeleted     int   `json:"globalDeleted"`
+	GlobalBytes       int64 `json:"globalBytes"`
+
+	LocalFiles       int   `json:"localFiles"`
+	LocalDirectories int   `json:"localDirectories"`
+	LocalSymlinks    int   `json:"localSymlinks"`
+	LocalDeleted     int   `json:"localDeleted"`
+	LocalBytes       int64 `json:"localBytes"`
+
+	NeedFiles       int   `json:"needFiles"`
+	NeedDirectories int   `json:"needDirectories"`
+	NeedSymlinks    int   `json:"needSymlinks"`
+	NeedDeletes     int   `json:"needDeletes"`
+	NeedBytes       int64 `json:"needBytes"`
+
+	InSyncFiles int   `json:"inSyncFiles"`
+	InSyncBytes int64 `json:"inSyncBytes"`
+
+	State        string    `json:"state"`
+	StateChanged time.Time `json:"stateChanged"`
+
+	Sequence int64 `json:"sequence"`
+
+	IgnorePatterns bool `json:"ignorePatterns"`
+}
+
 // NewSyncThing creates a new instance of Syncthing
 func NewSyncThing(conf *xdsconfig.Config, log *logrus.Logger) *SyncThing {
 	var url, apiKey, home, binDir string
@@ -308,4 +344,58 @@ func (s *SyncThing) ConfigSet(cfg config.Configuration) error {
 		return err
 	}
 	return s.client.HTTPPost("system/config", string(body))
+}
+
+// IsConfigInSync Returns true if configuration is in sync
+func (s *SyncThing) IsConfigInSync() (bool, error) {
+	var data []byte
+	var d configInSync
+	if err := s.client.HTTPGet("system/config/insync", &data); err != nil {
+		return false, err
+	}
+	if err := json.Unmarshal(data, &d); err != nil {
+		return false, err
+	}
+	return d.ConfigInSync, nil
+}
+
+// FolderStatus Returns all information about the current
+func (s *SyncThing) FolderStatus(folderID string) (*FolderStatus, error) {
+	var data []byte
+	var res FolderStatus
+	if folderID == "" {
+		return nil, fmt.Errorf("folderID not set")
+	}
+	if err := s.client.HTTPGet("db/status?folder="+folderID, &data); err != nil {
+		return nil, err
+	}
+	if err := json.Unmarshal(data, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+// IsFolderInSync Returns true when folder is in sync
+func (s *SyncThing) IsFolderInSync(folderID string) (bool, error) {
+	// FIXME better to detected FolderCompletion event (/rest/events)
+	// See https://docs.syncthing.net/dev/events.html
+	sts, err := s.FolderStatus(folderID)
+	if err != nil {
+		return false, err
+	}
+	return sts.NeedBytes == 0, nil
+}
+
+// FolderScan Request immediate folder scan.
+// Scan all folders if folderID param is empty
+func (s *SyncThing) FolderScan(folderID string, subpath string) error {
+	url := "db/scan"
+	if folderID != "" {
+		url += "?folder=" + folderID
+
+		if subpath != "" {
+			url += "&sub=" + subpath
+		}
+	}
+	return s.client.HTTPPost(url, "")
 }
