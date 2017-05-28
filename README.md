@@ -99,7 +99,15 @@ integrated in AGL SDK docker container.
 
 ### Create XDS AGL docker worker container
 
-Execute following commands to build docker image:
+You can either load a pre-build docker image or rebuild this image with latest
+source code.
+
+* load pre-build docker image:
+```bash
+wget http://iot.bzh/download/public/2017/XDS/docker/docker_agl_worker-xds-3.2.tar.xz | docker load
+```
+
+*  OR execute following commands to rebuild docker image:
 ```bash
 git clone https://git.automotivelinux.org/AGL/docker-worker-generator
 cd docker-worker-generator
