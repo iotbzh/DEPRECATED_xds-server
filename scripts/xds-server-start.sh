@@ -42,6 +42,25 @@ echo ""
 mkdir -p ${LOGDIR}
 LOG_XDS=${LOGDIR}/xds-server.log
 
+# Download xds-agent tarball
+SCRIPT_GET_XDS_TARBALL=$BINDIR/xds-utils/get-xds-agent.sh
+if [ ! -f ${SCRIPT_GET_XDS_TARBALL} ]; then
+    SCRIPT_GET_XDS_TARBALL=$(dirname $0)/xds-utils/get-xds-agent.sh
+fi
+if [ -f ${SCRIPT_GET_XDS_TARBALL} ]; then
+    TARBALLDIR=${XDS_WWWDIR}/assets/xds-agent-tarballs
+    [ ! -d "$TARBALLDIR" ] && TARBALLDIR=$BINDIR/www-xds-server/assets/xds-agent-tarballs
+    [ ! -d "$TARBALLDIR" ] && TARBALLDIR=$(grep webAppDir ~/.xds/config.json|cut -d '"' -f 4)/assets/xds-agent-tarballs
+    if [ -d "$TARBALLDIR" ]; then
+        DEST_DIR=$TARBALLDIR $SCRIPT_GET_XDS_TARBALL
+    else
+        echo "WARNING: cannot download / update xds-agent tarballs (DESTDIR error)"
+    fi
+else
+    echo "WARNING: cannot download / update xds-agent tarballs"
+fi
+
+
 echo "### Start XDS server"
 echo "nohup $BINDIR/xds-server --config $XDS_CONFFILE -log $LOGLEVEL > $LOG_XDS 2>&1"
 if [ "$1" != "-dryrun" ]; then

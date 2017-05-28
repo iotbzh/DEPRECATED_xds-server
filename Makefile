@@ -87,12 +87,12 @@ webapp/install:
 
 .PHONY: scripts
 scripts:
-	@mkdir -p $(LOCAL_BINDIR) && cp -rf scripts/xds-start-server.sh scripts/agl $(LOCAL_BINDIR)
+	@mkdir -p $(LOCAL_BINDIR) && cp -rf scripts/xds-server-st*.sh scripts/xds-utils $(LOCAL_BINDIR)
 
 .PHONY: install
 install:
 	@test -e $(LOCAL_BINDIR)/xds-server -a -d webapp/dist || { echo "Please execute first: make all\n"; exit 1; }
-	@test -e $(LOCAL_BINDIR)/xds-start-server.sh -a -d $(LOCAL_BINDIR)/agl || { echo "Please execute first: make all\n"; exit 1; }
+	@test -e $(LOCAL_BINDIR)/xds-server-start.sh -a -d $(LOCAL_BINDIR)/xds-utils || { echo "Please execute first: make all\n"; exit 1; }
 	@test -e $(LOCAL_BINDIR)/syncthing -a -e $(LOCAL_BINDIR)/syncthing-inotify || { echo "Please execute first: make all\n"; exit 1; }
 	mkdir -p $(INSTALL_DIR) \
 		&& cp -a $(LOCAL_BINDIR)/* $(INSTALL_DIR)
@@ -114,7 +114,7 @@ tools/syncthing:
 	DESTDIR=$(LOCAL_TOOLSDIR) \
 	SYNCTHING_VERSION=$(SYNCTHING_VERSION) \
 	SYNCTHING_INOTIFY_VERSION=$(SYNCTHING_INOTIFY_VERSION) \
-	./scripts/get-syncthing.sh; }
+	./scripts/xds-utils/get-syncthing.sh; }
 
 .PHONY:
 tools/syncthing/copytobin:

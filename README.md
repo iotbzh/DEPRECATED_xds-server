@@ -79,14 +79,14 @@ Supported fields in configuration file are:
 
 ## Start-up
 
-Use `xds-start-server.sh` script to start all requested tools
+Use `xds-server-start.sh` script to start all requested tools
 ```bash
-/usr/local/bin/xds-start-server.sh
+/usr/local/bin/xds-server-start.sh
 ```
 
 >**NOTE** you can define some environment variables to setup for example
 config file `XDS_CONFFILE` or change logs directory `LOGDIR`.
-See head section of `xds-start-server.sh` file to see all configurable variables.
+See head section of `xds-server-start.sh` file to see all configurable variables.
 
 ## Install XDS-server in AGL SDK docker container
 
@@ -133,7 +133,7 @@ This container exposes following ports:
 Now start xds-server inside this container:
 ```bash
 > ssh -p 2222 devel@localhost
-[15:59:58] devel@agl-worker-seb-laptop-0-seb:~$ /usr/local/bin/xds-start-server.sh
+[15:59:58] devel@agl-worker-seb-laptop-0-seb:~$ /usr/local/bin/xds-server-start.sh
 ### Configuration in config.json:
 {
     "webAppDir": "/usr/local/bin/www-xds-server",
