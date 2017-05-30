@@ -14,12 +14,13 @@ import (
 
 // MakeArgs is the parameters (json format) of /make command
 type MakeArgs struct {
-	ID         string   `json:"id"`
-	SdkID      string   `json:"sdkid"` // sdk ID to use for setting env
-	Args       []string `json:"args"`  // args to pass to make command
-	Env        []string `json:"env"`
-	RPath      string   `json:"rpath"`   // relative path into project
-	CmdTimeout int      `json:"timeout"` // command completion timeout in Second
+	ID            string   `json:"id"`
+	SdkID         string   `json:"sdkid"` // sdk ID to use for setting env
+	Args          []string `json:"args"`  // args to pass to make command
+	Env           []string `json:"env"`
+	RPath         string   `json:"rpath"`         // relative path into project
+	ExitImmediate bool     `json:"exitImmediate"` // when true, exit event sent immediately when command exited (IOW, don't wait file synchronization)
+	CmdTimeout    int      `json:"timeout"`       // command completion timeout in Second
 }
 
 // MakeOutMsg Message send on each output (stdout+stderr) of make command
@@ -87,6 +88,8 @@ func (s *APIService) buildMake(c *gin.Context) {
 		execTmo = 24 * 60 * 60 // 1 day
 	}
 
+	// TODO merge all code below with exec.go
+
 	// Define callback for output
 	var oCB common.EmitOutputCB
 	oCB = func(sid string, id int, stdout, stderr string, data *map[string]interface{}) {
@@ -132,10 +135,26 @@ func (s *APIService) buildMake(c *gin.Context) {
 
 		// Retrieve project ID and RootPath
 		prjID := (*data)["ID"].(string)
+		exitImm := (*data)["ExitImmediate"].(bool)
 
 		// XXX - workaround to be sure that Syncthing detected all changes
 		if err := s.mfolder.ForceSync(prjID); err != nil {
 			s.log.Errorf("Error while syncing folder %s: %v", prjID, err)
+		}
+		if !exitImm {
+			// Wait end of file sync
+			// FIXME pass as argument
+			tmo := 60
+			for t := tmo; t > 0; t-- {
+				s.log.Debugf("Wait file insync for %s (%d/%d)", prjID, t, tmo)
+				if sync, err := s.mfolder.IsFolderInSync(prjID); sync || err != nil {
+					if err != nil {
+						s.log.Errorf("ERROR IsFolderInSync (%s): %v", prjID, err)
+					}
+					break
+				}
+				time.Sleep(time.Second)
+			}
 		}
 
 		// FIXME replace by .BroadcastTo a room
@@ -170,8 +189,9 @@ func (s *APIService) buildMake(c *gin.Context) {
 	data := make(map[string]interface{})
 	data["ID"] = prj.ID
 	data["RootPath"] = prj.RootPath
+	data["ExitImmediate"] = args.ExitImmediate
 
-	err := common.ExecPipeWs(cmd, args.Env, sop, sess.ID, cmdID, execTmo, s.log, oCB, eCB, nil)
+	err := common.ExecPipeWs(cmd, args.Env, sop, sess.ID, cmdID, execTmo, s.log, oCB, eCB, &data)
 	if err != nil {
 		common.APIError(c, err.Error())
 		return
