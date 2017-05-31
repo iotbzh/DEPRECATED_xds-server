@@ -144,13 +144,14 @@ func xdsApp(cliCtx *cli.Context) error {
 		// Establish connection with local Syncthing (retry if connection fail)
 		fmt.Printf("Establishing connection with Syncthing...\n")
 		time.Sleep(2 * time.Second)
-		retry := 10
+		maxRetry := 30
+		retry := maxRetry
 		err = nil
 		for retry > 0 {
 			if err = ctx.SThg.Connect(); err == nil {
 				break
 			}
-			ctx.Log.Warningf("Establishing connection to Syncthing (retry %d/10)", retry)
+			ctx.Log.Warningf("Establishing connection to Syncthing (retry %d/%d)", retry, maxRetry)
 			time.Sleep(time.Second)
 			retry--
 		}
