@@ -9,6 +9,9 @@ import { Router } from '@angular/router';
 })
 
 export class AppComponent implements OnInit, OnDestroy {
+
+    isCollapsed: boolean = true;
+
     private defaultLanguage: string = 'en';
 
     // I initialize the app component.
