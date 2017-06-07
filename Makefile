@@ -1,7 +1,7 @@
 # Makefile used to build XDS daemon Web Server
 
 # Application Version
-VERSION := 0.0.1
+VERSION := 0.1.0
 
 # Syncthing version to install
 SYNCTHING_VERSION = 0.14.28
