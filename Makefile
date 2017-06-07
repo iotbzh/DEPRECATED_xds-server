@@ -12,7 +12,7 @@ SYNCTHING_INOTIFY_VERSION=master
 
 # Retrieve git tag/commit to set sub-version string
 ifeq ($(origin SUB_VERSION), undefined)
-	SUB_VERSION := $(shell git describe --tags 2>/dev/null | sed 's/^v//')
+	SUB_VERSION := $(shell git describe --exact-match --tags 2>/dev/null | sed 's/^v//')
 	ifneq ($(SUB_VERSION), )
 		VERSION := $(firstword $(subst -, ,$(SUB_VERSION)))
 		SUB_VERSION := $(word 2,$(subst -, ,$(SUB_VERSION)))
