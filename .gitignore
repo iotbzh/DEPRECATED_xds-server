@@ -2,7 +2,7 @@ bin
 tools
 **/glide.lock
 **/vendor
-
+package
 debug
 cmd/*/debug
 
