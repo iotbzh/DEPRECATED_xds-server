@@ -4,6 +4,19 @@
             // paths serve as alias
             'npm:': 'lib/'
         },
+        bundles: {
+            "npm:rxjs-system-bundle/Rx.system.min.js": [
+                "rxjs",
+                "rxjs/*",
+                "rxjs/operator/*",
+                "rxjs/observable/*",
+                "rxjs/scheduler/*",
+                "rxjs/symbol/*",
+                "rxjs/add/operator/*",
+                "rxjs/add/observable/*",
+                "rxjs/util/*"
+            ]
+        },
         // map tells the System loader where to look for things
         map: {
             // our app is within the app folder
@@ -26,19 +39,18 @@
             'ngx-bootstrap/carousel': 'npm:ngx-bootstrap/bundles/ngx-bootstrap.umd.min.js',
             'ngx-bootstrap/dropdown': 'npm:ngx-bootstrap/bundles/ngx-bootstrap.umd.min.js',
             // other libraries
-            'rxjs': 'npm:rxjs',
             'socket.io-client': 'npm:socket.io-client/dist/socket.io.min.js'
         },
         // packages tells the System loader how to load when no filename and/or no extension
         packages: {
-            app: {
+            'app': {
                 main: './main.js',
                 defaultExtension: 'js'
             },
-            rxjs: {
-                defaultExtension: 'js'
+            'rxjs': {
+                defaultExtension: false
             },
-            "socket.io-client": {
+            'socket.io-client': {
                 defaultExtension: 'js'
             },
             'ngx-bootstrap': {

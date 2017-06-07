@@ -38,6 +38,7 @@
     "ngx-cookie": "^1.0.0",
     "reflect-metadata": "^0.1.8",
     "rxjs": "5.0.3",
+    "rxjs-system-bundle": "5.0.3",
     "socket.io-client": "^1.7.3",
     "socketio": "^1.0.0",
     "systemjs": "0.20.0",

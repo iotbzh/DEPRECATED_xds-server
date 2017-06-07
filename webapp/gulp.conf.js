@@ -10,7 +10,7 @@ module.exports = {
         node_modules_libs: [
             'core-js/client/shim.min.js',
             'reflect-metadata/Reflect.js',
-            'rxjs/**/*.js',
+            'rxjs-system-bundle/*.min.js',
             'socket.io-client/dist/socket.io*.js',
             'systemjs/dist/system-polyfills.js',
             'systemjs/dist/system.src.js',
