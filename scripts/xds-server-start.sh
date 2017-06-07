@@ -6,10 +6,11 @@
 [ -z "$XDS_SHAREDIR" ] && XDS_SHAREDIR=$HOME/.xds/share
 [ -z "$ST_CONFDIR" ] && ST_CONFDIR=$HOME/.xds/syncthing-config
 [ -z "$XDS_WWWDIR" ] && XDS_WWWDIR=webapp/dist
-[ -z "$LOGLEVEL" ] && LOGLEVEL=warn
+[ -z "$LOGLEVEL" ] && LOGLEVEL=info
 [ -z "$LOGDIR" ] && LOGDIR=/tmp/xds-server/logs
 [ -z "$PORT_GUI" ] && PORT_GUI=8384
 [ -z "$API_KEY" ] && API_KEY="1234abcezam"
+[ -z "$UPDATE_XDS_TARBALL" ] && UPDATE_XDS_TARBALL=0
 
 [[ -f $BINDIR/xds-server ]] || { echo "Cannot find xds-server in BINDIR !"; exit 1; }
 
@@ -43,21 +44,23 @@ mkdir -p ${LOGDIR}
 LOG_XDS=${LOGDIR}/xds-server.log
 
 # Download xds-agent tarball
-SCRIPT_GET_XDS_TARBALL=$BINDIR/xds-utils/get-xds-agent.sh
-if [ ! -f ${SCRIPT_GET_XDS_TARBALL} ]; then
-    SCRIPT_GET_XDS_TARBALL=$(dirname $0)/xds-utils/get-xds-agent.sh
-fi
-if [ -f ${SCRIPT_GET_XDS_TARBALL} ]; then
-    TARBALLDIR=${XDS_WWWDIR}/assets/xds-agent-tarballs
-    [ ! -d "$TARBALLDIR" ] && TARBALLDIR=$BINDIR/www-xds-server/assets/xds-agent-tarballs
-    [ ! -d "$TARBALLDIR" ] && TARBALLDIR=$(grep webAppDir ~/.xds/config.json|cut -d '"' -f 4)/assets/xds-agent-tarballs
-    if [ -d "$TARBALLDIR" ]; then
-        DEST_DIR=$TARBALLDIR $SCRIPT_GET_XDS_TARBALL
-    else
-        echo "WARNING: cannot download / update xds-agent tarballs (DESTDIR error)"
+if [ "${UPDATE_XDS_TARBALL}" = 1 ]; then
+    SCRIPT_GET_XDS_TARBALL=$BINDIR/xds-utils/get-xds-agent.sh
+    if [ ! -f ${SCRIPT_GET_XDS_TARBALL} ]; then
+        SCRIPT_GET_XDS_TARBALL=$(dirname $0)/xds-utils/get-xds-agent.sh
     fi
-else
-    echo "WARNING: cannot download / update xds-agent tarballs"
+    if [ -f ${SCRIPT_GET_XDS_TARBALL} ]; then
+        TARBALLDIR=${XDS_WWWDIR}/assets/xds-agent-tarballs
+        [ ! -d "$TARBALLDIR" ] && TARBALLDIR=$BINDIR/www-xds-server/assets/xds-agent-tarballs
+        [ ! -d "$TARBALLDIR" ] && TARBALLDIR=$(grep webAppDir ~/.xds/config.json|cut -d '"' -f 4)/assets/xds-agent-tarballs
+        if [ -d "$TARBALLDIR" ]; then
+            DEST_DIR=$TARBALLDIR $SCRIPT_GET_XDS_TARBALL
+        else
+            echo "WARNING: cannot download / update xds-agent tarballs (DESTDIR error)"
+        fi
+    else
+        echo "WARNING: cannot download / update xds-agent tarballs"
+    fi
 fi
 
 
