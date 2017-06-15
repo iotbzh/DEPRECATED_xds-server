@@ -184,6 +184,9 @@ func (s *APIService) execCmd(c *gin.Context) {
 		cmd = append(cmd, args.Args...)
 	}
 
+	// Append client project dir to environment
+	args.Env = append(args.Env, "CLIENT_PROJECT_DIR="+prj.RelativePath)
+
 	s.log.Debugf("Execute [Cmd ID %d]: %v", cmdID, cmd)
 
 	data := make(map[string]interface{})
