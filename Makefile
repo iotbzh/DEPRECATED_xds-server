@@ -24,12 +24,20 @@ ifeq ($(origin SUB_VERSION), undefined)
 	endif
 endif
 
-# Configurable variables for installation (default /usr/local/...)
-ifeq ($(origin INSTALL_DIR), undefined)
-	INSTALL_DIR := /usr/local/bin
+# for backward compatibility
+ifneq ($(origin INSTALL_DIR), undefined)
+	DESTDIR := $(INSTALL_DIR)
 endif
-ifeq ($(origin INSTALL_WEBAPP_DIR), undefined)
-	INSTALL_WEBAPP_DIR := $(INSTALL_DIR)/www-xds-server
+ifneq ($(origin INSTALL_WEBAPP_DIR), undefined)
+	DESTDIR_WWW := $(INSTALL_WEBAPP_DIR)
+endif
+
+# Configurable variables for installation (default /usr/local/...)
+ifeq ($(origin DESTDIR), undefined)
+	DESTDIR := /usr/local/bin
+endif
+ifeq ($(origin DESTDIR_WWW), undefined)
+	DESTDIR_WWW := $(DESTDIR)/www-xds-server
 endif
 
 HOST_GOOS=$(shell go env GOOS)
@@ -121,7 +129,7 @@ scripts:
 .PHONY: conffile
 conffile:
 	cat config.json.in \
-		| sed -e s,"webapp/dist","$(INSTALL_WEBAPP_DIR)",g \
+		| sed -e s,"webapp/dist","$(DESTDIR_WWW)",g \
 		| sed -e s,"\./bin","",g \
 		 > $(PACKAGE_DIR)/xds-server/config.json
 
@@ -130,15 +138,15 @@ install:
 	@test -e $(LOCAL_BINDIR)/xds-server$(EXT) -a -d webapp/dist || { echo "Please execute first: make all\n"; exit 1; }
 	@test -e $(LOCAL_BINDIR)/xds-server-start.sh -a -d $(LOCAL_BINDIR)/xds-utils || { echo "Please execute first: make all\n"; exit 1; }
 	@test -e $(LOCAL_BINDIR)/syncthing$(EXT) -a -e $(LOCAL_BINDIR)/syncthing-inotify$(EXT) || { echo "Please execute first: make all\n"; exit 1; }
-	mkdir -p $(INSTALL_DIR) \
-		&& cp -a $(LOCAL_BINDIR)/* $(INSTALL_DIR)
-	mkdir -p $(INSTALL_WEBAPP_DIR) \
-		&& cp -a webapp/dist/* $(INSTALL_WEBAPP_DIR)
+	mkdir -p $(DESTDIR) \
+		&& cp -a $(LOCAL_BINDIR)/* $(DESTDIR)
+	mkdir -p $(DESTDIR_WWW) \
+		&& cp -a webapp/dist/* $(DESTDIR_WWW)
 
 .PHONY: package
 package: clean
-	INSTALL_DIR=$(PACKAGE_DIR)/xds-server make -f $(ROOT_SRCDIR)/Makefile all install
-	INSTALL_DIR=$(PACKAGE_DIR)/xds-server INSTALL_WEBAPP_DIR=www-xds-server	make -f $(ROOT_SRCDIR)/Makefile conffile
+	DESTDIR=$(PACKAGE_DIR)/xds-server make -f $(ROOT_SRCDIR)/Makefile all install
+	DESTDIR=$(PACKAGE_DIR)/xds-server DESTDIR_WWW=www-xds-server	make -f $(ROOT_SRCDIR)/Makefile conffile
 	(cd $(PACKAGE_DIR) && zip -r $(ROOT_SRCDIR)/$(PACKAGE_ZIPFILE) ./xds-server)
 
 .PHONY: package-all

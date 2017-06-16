@@ -42,10 +42,16 @@ Clone this repo into your `$GOPATH/src/github.com/iotbzh` and use delivered Make
  make all
 ```
 
-And to install xds-server in /usr/local/bin:
+And to install xds-server (by default in `/usr/local/bin`):
 ```bash
 make install
 ```
+
+>**NOTE:** Used `DESTDIR` to specify another install directory
+>```bash
+>make install DESTDIR=$HOME/opt/xds-server
+>```
+
 
 ## How to run
 
