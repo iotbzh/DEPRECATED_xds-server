@@ -159,10 +159,13 @@ package-all:
 vendor: tools/glide glide.yaml
 	$(LOCAL_TOOLSDIR)/glide install --strip-vendor
 
+.PHONY: tools/glide
 tools/glide:
-	@echo "Downloading glide"
-	mkdir -p $(LOCAL_TOOLSDIR)
-	curl --silent -L https://glide.sh/get | GOBIN=$(LOCAL_TOOLSDIR)  sh
+	@test -f $(LOCAL_TOOLSDIR)/glide || { \
+		echo "Downloading glide"; \
+		mkdir -p $(LOCAL_TOOLSDIR); \
+		curl --silent -L https://glide.sh/get | GOBIN=$(LOCAL_TOOLSDIR)  sh; \
+	}
 
 .PHONY: tools/syncthing
 tools/syncthing:
