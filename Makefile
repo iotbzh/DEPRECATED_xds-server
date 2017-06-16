@@ -54,7 +54,7 @@ mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 ROOT_SRCDIR := $(patsubst %/,%,$(dir $(mkfile_path)))
 ROOT_GOPRJ := $(abspath $(ROOT_SRCDIR)/../../../..)
 LOCAL_BINDIR := $(ROOT_SRCDIR)/bin
-LOCAL_TOOLSDIR := $(ROOT_SRCDIR)/tools
+LOCAL_TOOLSDIR := $(ROOT_SRCDIR)/tools/${HOST_GOOS}
 PACKAGE_DIR := $(ROOT_SRCDIR)/package
 
 
@@ -111,7 +111,7 @@ clean:
 
 .PHONY: distclean
 distclean: clean
-	rm -rf $(LOCAL_BINDIR) $(LOCAL_TOOLSDIR) glide.lock vendor webapp/node_modules webapp/dist
+	rm -rf $(LOCAL_BINDIR) $(ROOT_SRCDIR)/tools glide.lock vendor webapp/node_modules webapp/dist
 
 webapp: webapp/install
 	(cd webapp && gulp build)
@@ -121,6 +121,7 @@ webapp/debug:
 
 webapp/install:
 	(cd webapp && npm install)
+	@test -d ${DESTDIR}/usr/local/etc && rm -rf ${DESTDIR}/usr
 
 .PHONY: scripts
 scripts:
@@ -131,7 +132,7 @@ conffile:
 	cat config.json.in \
 		| sed -e s,"webapp/dist","$(DESTDIR_WWW)",g \
 		| sed -e s,"\./bin","",g \
-		 > $(PACKAGE_DIR)/xds-server/config.json
+		 > $(DESTDIR)/config.json
 
 .PHONY: install
 install:
@@ -145,8 +146,8 @@ install:
 
 .PHONY: package
 package: clean
-	DESTDIR=$(PACKAGE_DIR)/xds-server make -f $(ROOT_SRCDIR)/Makefile all install
-	DESTDIR=$(PACKAGE_DIR)/xds-server DESTDIR_WWW=www-xds-server	make -f $(ROOT_SRCDIR)/Makefile conffile
+	make -f $(ROOT_SRCDIR)/Makefile all install  DESTDIR=$(PACKAGE_DIR)/xds-server
+	make -f $(ROOT_SRCDIR)/Makefile conffile  DESTDIR=$(PACKAGE_DIR)/xds-server DESTDIR_WWW=www-xds-server
 	(cd $(PACKAGE_DIR) && zip -r $(ROOT_SRCDIR)/$(PACKAGE_ZIPFILE) ./xds-server)
 
 .PHONY: package-all
