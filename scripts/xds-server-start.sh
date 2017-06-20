@@ -10,7 +10,7 @@
 [ -z "$LOGDIR" ] && LOGDIR=/tmp/xds-server/logs
 [ -z "$PORT_GUI" ] && PORT_GUI=8384
 [ -z "$API_KEY" ] && API_KEY="1234abcezam"
-[ -z "$UPDATE_XDS_TARBALL" ] && UPDATE_XDS_TARBALL=0
+[ -z "$UPDATE_XDS_TARBALL" ] && UPDATE_XDS_TARBALL=1
 
 [[ -f $BINDIR/xds-server ]] || { echo "Cannot find xds-server in BINDIR !"; exit 1; }
 
