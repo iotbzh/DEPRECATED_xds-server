@@ -61,6 +61,8 @@ while [ $# -ne 0 ]; do
     shift
 done
 
+[ ! -d ${XDT_SDK} ] && mkdir -p ${XDT_SDK}
+
 if [ "$FILE" = "" ]; then
     FILE=$(getFile $ARCH)
     SDK_FILE=${XDT_SDK}/${FILE}
