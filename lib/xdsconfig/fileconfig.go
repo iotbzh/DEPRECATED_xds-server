@@ -77,7 +77,6 @@ func updateConfigFromFile(c *Config, confFile string) error {
 	if err := json.NewDecoder(fd).Decode(&fCfg); err != nil {
 		return err
 	}
-	c.FileConf = fCfg
 
 	// Support environment variables (IOW ${MY_ENV_VAR} syntax) in config.json
 	for _, field := range []*string{
@@ -94,30 +93,33 @@ func updateConfigFromFile(c *Config, confFile string) error {
 		}
 	}
 
-	// Config file settings overwrite default config
-
-	if fCfg.WebAppDir != "" {
-		c.WebAppDir = strings.Trim(fCfg.WebAppDir, " ")
+	// Use config file settings else use default config
+	if fCfg.WebAppDir == "" {
+		fCfg.WebAppDir = c.FileConf.WebAppDir
 	}
-	// Is it a full path ?
-	if !strings.HasPrefix(c.WebAppDir, "/") && exePath != "" {
+	if fCfg.ShareRootDir == "" {
+		fCfg.ShareRootDir = c.FileConf.ShareRootDir
+	}
+	if fCfg.SdkRootDir == "" {
+		fCfg.SdkRootDir = c.FileConf.SdkRootDir
+	}
+	if fCfg.HTTPPort == "" {
+		fCfg.HTTPPort = c.FileConf.HTTPPort
+	}
+
+	// Resolve webapp dir (support relative or full path)
+	fCfg.WebAppDir = strings.Trim(fCfg.WebAppDir, " ")
+	if !strings.HasPrefix(fCfg.WebAppDir, "/") && exePath != "" {
 		// Check first from current directory
 		for _, rootD := range []string{cwd, exePath} {
-			ff := path.Join(rootD, c.WebAppDir, "index.html")
+			ff := path.Join(rootD, fCfg.WebAppDir, "index.html")
 			if common.Exists(ff) {
-				c.WebAppDir = path.Join(rootD, c.WebAppDir)
+				fCfg.WebAppDir = path.Join(rootD, fCfg.WebAppDir)
 				break
 			}
 		}
 	}
 
-	if fCfg.ShareRootDir != "" {
-		c.ShareRootDir = fCfg.ShareRootDir
-	}
-
-	if fCfg.HTTPPort != "" {
-		c.HTTPPort = fCfg.HTTPPort
-	}
-
+	c.FileConf = fCfg
 	return nil
 }

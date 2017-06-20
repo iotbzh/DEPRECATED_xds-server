@@ -100,12 +100,12 @@ func (s *Server) Serve() error {
 	*/
 
 	// Web Application (serve on / )
-	idxFile := path.Join(s.cfg.WebAppDir, indexFilename)
+	idxFile := path.Join(s.cfg.FileConf.WebAppDir, indexFilename)
 	if _, err := os.Stat(idxFile); err != nil {
 		s.log.Fatalln("Web app directory not found, check/use webAppDir setting in config file: ", idxFile)
 	}
-	s.log.Infof("Serve WEB app dir: %s", s.cfg.WebAppDir)
-	s.router.Use(static.Serve("/", static.LocalFile(s.cfg.WebAppDir, true)))
+	s.log.Infof("Serve WEB app dir: %s", s.cfg.FileConf.WebAppDir)
+	s.router.Use(static.Serve("/", static.LocalFile(s.cfg.FileConf.WebAppDir, true)))
 	s.webApp = s.router.Group("/", s.serveIndexFile)
 	{
 		s.webApp.GET("/")
@@ -114,8 +114,8 @@ func (s *Server) Serve() error {
 	// Serve in the background
 	serveError := make(chan error, 1)
 	go func() {
-		fmt.Printf("Web Server running on localhost:%s ...\n", s.cfg.HTTPPort)
-		serveError <- http.ListenAndServe(":"+s.cfg.HTTPPort, s.router)
+		fmt.Printf("Web Server running on localhost:%s ...\n", s.cfg.FileConf.HTTPPort)
+		serveError <- http.ListenAndServe(":"+s.cfg.FileConf.HTTPPort, s.router)
 	}()
 
 	// Wait for stop, restart or error signals

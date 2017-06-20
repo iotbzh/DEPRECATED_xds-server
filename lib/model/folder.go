@@ -48,7 +48,7 @@ func (c *Folder) UpdateAll(newCfg xdsconfig.Config) error {
 				Label:        f.Label,
 				RelativePath: f.RelativePath,
 				SyncThingID:  f.SyncThingID,
-				ShareRootDir: c.ShareRootDir,
+				ShareRootDir: c.FileConf.ShareRootDir,
 			}); err != nil {
 				return err
 			}
@@ -62,7 +62,7 @@ func (c *Folder) UpdateAll(newCfg xdsconfig.Config) error {
 func (c *Folder) UpdateFolder(newFolder xdsconfig.FolderConfig) (xdsconfig.FolderConfig, error) {
 	// rootPath should not be empty
 	if newFolder.RootPath == "" {
-		newFolder.RootPath = c.Conf.ShareRootDir
+		newFolder.RootPath = c.Conf.FileConf.ShareRootDir
 	}
 
 	// Sanity check of folder settings

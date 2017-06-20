@@ -27,7 +27,7 @@ func (s *APIService) getXdsAgentInfo(c *gin.Context) {
 
 	res := XDSAgentInfo{}
 	tarballURL := "assets/xds-agent-tarballs"
-	tarballDir := filepath.Join(s.cfg.WebAppDir, "assets", "xds-agent-tarballs")
+	tarballDir := filepath.Join(s.cfg.FileConf.WebAppDir, "assets", "xds-agent-tarballs")
 	if common.Exists(tarballDir) {
 		files, err := filepath.Glob(path.Join(tarballDir, "xds-agent_*.zip"))
 		if err != nil {

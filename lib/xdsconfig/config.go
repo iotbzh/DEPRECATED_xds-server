@@ -19,11 +19,8 @@ type Config struct {
 	Folders       FoldersConfig `json:"folders"`
 
 	// Private (un-exported fields in REST GET /config route)
-	FileConf     FileConfig     `json:"-"`
-	WebAppDir    string         `json:"-"`
-	HTTPPort     string         `json:"-"`
-	ShareRootDir string         `json:"-"`
-	Log          *logrus.Logger `json:"-"`
+	FileConf FileConfig     `json:"-"`
+	Log      *logrus.Logger `json:"-"`
 }
 
 // Config default values
@@ -31,6 +28,7 @@ const (
 	DefaultAPIVersion = "1"
 	DefaultPort       = "8000"
 	DefaultShareDir   = "/mnt/share"
+	DefaultSdkRootDir = "/xdt/sdk"
 )
 
 // Init loads the configuration on start-up
@@ -44,11 +42,13 @@ func Init(cliCtx *cli.Context, log *logrus.Logger) (*Config, error) {
 		VersionGitTag: cliCtx.App.Metadata["git-tag"].(string),
 		Builder:       BuilderConfig{},
 		Folders:       FoldersConfig{},
-
-		WebAppDir:    "webapp/dist",
-		HTTPPort:     DefaultPort,
-		ShareRootDir: DefaultShareDir,
-		Log:          log,
+		FileConf: FileConfig{
+			WebAppDir:    "webapp/dist",
+			ShareRootDir: DefaultShareDir,
+			SdkRootDir:   DefaultSdkRootDir,
+			HTTPPort:     DefaultPort,
+		},
+		Log: log,
 	}
 
 	// config file settings overwrite default config
@@ -58,12 +58,12 @@ func Init(cliCtx *cli.Context, log *logrus.Logger) (*Config, error) {
 	}
 
 	// Update location of shared dir if needed
-	if !common.Exists(c.ShareRootDir) {
-		if err := os.MkdirAll(c.ShareRootDir, 0770); err != nil {
+	if !common.Exists(c.FileConf.ShareRootDir) {
+		if err := os.MkdirAll(c.FileConf.ShareRootDir, 0770); err != nil {
 			return nil, fmt.Errorf("No valid shared directory found: %v", err)
 		}
 	}
-	c.Log.Infoln("Share root directory: ", c.ShareRootDir)
+	c.Log.Infoln("Share root directory: ", c.FileConf.ShareRootDir)
 
 	if c.FileConf.LogsDir != "" && !common.Exists(c.FileConf.LogsDir) {
 		if err := os.MkdirAll(c.FileConf.LogsDir, 0770); err != nil {

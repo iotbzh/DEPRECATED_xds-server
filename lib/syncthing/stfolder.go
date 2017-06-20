@@ -55,7 +55,7 @@ func (s *SyncThing) FolderChange(f xdsconfig.FolderConfig) error {
 	folder := config.FolderConfiguration{
 		ID:      id,
 		Label:   label,
-		RawPath: filepath.Join(s.conf.ShareRootDir, f.RelativePath),
+		RawPath: filepath.Join(s.conf.FileConf.ShareRootDir, f.RelativePath),
 	}
 
 	if s.conf.FileConf.SThgConf.RescanIntervalS > 0 {

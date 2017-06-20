@@ -179,12 +179,16 @@ func xdsApp(cliCtx *cli.Context) error {
 			return cli.NewExitError(err, 2)
 		}
 		for _, stFld := range stCfg.Folders {
-			relativePath := strings.TrimPrefix(stFld.RawPath, ctx.Config.ShareRootDir)
+			relativePath := strings.TrimPrefix(stFld.RawPath, ctx.Config.FileConf.ShareRootDir)
 			if relativePath == "" {
 				relativePath = stFld.RawPath
 			}
 
-			newFld := xdsconfig.NewFolderConfig(stFld.ID, stFld.Label, ctx.Config.ShareRootDir, strings.TrimRight(relativePath, "/"), defaultSdk)
+			newFld := xdsconfig.NewFolderConfig(stFld.ID,
+				stFld.Label,
+				ctx.Config.FileConf.ShareRootDir,
+				strings.TrimRight(relativePath, "/"),
+				defaultSdk)
 			ctx.Config.Folders = ctx.Config.Folders.Update(xdsconfig.FoldersConfig{newFld})
 		}
 
