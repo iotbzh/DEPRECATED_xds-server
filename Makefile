@@ -82,9 +82,9 @@ endif
 all: tools/syncthing build
 
 .PHONY: build
-build: xds webapp
+build: vendor xds webapp
 
-xds:vendor scripts tools/syncthing/copytobin
+xds: scripts tools/syncthing/copytobin
 	@echo "### Build XDS server (version $(VERSION), subversion $(SUB_VERSION))";
 	@cd $(ROOT_SRCDIR); $(BUILD_ENV_FLAGS) go build $(VERBOSE_$(V)) -i -o $(LOCAL_BINDIR)/xds-server$(EXT) -ldflags "$(GORELEASE) -X main.AppVersion=$(VERSION) -X main.AppSubVersion=$(SUB_VERSION)" .
 
