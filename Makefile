@@ -119,7 +119,7 @@ webapp/debug:
 
 webapp/install:
 	(cd webapp && npm install)
-	@test -d ${DESTDIR}/usr/local/etc && rm -rf ${DESTDIR}/usr
+	@if [ -d ${DESTDIR}/usr/local/etc ]; then rm -rf ${DESTDIR}/usr; fi
 
 .PHONY: scripts
 scripts:
