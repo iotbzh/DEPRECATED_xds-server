@@ -27,14 +27,14 @@ your favorite IDE (eg. Netbeans or Visual Studio Code) through `xds-server`.
 
 ## How to run
 
-`xds-server` has been designed to easily cross compile
+`xds-server` has been designed to easily compile and debug
 [AGL](https://www.automotivelinux.org/) applications. That's why `xds-server` has
-been integrated in AGL SDK docker container.
+been integrated into AGL SDK docker container.
 
 >**NOTE** For more info about AGL SDK docker container, please refer to
 [AGL SDK Quick Setup](http://docs.automotivelinux.org/docs/getting_started/en/dev/reference/setup-sdk-environment.html)
 
-### Get container
+### Get the container
 
 Load the pre-build AGL SDK docker image including `xds-server`:
 ```bash
@@ -58,12 +58,17 @@ This container exposes following ports:
   - 69   : TFTP
   - 2222 : ssh
 
-Now you need to start manually `xds-server` inside this container:
+`xds-server` is automatically started as a service on container startup.
+If needed you can stop / start it manually using following commands:
 ```bash
 > ssh -p 2222 devel@localhost
+
+[15:59:58] devel@agl-worker-seb-laptop-0-seb:~$ /usr/local/bin/xds-server-stop.sh
+
 [15:59:58] devel@agl-worker-seb-laptop-0-seb:~$ /usr/local/bin/xds-server-start.sh
 ```
-You should get the following output:
+
+On `xds-server` startup, you should get the following output:
 ```
 ### Configuration in config.json:
 {
@@ -87,12 +92,25 @@ pid=22379
 >**NOTE:** You can set LOGLEVEL env variable to increase log level if you need it.
 > For example, to set log level to "debug" mode : ` LOGLEVEL=debug /usr/local/bin/xds-server-start.sh`
 
-You can now connect your browser to `xds-server` (running by default on port 8000):
-[http://localhost:8000](http://localhost:8000)
+### Install SDK cross-toolchain
 
-Then follow instructions provided by dashboard, knowing that the first time you
-must to download and start `xds-agent` on your local machine using download icon
-in dashboard configuration page or download one of `xds-agent` [released tarball](https://github.com/iotbzh/xds-agent/releases).
+`xds-server` uses cross-toolchain install into directory pointed by `sdkRootDir` setting (see configuration section below for more details).
+For now, you need to install manually SDK cross toolchain. There are not embedded into docker image by default because the size of these tarballs is too big.
+
+Use provided `install-agl-sdks` script, for example to install SDK for ARM64:
+
+```bash
+/usr/local/bin/xds-utils/install-agl-sdks.sh --aarch aarch64
+```
+
+### XDS Dashboard
+
+`xds-server` serves a web-application (default port 8000:
+[http://localhost:8000](http://localhost:8000) ). So you can now connect your browser to this url and use what we call the **XDS dashboard**.
+
+Then follow instructions provided by this dashboard, knowing that the first time
+you need to download and start `xds-agent` on your local machine. To download
+this tool, just click on download icon in dashboard configuration page or download one of `xds-agent` released tarball: [https://github.com/iotbzh/xds-agent/releases](https://github.com/iotbzh/xds-agent/releases).
 
 See also `xds-agent` [README file](https://github.com/iotbzh/xds-agent) for more
 details.
@@ -106,7 +124,6 @@ details.
 higher to compile this tool.
 - Install [npm](https://www.npmjs.com/) : `sudo apt install npm`
 - Install [gulp](http://gulpjs.com/) : `sudo npm install -g gulp-cli`
-
 
 ### Building
 
@@ -156,7 +173,6 @@ Supported fields in configuration file are (all fields are optional and listed v
 ```
 
 >**NOTE:** environment variables are supported by using `${MY_VAR}` syntax.
-
 
 ## Start-up
 
