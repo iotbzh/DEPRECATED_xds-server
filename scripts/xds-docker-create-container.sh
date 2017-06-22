@@ -50,11 +50,12 @@ while [ $# -ne 0 ]; do
         -fr|-force-restart)
             FORCE=true
             ;;
-        *[0-9]*)
-            ID=$1
-            ;;
         *)
-            IMAGE=$1
+            if [[ "$1" =~ ^[0-9]+$ ]]; then
+                ID=$1
+            else
+                IMAGE=$1
+            fi
             ;;
     esac
     shift
@@ -76,7 +77,7 @@ WWW_PORT=$((8000 + ID))
 BOOT_PORT=$((69 + ID))
 NBD_PORT=$((10809 + ID))
 
-mkdir -p $MIRRORDIR $XDTDIR $SHAREDDIR
+mkdir -p $MIRRORDIR $XDTDIR $SHAREDDIR || exit 1
 docker run \
 	--publish=${SSH_PORT}:22 \
 	--publish=${WWW_PORT}:8000 \
@@ -89,13 +90,17 @@ docker run \
 	-v $SHAREDDIR:/home/$DOCKER_USER/share \
 	-v $XDTDIR:/xdt \
 	-it $IMAGE
+if [ "$?" != "0" ]; then
+    echo "An error was encountered while creating docker container."
+    exit 1
+fi
 
 if ($FORCE); then
     echo "Stoping xds-server..."
-    docker exec --user $DOCKER_USER  ${NAME} bash -c "/usr/local/bin/xds-server-stop.sh"
+    docker exec --user $DOCKER_USER  ${NAME} bash -c "/usr/local/bin/xds-server-stop.sh" || exit 1
     sleep 1
     echo "Starting xds-server..."
-    docker exec --user $DOCKER_USER  ${NAME} bash -c "nohup /usr/local/bin/xds-server-start.sh"
+    docker exec --user $DOCKER_USER  ${NAME} bash -c "nohup /usr/local/bin/xds-server-start.sh" || exit 1
 fi
 
 echo "You can now login using:"
