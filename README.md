@@ -157,7 +157,7 @@ Here is the logic to determine which `config.json` file will be used:
 4. `<xds-server executable dir>/config.json` file
 
 Supported fields in configuration file are (all fields are optional and listed values are the default values):
-```json
+```
 {
     "webAppDir": "webapp/dist",                     # location of client dashboard (default: webapp/dist)
     "shareRootDir": "${HOME}/.xds/projects",        # root directory where projects will be copied
