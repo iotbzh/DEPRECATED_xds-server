@@ -38,15 +38,15 @@ been integrated into AGL SDK docker container.
 
 Load the pre-build AGL SDK docker image including `xds-server`:
 ```bash
-wget http://iot.bzh/download/public/2017/XDS/docker/docker_agl_worker-xds-latest.tar.xz | docker load
+wget -O - http://iot.bzh/download/public/2017/XDS/docker/docker_agl_worker-xds-latest.tar.xz | docker load
 ```
 
 ### Start xds-server within the container
 
 Use provided script to create a new docker image and start a new container:
 ```bash
-> wget https://github.com/iotbzh/xds-server/blob/master/scripts/xds-docker-create-container.sh
-bash ./xds-docker-create-container.sh 0 docker.automotivelinux.org/agl/worker-xds:3.99.1
+> wget https://raw.githubusercontent.com/iotbzh/xds-server/master/scripts/xds-docker-create-container.sh
+> bash ./xds-docker-create-container.sh 0 docker.automotivelinux.org/agl/worker-xds:3.99.1
 
 > docker ps
 CONTAINER ID        IMAGE                                               COMMAND                  CREATED              STATUS              PORTS                                                                                         NAMES
