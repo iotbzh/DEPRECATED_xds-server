@@ -107,8 +107,8 @@ if [ ! -f ${SDK_FILE} ]; then
 fi
 
 # Retreive default install dir to extract version
-offset=$(grep -na -m1 "^MARKER:$" $FILE | cut -d':' -f1)
-eval $(head -n $offset $FILE | grep ^DEFAULT_INSTALL_DIR= )
+offset=$(grep -na -m1 "^MARKER:$" ${SDK_FILE} | cut -d':' -f1)
+eval $(head -n $offset ${SDK_FILE} | grep ^DEFAULT_INSTALL_DIR= )
 VERSION=$(basename $DEFAULT_INSTALL_DIR)
 
 [ "$PROFILE" = "" ] && { echo "PROFILE is not set"; exit 1; }
