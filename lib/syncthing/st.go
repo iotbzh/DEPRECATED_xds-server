@@ -210,6 +210,8 @@ func (s *SyncThing) Start() (*exec.Cmd, error) {
 
 	env := []string{
 		"STNODEFAULTFOLDER=1",
+		"STNOUPGRADE=1",
+		"STNORESTART=1",
 	}
 
 	s.STCmd, err = s.startProc("syncthing", args, env, &s.exitSTChan)
