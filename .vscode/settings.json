@@ -15,9 +15,31 @@
 
     // Words to add to dictionary for a workspace.
     "cSpell.words": [
-        "apiv", "gonic", "devel", "csrffound", "Syncthing", "STID",
-        "ISTCONFIG", "socketio", "ldflags", "SThg", "Intf", "dismissible",
-        "rpath", "WSID", "sess", "IXDS", "xdsconfig", "xdsserver", "mfolder",
-	"inotify", "Inot", "pname", "pkill", "sdkid", "CLOUDSYNC", "xdsagent"
+        "apiv",
+        "gonic",
+        "devel",
+        "csrffound",
+        "Syncthing",
+        "STID",
+        "ISTCONFIG",
+        "socketio",
+        "ldflags",
+        "SThg",
+        "Intf",
+        "dismissible",
+        "rpath",
+        "WSID",
+        "sess",
+        "IXDS",
+        "xdsconfig",
+        "xdsserver",
+        "mfolder",
+        "inotify",
+        "Inot",
+        "pname",
+        "pkill",
+        "sdkid",
+        "CLOUDSYNC",
+        "xdsagent"
     ]
 }

@@ -52,10 +52,15 @@ export interface ILocalSTConfig {
     tilde: string;
 }
 
+export interface IxdsAgentPackage {
+    os: string;
+    url: string;
+}
+
 export interface IConfig {
     xdsServerURL: string;
     xdsAgent: IXDSAgentConfig;
-    xdsAgentZipUrl: string;
+    xdsAgentPackages: IxdsAgentPackage[];
     projectsRootDir: string;
     projects: IProject[];
     localSThg: ILocalSTConfig;
@@ -70,7 +75,6 @@ export class ConfigService {
     private confStore: IConfig;
     private AgentConnectObs = null;
     private stConnectObs = null;
-    private xdsAgentZipUrl = "";
 
     constructor(private _window: Window,
         private cookie: CookieService,
@@ -102,7 +106,7 @@ export class ConfigService {
                     URL: 'http://localhost:8000',
                     retry: 10,
                 },
-                xdsAgentZipUrl: "",
+                xdsAgentPackages: [],
                 projectsRootDir: "",
                 projects: [],
                 localSThg: {
@@ -115,14 +119,12 @@ export class ConfigService {
         }
 
         // Update XDS Agent tarball url
-        this.confStore.xdsAgentZipUrl = "";
         this.xdsServerSvr.getXdsAgentInfo().subscribe(nfo => {
-            let os = this.utils.getOSName(true);
-            let zurl = nfo.tarballs && nfo.tarballs.filter(elem => elem.os === os);
-            if (zurl && zurl.length) {
-                this.confStore.xdsAgentZipUrl = zurl[0].fileUrl;
-                this.confSubject.next(Object.assign({}, this.confStore));
-            }
+            this.confStore.xdsAgentPackages = [];
+            nfo.tarballs && nfo.tarballs.forEach(el =>
+                this.confStore.xdsAgentPackages.push({os: el.os, url: el.fileUrl})
+            );
+            this.confSubject.next(Object.assign({}, this.confStore));
         });
     }
 
@@ -158,9 +160,12 @@ export class ConfigService {
                 if (error.indexOf("XDS local Agent not responding") !== -1) {
                     let msg = "<span><strong>" + error + "<br></strong>";
                     msg += "You may need to download and execute XDS-Agent.<br>";
-                    if (this.confStore.xdsAgentZipUrl !== "") {
-                        msg += "<a class=\"fa fa-download\" href=\"" + this.confStore.xdsAgentZipUrl + "\" target=\"_blank\"></a>";
-                        msg += " Download XDS-Agent tarball.";
+
+                    let os = this.utils.getOSName(true);
+                    let zurl = this.confStore.xdsAgentPackages && this.confStore.xdsAgentPackages.filter(elem => elem.os === os);
+                    if (zurl && zurl.length) {
+                        msg += " Download XDS-Agent tarball for " + zurl[0].os + " host OS ";
+                        msg += "<a class=\"fa fa-download\" href=\"" +  zurl[0].url + "\" target=\"_blank\"></a>";
                     }
                     msg += "</span>";
                     this.alert.error(msg);

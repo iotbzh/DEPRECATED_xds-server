@@ -7,7 +7,7 @@ import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/filter';
 import 'rxjs/add/operator/debounceTime';
 
-import { ConfigService, IConfig, IProject, ProjectType } from "../services/config.service";
+import { ConfigService, IConfig, IProject, ProjectType, IxdsAgentPackage } from "../services/config.service";
 import { XDSServerService, IServerStatus, IXDSAgentInfo } from "../services/xdsserver.service";
 import { XDSAgentService, IAgentStatus } from "../services/xdsagent.service";
 import { SyncthingService, ISyncThingStatus } from "../services/syncthing.service";
@@ -32,7 +32,7 @@ export class ConfigComponent implements OnInit {
 
     curProj: number;
     userEditedLabel: boolean = false;
-    xdsAgentZipUrl: string = "";
+    xdsAgentPackages: IxdsAgentPackage[] = [];
 
     // TODO replace by reactive FormControl + add validation
     syncToolUrl: string;
@@ -78,7 +78,7 @@ export class ConfigComponent implements OnInit {
             this.xdsAgentUrl = cfg.xdsAgent.URL;
             this.xdsAgentRetry = String(cfg.xdsAgent.retry);
             this.projectsRootDir = cfg.projectsRootDir;
-            this.xdsAgentZipUrl = cfg.xdsAgentZipUrl;
+            this.xdsAgentPackages = cfg.xdsAgentPackages;
         });
 
         // Auto create label name

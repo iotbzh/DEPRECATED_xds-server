@@ -9,6 +9,7 @@ import { AlertModule } from 'ngx-bootstrap/alert';
 import { ModalModule } from 'ngx-bootstrap/modal';
 import { AccordionModule } from 'ngx-bootstrap/accordion';
 import { CarouselModule } from 'ngx-bootstrap/carousel';
+import { PopoverModule } from 'ngx-bootstrap/popover';
 import { BsDropdownModule } from 'ngx-bootstrap/dropdown';
 
 // Import the application components and services.
@@ -16,6 +17,7 @@ import { Routing, AppRoutingProviders } from './app.routing';
 import { AppComponent } from "./app.component";
 import { AlertComponent } from './alert/alert.component';
 import { ConfigComponent } from "./config/config.component";
+import { DlXdsAgentComponent, CapitalizePipe } from "./config/downloadXdsAgent.component";
 import { ProjectCardComponent } from "./projects/projectCard.component";
 import { ProjectReadableTypePipe } from "./projects/projectCard.component";
 import { ProjectsListAccordionComponent } from "./projects/projectsListAccordion.component";
@@ -49,6 +51,7 @@ import { SdkService } from "./services/sdk.service";
         ModalModule.forRoot(),
         AccordionModule.forRoot(),
         CarouselModule.forRoot(),
+        PopoverModule.forRoot(),
         BsDropdownModule.forRoot(),
     ],
     declarations: [
@@ -59,6 +62,8 @@ import { SdkService } from "./services/sdk.service";
         DevelComponent,
         DeployComponent,
         ConfigComponent,
+        DlXdsAgentComponent,
+        CapitalizePipe,
         ProjectCardComponent,
         ProjectReadableTypePipe,
         ProjectsListAccordionComponent,

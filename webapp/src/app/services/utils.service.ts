@@ -5,15 +5,25 @@ export class UtilsService {
     constructor() { }
 
     getOSName(lowerCase?: boolean): string {
-        let OSName = "Unknown OS";
-        if (navigator.appVersion.indexOf("Linux") !== -1) {
-            OSName = "Linux";
-        } else if (navigator.appVersion.indexOf("Win") !== -1) {
-            OSName = "Windows";
-        } else if (navigator.appVersion.indexOf("Mac") !== -1) {
-            OSName = "MacOS";
-        } else if (navigator.appVersion.indexOf("X11") !== -1) {
-            OSName = "UNIX";
+        var checkField = function (ff) {
+            if (ff.indexOf("Linux") !== -1) {
+                return "Linux";
+            } else if (ff.indexOf("Win") !== -1) {
+                return "Windows";
+            } else if (ff.indexOf("Mac") !== -1) {
+                return "MacOS";
+            } else if (ff.indexOf("X11") !== -1) {
+                return "UNIX";
+            }
+            return "";
+        };
+
+        let OSName = checkField(navigator.platform);
+        if (OSName === "") {
+            OSName = checkField(navigator.appVersion);
+        }
+        if (OSName === "") {
+            OSName = "Unknown OS";
         }
         if (lowerCase) {
             return OSName.toLowerCase();
