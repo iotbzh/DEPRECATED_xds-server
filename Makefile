@@ -15,7 +15,7 @@ ifeq ($(origin SUB_VERSION), undefined)
 		VERSION := $(firstword $(subst -, ,$(SUB_VERSION)))
 		SUB_VERSION := $(word 2,$(subst -, ,$(SUB_VERSION)))
 	else
-		SUB_VERSION := $(shell git describe --tags --always  | sed 's/^v//')
+		SUB_VERSION := $(shell git rev-parse --short HEAD)
 		ifeq ($(SUB_VERSION), )
 			SUB_VERSION := unknown-dev
 		endif
@@ -54,7 +54,6 @@ ROOT_GOPRJ := $(abspath $(ROOT_SRCDIR)/../../../..)
 LOCAL_BINDIR := $(ROOT_SRCDIR)/bin
 LOCAL_TOOLSDIR := $(ROOT_SRCDIR)/tools/${HOST_GOOS}
 PACKAGE_DIR := $(ROOT_SRCDIR)/package
-
 
 export GOPATH := $(shell go env GOPATH):$(ROOT_GOPRJ)
 export PATH := $(PATH):$(LOCAL_TOOLSDIR)
