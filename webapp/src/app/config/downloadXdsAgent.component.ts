@@ -9,7 +9,7 @@ import { IxdsAgentPackage } from "../services/config.service";
             <h3>Download xds-agent packages:</h3>
             <ul>
                 <li *ngFor="let p of packageUrls">
-                    for <a href="{{p.url}}">{{p.os | capitalize}}</a>
+                    <a href="{{p.url}}">{{p.os | capitalize}} - {{p.arch}} ({{p.version}}) </a>
                 </li>
             </ul>
             <button type="button" class="btn btn-sm" (click)="pop.hide()"> Cancel </button>

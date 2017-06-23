@@ -54,6 +54,8 @@ export interface ILocalSTConfig {
 
 export interface IxdsAgentPackage {
     os: string;
+    arch: string;
+    version: string;
     url: string;
 }
 
@@ -122,7 +124,12 @@ export class ConfigService {
         this.xdsServerSvr.getXdsAgentInfo().subscribe(nfo => {
             this.confStore.xdsAgentPackages = [];
             nfo.tarballs && nfo.tarballs.forEach(el =>
-                this.confStore.xdsAgentPackages.push({os: el.os, url: el.fileUrl})
+                this.confStore.xdsAgentPackages.push({
+                    os: el.os,
+                    arch: el.arch,
+                    version: el.version,
+                    url: el.fileUrl
+                })
             );
             this.confSubject.next(Object.assign({}, this.confStore));
         });

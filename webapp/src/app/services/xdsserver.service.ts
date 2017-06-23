@@ -50,6 +50,9 @@ interface IXDSConfig {
 
 export interface IXDSAgentTarball {
     os: string;
+    arch: string;
+    version: string;
+    rawVersion: string;
     fileUrl: string;
 }
 
