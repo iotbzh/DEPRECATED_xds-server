@@ -207,7 +207,9 @@ See head section of `xds-server-start.sh` file to see all configurable variables
 `xds-server` has been integrated as a flavour of AGL SDK docker image. So to rebuild
 docker image just execute following commands:
 ```bash
+# Clone docker-worker-generator git repo
 git clone https://git.automotivelinux.org/AGL/docker-worker-generator
+# Start build that will create a docker image
 cd docker-worker-generator
 make build FLAVOUR=xds
 ```
@@ -215,7 +217,9 @@ make build FLAVOUR=xds
 You should get `docker.automotivelinux.org/agl/worker-xds:X.Y` image
 
 ```bash
+# List image that we just built
 docker images
+
 REPOSITORY                                      TAG                 IMAGE ID            CREATED             SIZE
 docker.automotivelinux.org/agl/worker-xds       3.2                 786d65b2792c        6 days ago          602MB
 ```
