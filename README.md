@@ -20,10 +20,10 @@ projects files. But in a near future and for restricted configurations, `xds-ser
 will also support "standard" folder sharing (eg. nfs mount points or docker
 volumes).
 
-> **SEE ALSO**: [xds-exec and xds-make](https://github.com/iotbzh/xds-make),
-wrappers on `exec` and `make` commands that allows you to send command to
-`xds-server` and consequently build your application from command-line or from
-your favorite IDE (eg. Netbeans or Visual Studio Code) through `xds-server`.
+> **SEE ALSO**: [xds-exec](https://github.com/iotbzh/xds-exec),
+wrappers on `exec` commands that allows you to send commands to `xds-server`
+and for example build your application from command-line or from your favorite
+IDE (such as Netbeans or Visual Studio Code) through `xds-server`.
 
 ## How to run
 
