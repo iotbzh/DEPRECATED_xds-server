@@ -45,10 +45,17 @@ wget -O - http://iot.bzh/download/public/2017/XDS/docker/docker_agl_worker-xds-l
 
 Use provided script to create a new docker image and start a new container:
 ```bash
-> wget https://raw.githubusercontent.com/iotbzh/xds-server/master/scripts/xds-docker-create-container.sh
-> bash ./xds-docker-create-container.sh 0 docker.automotivelinux.org/agl/worker-xds:3.99.1
+# Get script
+wget https://raw.githubusercontent.com/iotbzh/xds-server/master/scripts/xds-docker-create-container.sh
+# [snip...]
 
-> docker ps
+# Create new XDS worker container
+bash ./xds-docker-create-container.sh 0 docker.automotivelinux.org/agl/worker-xds:3.99.1
+# [snip...]
+
+# Check that new container is running
+docker ps
+
 CONTAINER ID        IMAGE                                               COMMAND                  CREATED              STATUS              PORTS                                                                                         NAMES
 b985d81af40c        docker.automotivelinux.org/agl/worker-xds:3.99.1       "/usr/bin/wait_for..."   6 days ago           Up 4 hours          0.0.0.0:8000->8000/tcp, 0.0.0.0:69->69/udp, 0.0.0.0:10809->10809/tcp, 0.0.0.0:2222->22/tcp    agl-worker-seb-laptop-0-seb
 ```
@@ -61,10 +68,13 @@ This container exposes following ports:
 `xds-server` is automatically started as a service on container startup.
 If needed you can stop / start it manually using following commands:
 ```bash
-> ssh -p 2222 devel@localhost
+# Log into docker container
+ssh -p 2222 devel@localhost
 
+# Stop XDS server
 [15:59:58] devel@agl-worker-seb-laptop-0-seb:~$ /usr/local/bin/xds-server-stop.sh
 
+# Start XDS server
 [15:59:58] devel@agl-worker-seb-laptop-0-seb:~$ /usr/local/bin/xds-server-start.sh
 ```
 
@@ -97,10 +107,16 @@ pid=22379
 `xds-server` uses cross-toolchain install into directory pointed by `sdkRootDir` setting (see configuration section below for more details).
 For now, you need to install manually SDK cross toolchain. There are not embedded into docker image by default because the size of these tarballs is too big.
 
-Use provided `install-agl-sdks` script, for example to install SDK for ARM64:
+Use provided `install-agl-sdks` script, for example to install SDK for ARM64 and Intel corei7-64:
 
 ```bash
+# Install ARM64 SDK (automatic download)
 /usr/local/bin/xds-utils/install-agl-sdks.sh --aarch aarch64
+
+# Install Intel corei7-64 SDK (using an SDK tarball that has been built or downloaded manually)
+/usr/local/bin/xds-utils/install-agl-sdks.sh --aarch corei7-64 --file /tmp/poky-agl-glibc-x86_64-agl-demo-platform-crosssdk-corei7-64-toolchain-
+3.99.1+snapshot.sh
+
 ```
 
 ### XDS Dashboard
