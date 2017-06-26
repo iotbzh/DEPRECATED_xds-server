@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/iotbzh/xds-server/lib/common"
+	common "github.com/iotbzh/xds-common/golib"
 )
 
 // ExecArgs JSON parameters of /exec command

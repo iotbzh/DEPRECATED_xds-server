@@ -20,7 +20,7 @@ import (
 	"regexp"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/iotbzh/xds-server/lib/common"
+	common "github.com/iotbzh/xds-common/golib"
 	"github.com/iotbzh/xds-server/lib/xdsconfig"
 	"github.com/syncthing/syncthing/lib/config"
 )

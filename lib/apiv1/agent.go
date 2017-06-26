@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/gin-gonic/gin"
-	"github.com/iotbzh/xds-agent/lib/common"
+	common "github.com/iotbzh/xds-common/golib"
 )
 
 type XDSAgentTarball struct {

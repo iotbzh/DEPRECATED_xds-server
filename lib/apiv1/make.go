@@ -9,7 +9,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/iotbzh/xds-server/lib/common"
+	common "github.com/iotbzh/xds-common/golib"
 )
 
 // MakeArgs is the parameters (json format) of /make command

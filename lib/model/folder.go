@@ -3,7 +3,7 @@ package model
 import (
 	"fmt"
 
-	"github.com/iotbzh/xds-server/lib/common"
+	common "github.com/iotbzh/xds-common/golib"
 	"github.com/iotbzh/xds-server/lib/syncthing"
 	"github.com/iotbzh/xds-server/lib/xdsconfig"
 )

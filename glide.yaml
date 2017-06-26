@@ -9,6 +9,10 @@ import:
 - package: github.com/gin-contrib/static
 - package: github.com/syncthing/syncthing
   version: =0.14.28
+  subpackages:
+  - lib/sync
+  - lib/config
+  - lib/protocol
 - package: github.com/codegangsta/cli
   version: ^1.19.1
 - package: github.com/Sirupsen/logrus
@@ -17,3 +21,6 @@ import:
 - package: github.com/zhouhui8915/go-socket.io-client
 - package: github.com/satori/go.uuid
   version: ^1.1.0
+- package: github.com/iotbzh/xds-common
+  subpackages:
+  - golib/common
