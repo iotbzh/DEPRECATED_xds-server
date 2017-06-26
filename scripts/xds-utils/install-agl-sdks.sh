@@ -12,7 +12,7 @@ SDKS=$(curl -s ${SDK_BASEURL} | grep -oP  'href="[^"]*.sh"' | cut -d '"' -f 2)
 
 usage() {
     echo "Usage: $(basename $0) [-h|--help] [-clean] [-f|--file <agl-sdk-filename>] [-a|--arch <arch name>] [-l|--list]"
-	echo "For example, arch name is: aarch64, armv7vehf or x86-64"
+	echo "For example, arch name is: aarch64, armv7vehf or corei7-64"
 	exit 1
 }
 
@@ -61,14 +61,20 @@ while [ $# -ne 0 ]; do
     shift
 done
 
+if [ "$ARCH" = "x86-64" ]; then
+    echo "Warning x86-64 architure name is deprecated, please use corei7-64 instead !"
+    exit 1
+fi
+
 [ ! -d ${XDT_SDK} ] && mkdir -p ${XDT_SDK}
 
 if [ "$FILE" = "" ]; then
     FILE=$(getFile $ARCH)
-    SDK_FILE=${XDT_SDK}/${FILE}
-    if [ "$?" != 0 ]; then
+    if [ "$?" != "0" ]; then
+        echo "$FILE"
         exit 1
     fi
+    SDK_FILE=${XDT_SDK}/${FILE}
 elif [ ! -f $FILE ]; then
     echo "SDK file not found: $FILE"
     exit 1
