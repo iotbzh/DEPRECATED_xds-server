@@ -80,6 +80,7 @@ elif [ ! -f $FILE ]; then
     exit 1
 else
     DIR=$(cd $(dirname $FILE); pwd)
+    FILE=$(basename $FILE)
     SDK_FILE=${DIR}/${FILE}
 fi
 
