@@ -1,0 +1,11 @@
+[Unit]
+Description=XDS Server
+
+[Service]
+User=devel
+Type=forking
+EnvironmentFile=-/etc/default/xds-server
+ExecStart=/usr/local/bin/xds-server-start.sh
+
+[Install]
+WantedBy=multi-user.target

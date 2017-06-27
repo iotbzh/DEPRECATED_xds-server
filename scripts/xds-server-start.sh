@@ -8,6 +8,7 @@
 [ -z "$XDS_WWWDIR" ] && XDS_WWWDIR=webapp/dist
 [ -z "$LOGLEVEL" ] && LOGLEVEL=info
 [ -z "$LOGDIR" ] && LOGDIR=/tmp/xds-server/logs
+[ -z "PORT_SRV" ] && PORT_SRV=8000
 [ -z "$PORT_GUI" ] && PORT_GUI=8384
 [ -z "$API_KEY" ] && API_KEY="1234abcezam"
 [ -z "$UPDATE_XDS_TARBALL" ] && UPDATE_XDS_TARBALL=1
@@ -22,6 +23,7 @@ if [ ! -f "${XDS_CONFFILE}" ]; then
     [ ! -f "$XDS_WWWDIR/index.html" ] && { echo "Cannot determine XDS-server webapp directory."; exit 1; }
     cat <<EOF > ${XDS_CONFFILE}
 {
+    "HTTPPort": ${PORT_SRV},
     "webAppDir": "${XDS_WWWDIR}",
     "shareRootDir": "${XDS_SHAREDIR}",
     "logsDir": "${LOGDIR}",

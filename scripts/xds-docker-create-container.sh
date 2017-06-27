@@ -103,5 +103,26 @@ if ($FORCE); then
     docker exec --user $DOCKER_USER  ${NAME} bash -c "nohup /usr/local/bin/xds-server-start.sh" || exit 1
 fi
 
+echo "Copying your identity to container $NAME"
+#wait ssh service
+echo -n wait ssh service .
+res=3
+max=30
+count=0
+while [ $res -ne 0 ] && [ $count -le $max ]; do
+    sleep 1
+    docker exec ${NAME} bash -c "systemctl status ssh" 2>/dev/null 1>&2 
+    res=$?
+    echo -n "."
+    count=$(expr $count + 1);
+done
+echo
+
+ssh-keygen -R [$(hostname)]:$SSH_PORT -f ~/.ssh/known_hosts
+docker exec ${NAME} bash -c "mkdir -p /home/devel/.ssh"
+docker cp ~/.ssh/id_rsa.pub ${NAME}:/home/devel/.ssh/authorized_keys
+docker exec ${NAME} bash -c "chown devel:devel -R /home/devel/.ssh ;chmod 0700 /home/devel/.ssh;chmod 0600 /home/devel/.ssh/*"
+ssh -o StrictHostKeyChecking=no -p $SSH_PORT devel@$(hostname) exit
+
 echo "You can now login using:"
 echo "   ssh -p $SSH_PORT $DOCKER_USER@$(hostname)"

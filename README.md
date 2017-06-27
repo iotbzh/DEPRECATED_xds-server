@@ -41,6 +41,29 @@ Load the pre-build AGL SDK docker image including `xds-server`:
 wget -O - http://iot.bzh/download/public/2017/XDS/docker/docker_agl_worker-xds-latest.tar.xz | docker load
 ```
 
+### Build the container
+As an alternative to a pre-build image, you can rebuild the container from scratch. 
+`xds-server` has been integrated as a flavour of AGL SDK docker image. 
+So to rebuild docker image just execute following commands:
+
+```bash
+# Clone docker-worker-generator git repo
+git clone https://git.automotivelinux.org/AGL/docker-worker-generator
+# Start build that will create a docker image
+cd docker-worker-generator
+make build FLAVOUR=xds
+```
+
+### List  container
+You should get `docker.automotivelinux.org/agl/worker-xds:X.Y` image
+ 
+```bash
+# List image that we just built
+docker images | grep worker-xds
+
+docker.automotivelinux.org/agl/worker-xds       3.2                 786d65b2792c        6 days ago          602MB
+```
+
 ### Start xds-server within the container
 
 Use provided script to create a new docker image and start a new container:
@@ -54,34 +77,45 @@ bash ./xds-docker-create-container.sh 0 docker.automotivelinux.org/agl/worker-xd
 # [snip...]
 
 # Check that new container is running
-docker ps
+docker ps | grep worker-xds
 
-CONTAINER ID        IMAGE                                               COMMAND                  CREATED              STATUS              PORTS                                                                                         NAMES
 b985d81af40c        docker.automotivelinux.org/agl/worker-xds:3.99.1       "/usr/bin/wait_for..."   6 days ago           Up 4 hours          0.0.0.0:8000->8000/tcp, 0.0.0.0:69->69/udp, 0.0.0.0:10809->10809/tcp, 0.0.0.0:2222->22/tcp    agl-worker-seb-laptop-0-seb
 ```
 
-This container exposes following ports:
+This container (ID=0) exposes following ports:
   - 8000 : `xds-server` to serve XDS Dashboard
   - 69   : TFTP
   - 2222 : ssh
 
 `xds-server` is automatically started as a service on container startup.
-If needed you can stop / start it manually using following commands:
+
+```bash
+#On your localhost you can access the web insterface:
+xdg-open http://localhost:8000
+```
+
+If needed you can status / stop / start  it manually using following commands:
 ```bash
 # Log into docker container
 ssh -p 2222 devel@localhost
 
+#Status XDS server:
+sudo systemctl status xds-server.service
+
 # Stop XDS server
-[15:59:58] devel@agl-worker-seb-laptop-0-seb:~$ /usr/local/bin/xds-server-stop.sh
+sudo systemctl stop xds-server.service
 
 # Start XDS server
-[15:59:58] devel@agl-worker-seb-laptop-0-seb:~$ /usr/local/bin/xds-server-start.sh
+sudo systemctl start xds-server.service
 ```
 
-On `xds-server` startup, you should get the following output:
-```
 ### Configuration in config.json:
+On `xds-server` startup, you should get the following output:
+
+```bash
+sudo journalctl --unit=xds-server.service --output=cat
 {
+    "HTTPPort": 8000,
     "webAppDir": "/usr/local/bin/www-xds-server",
     "shareRootDir": "/home/devel/.xds/share",
     "logsDir": "/tmp/xds-server/logs",
@@ -93,14 +127,47 @@ On `xds-server` startup, you should get the following output:
         "gui-apikey": "1234abcezam"
     }
 }
-
-### Start XDS server
-nohup /usr/local/bin/xds-server --config /home/devel/.xds/config.json -log warn > /tmp/xds-server/logs/xds-server.log 2>&1
-pid=22379
 ```
 
->**NOTE:** You can set LOGLEVEL env variable to increase log level if you need it.
-> For example, to set log level to "debug" mode : ` LOGLEVEL=debug /usr/local/bin/xds-server-start.sh`
+### Manually Start XDS server
+Systemd use a service to start the XDS server:
+
+```bash
+/lib/systemd/system/xds-server.service
+```
+
+Systemd service start a bash script `xds-server-start.sh` script to start all requested tools:
+
+```bash
+/usr/local/bin/xds-server-start.sh
+```
+
+Command line:
+
+```bash
+nohup $BINDIR/xds-server --config $XDS_CONFFILE -log $LOGLEVEL > $LOG_XDS
+```
+
+Default value :
+```bash
+BINDIR=/usr/local/bin
+#xds-server install directory
+
+XDS_CONFFILE=$HOME/.xds/config.json
+#Conf file create at the first boot
+
+LOGLEVEL=info
+#You can set LOGLEVEL env variable to increase log level if you need it. 
+#Supported *level* are: panic, fatal, error, warn, info, debug.
+
+LOG_XDS=/tmp/xds-server/logs/xds-server.log
+```
+
+#For example, to set log level to "debug" mode :
+
+```bash
+LOGLEVEL=debug /usr/local/bin/xds-server-start.sh
+```
 
 ### Install SDK cross-toolchain
 
@@ -111,10 +178,10 @@ Use provided `install-agl-sdks` script, for example to install SDK for ARM64 and
 
 ```bash
 # Install ARM64 SDK (automatic download)
-/usr/local/bin/xds-utils/install-agl-sdks.sh --aarch aarch64
+/usr/local/bin/xds-utils/install-agl-sdks.sh --arch aarch64
 
 # Install Intel corei7-64 SDK (using an SDK tarball that has been built or downloaded manually)
-/usr/local/bin/xds-utils/install-agl-sdks.sh --aarch corei7-64 --file /tmp/poky-agl-glibc-x86_64-agl-demo-platform-crosssdk-corei7-64-toolchain-
+/usr/local/bin/xds-utils/install-agl-sdks.sh --arch corei7-64 --file /tmp/poky-agl-glibc-x86_64-agl-demo-platform-crosssdk-corei7-64-toolchain-
 3.99.1+snapshot.sh
 
 ```
@@ -125,12 +192,11 @@ Use provided `install-agl-sdks` script, for example to install SDK for ARM64 and
 [http://localhost:8000](http://localhost:8000) ). So you can now connect your browser to this url and use what we call the **XDS dashboard**.
 
 Then follow instructions provided by this dashboard, knowing that the first time
-you need to download and start `xds-agent` on your local machine. To download
-this tool, just click on download icon in dashboard configuration page or download one of `xds-agent` released tarball: [https://github.com/iotbzh/xds-agent/releases](https://github.com/iotbzh/xds-agent/releases).
+you need to download and start `xds-agent` on your local machine. 
 
-See also `xds-agent` [README file](https://github.com/iotbzh/xds-agent) for more
-details.
+To download this tool, just click on download icon in dashboard configuration page or download one of `xds-agent` released tarball: [https://github.com/iotbzh/xds-agent/releases](https://github.com/iotbzh/xds-agent/releases).
 
+See also `xds-agent` [README file](https://github.com/iotbzh/xds-agent) for more details.
 
 ## Build xds-server from scratch
 
@@ -138,10 +204,31 @@ details.
 
 - Install and setup [Go](https://golang.org/doc/install) version 1.7 or
 higher to compile this tool.
-- Install [npm](https://www.npmjs.com/) : `sudo apt install npm`
-- Install [gulp](http://gulpjs.com/) : `sudo npm install -g gulp-cli`
+- Install [npm](https://www.npmjs.com/)
+- Install [gulp](http://gulpjs.com/)
+
+Ubuntu:
+
+```bash
+ sudo apt-get install golang npm curl git zip
+ sudo npm install -g gulp-cli
+```
+
+openSUSE:
+
+```bash
+ sudo zypper install go npm git curl zip
+ sudo npm install -g gulp-cli
+```
+
+Don't forget to open new user session after installing the packages.
 
 ### Building
+
+Create a GOPATH variable(must be a full path):
+```bash
+ export GOPATH=$(realpath ~/workspace_go)
+```
 
 Clone this repo into your `$GOPATH/src/github.com/iotbzh` and use delivered Makefile:
 ```bash
@@ -154,7 +241,7 @@ Clone this repo into your `$GOPATH/src/github.com/iotbzh` and use delivered Make
 
 And to install `xds-server` (by default in `/usr/local/bin`):
 ```bash
-make install
+ make install
 ```
 
 >**NOTE:** Used `DESTDIR` to specify another install directory
@@ -175,6 +262,7 @@ Here is the logic to determine which `config.json` file will be used:
 Supported fields in configuration file are (all fields are optional and listed values are the default values):
 ```
 {
+    "HTTPPort": 8000,
     "webAppDir": "webapp/dist",                     # location of client dashboard (default: webapp/dist)
     "shareRootDir": "${HOME}/.xds/projects",        # root directory where projects will be copied
     "logsDir": "/tmp/logs",                         # directory to store logs (eg. syncthing output)
@@ -190,40 +278,6 @@ Supported fields in configuration file are (all fields are optional and listed v
 
 >**NOTE:** environment variables are supported by using `${MY_VAR}` syntax.
 
-## Start-up
-
-Use `xds-server-start.sh` script to start all requested tools
-```bash
-/usr/local/bin/xds-server-start.sh
-```
-
->**NOTE** you can define some environment variables to setup for example
-logging level `LOGLEVEL` or change logs directory `LOGDIR`.
-See head section of `xds-server-start.sh` file to see all configurable variables.
-
-
-### Create XDS AGL docker worker container
-
-`xds-server` has been integrated as a flavour of AGL SDK docker image. So to rebuild
-docker image just execute following commands:
-```bash
-# Clone docker-worker-generator git repo
-git clone https://git.automotivelinux.org/AGL/docker-worker-generator
-# Start build that will create a docker image
-cd docker-worker-generator
-make build FLAVOUR=xds
-```
-
-You should get `docker.automotivelinux.org/agl/worker-xds:X.Y` image
-
-```bash
-# List image that we just built
-docker images
-
-REPOSITORY                                      TAG                 IMAGE ID            CREATED             SIZE
-docker.automotivelinux.org/agl/worker-xds       3.2                 786d65b2792c        6 days ago          602MB
-```
-
 ## Debugging
 
 ### XDS server architecture
@@ -235,7 +289,7 @@ The server part is written in *Go* and web app / dashboard (client part) in
 |
 +-- bin/                where xds-server binary file will be built
 |
-+-- config.json.in      example of config.json file
++-- agent-config.json.in      example of config.json file
 |
 +-- glide.yaml          Go package dependency file
 |
