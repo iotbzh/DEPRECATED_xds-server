@@ -74,10 +74,10 @@ This container (ID=0) exposes following ports:
   - 69   : TFTP
   - 2222 : ssh
 
-`xds-server` is automatically started as a service on container startup.
+**`xds-server` is automatically started** as a service on container startup.
 
+If the container is running on your localhost, you can access the web interface (what we call the "Dashboard"):
 ```bash
-#On your localhost you can access the web insterface:
 xdg-open http://localhost:8000
 ```
 
@@ -86,7 +86,7 @@ If needed you can status / stop / start  it manually using following commands:
 # Log into docker container
 ssh -p 2222 devel@localhost
 
-#Status XDS server:
+# Status XDS server:
 sudo systemctl status xds-server.service
 
 # Stop XDS server
@@ -94,66 +94,43 @@ sudo systemctl stop xds-server.service
 
 # Start XDS server
 sudo systemctl start xds-server.service
-```
 
-### Configuration in config.json:
-On `xds-server` startup, you should get the following output:
-
-```bash
+# Get XDS server logs
 sudo journalctl --unit=xds-server.service --output=cat
+Starting XDS Server...
+### Configuration in config.json:
 {
-    "HTTPPort": 8000,
-    "webAppDir": "/usr/local/bin/www-xds-server",
-    "shareRootDir": "/home/devel/.xds/share",
-    "logsDir": "/tmp/xds-server/logs",
-    "sdkRootDir": "/xdt/sdk",
-    "syncthing": {
-        "binDir": "/usr/local/bin",
-        "home": "/home/devel/.xds/syncthing-config",
-        "gui-address": "http://localhost:8384",
-        "gui-apikey": "1234abcezam"
-    }
+"webAppDir": "/var/www/xds-server",
+"shareRootDir": "/home/devel/.xds/projects",
+"sdkRootDir": "/xdt/sdk",
+"syncthing": {
+"home": "/home/devel/.xds/syncthing-config",
+"gui-address": "http://localhost:8384"
 }
+}
+Downloading xds-agent_darwin-amd64-v0.1.0_59b0682.zip... OK
+Downloading xds-agent_linux-amd64-v0.1.0_59b0682.zip... OK
+Downloading xds-agent_windows-amd64-v0.1.0_59b0682.zip... OK
+### Start XDS server
+nohup /usr/local/bin/xds-server --config /home/devel/.xds/config.json -log info > /tmp/xds-server/logs/xds-server.lo
+pid=140
+Started XDS Server.
 ```
 
 ### Manually Start XDS server
-Systemd use a service to start the XDS server:
 
+XDS server is started as a service by Systemd.
 ```bash
 /lib/systemd/system/xds-server.service
 ```
+This Systemd service starts a bash script `/usr/local/bin/xds-server-start.sh`
 
-Systemd service start a bash script `xds-server-start.sh` script to start all requested tools:
-
+If you needed you can change default setting by defining specific environment variables in `/etc/default/xds-server`.
+For example to control log level, just set LOGLEVEL env variable knowing that supported *level* are: panic, fatal, error, warn, info, debug.
 ```bash
-/usr/local/bin/xds-server-start.sh
-```
-
-Command line:
-
-```bash
-nohup $BINDIR/xds-server --config $XDS_CONFFILE -log $LOGLEVEL > $LOG_XDS
-```
-
-Default value :
-```bash
-BINDIR=/usr/local/bin
-#xds-server install directory
-
-XDS_CONFFILE=$HOME/.xds/config.json
-#Conf file create at the first boot
-
-LOGLEVEL=info
-#You can set LOGLEVEL env variable to increase log level if you need it. 
-#Supported *level* are: panic, fatal, error, warn, info, debug.
-
-LOG_XDS=/tmp/xds-server/logs/xds-server.log
-```
-
-#For example, to set log level to "debug" mode :
-
-```bash
-LOGLEVEL=debug /usr/local/bin/xds-server-start.sh
+echo 'LOGLEVEL=debug' | sudo tee --append /etc/default/xds-server > /dev/null
+sudo systemctl restart xds-server.service
+tail -f /tmp/xds-server/logs/xds-server.log
 ```
 
 ### Install SDK cross-toolchain
@@ -175,7 +152,7 @@ Use provided `install-agl-sdks` script, for example to install SDK for ARM64 and
 
 ### XDS Dashboard
 
-`xds-server` serves a web-application (default port 8000:
+`xds-server` serves a web-application (default port 8000). :
 [http://localhost:8000](http://localhost:8000) ). So you can now connect your browser to this url and use what we call the **XDS dashboard**.
 
 Then follow instructions provided by this dashboard, knowing that the first time
