@@ -41,20 +41,7 @@ Load the pre-build AGL SDK docker image including `xds-server`:
 wget -O - http://iot.bzh/download/public/2017/XDS/docker/docker_agl_worker-xds-latest.tar.xz | docker load
 ```
 
-### Build the container
-As an alternative to a pre-build image, you can rebuild the container from scratch. 
-`xds-server` has been integrated as a flavour of AGL SDK docker image. 
-So to rebuild docker image just execute following commands:
-
-```bash
-# Clone docker-worker-generator git repo
-git clone https://git.automotivelinux.org/AGL/docker-worker-generator
-# Start build that will create a docker image
-cd docker-worker-generator
-make build FLAVOUR=xds
-```
-
-### List  container
+### List container
 You should get `docker.automotivelinux.org/agl/worker-xds:X.Y` image
  
 ```bash
@@ -225,6 +212,8 @@ Don't forget to open new user session after installing the packages.
 
 ### Building
 
+#### Native build
+
 Create a GOPATH variable(must be a full path):
 ```bash
  export GOPATH=$(realpath ~/workspace_go)
@@ -248,6 +237,20 @@ And to install `xds-server` (by default in `/usr/local/bin`):
 >```bash
 >make install DESTDIR=$HOME/opt/xds-server
 >```
+
+#### XDS docker image
+
+As an alternative to a pre-build image, you can rebuild the container from scratch. 
+`xds-server` has been integrated as a flavour of AGL SDK docker image. 
+So to rebuild docker image just execute following commands:
+
+```bash
+# Clone docker-worker-generator git repo
+git clone https://git.automotivelinux.org/AGL/docker-worker-generator
+# Start build that will create a docker image
+cd docker-worker-generator
+make build FLAVOUR=xds
+```
 
 ### Configuration
 
@@ -277,6 +280,7 @@ Supported fields in configuration file are (all fields are optional and listed v
 ```
 
 >**NOTE:** environment variables are supported by using `${MY_VAR}` syntax.
+
 
 ## Debugging
 
