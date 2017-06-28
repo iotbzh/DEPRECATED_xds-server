@@ -97,24 +97,6 @@ sudo systemctl start xds-server.service
 
 # Get XDS server logs
 sudo journalctl --unit=xds-server.service --output=cat
-Starting XDS Server...
-### Configuration in config.json:
-{
-"webAppDir": "/var/www/xds-server",
-"shareRootDir": "/home/devel/.xds/projects",
-"sdkRootDir": "/xdt/sdk",
-"syncthing": {
-"home": "/home/devel/.xds/syncthing-config",
-"gui-address": "http://localhost:8384"
-}
-}
-Downloading xds-agent_darwin-amd64-v0.1.0_59b0682.zip... OK
-Downloading xds-agent_linux-amd64-v0.1.0_59b0682.zip... OK
-Downloading xds-agent_windows-amd64-v0.1.0_59b0682.zip... OK
-### Start XDS server
-nohup /usr/local/bin/xds-server --config /home/devel/.xds/config.json -log info > /tmp/xds-server/logs/xds-server.lo
-pid=140
-Started XDS Server.
 ```
 
 ### Manually Start XDS server
@@ -152,8 +134,10 @@ Use provided `install-agl-sdks` script, for example to install SDK for ARM64 and
 
 ### XDS Dashboard
 
-`xds-server` serves a web-application (default port 8000). :
-[http://localhost:8000](http://localhost:8000) ). So you can now connect your browser to this url and use what we call the **XDS dashboard**.
+`xds-server` serves a web-application at [http://localhost:8000](http://localhost:8000) when XDS server is running on your host. Just replace `localhost` by the host name or ip when XDS server is running on another host. So you can now connect your browser to this url and use what we call the **XDS dashboard**.
+```bash
+xdg-open http://localhost:8000
+```
 
 Then follow instructions provided by this dashboard, knowing that the first time
 you need to download and start `xds-agent` on your local machine. 
@@ -242,7 +226,7 @@ Here is the logic to determine which `config.json` file will be used:
 Supported fields in configuration file are (all fields are optional and listed values are the default values):
 ```
 {
-    "HTTPPort": 8000,
+    "httpPort": 8000,                               # HTTP port of client webapp / dashboard
     "webAppDir": "webapp/dist",                     # location of client dashboard (default: webapp/dist)
     "shareRootDir": "${HOME}/.xds/projects",        # root directory where projects will be copied
     "logsDir": "/tmp/logs",                         # directory to store logs (eg. syncthing output)
