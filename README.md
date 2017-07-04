@@ -124,10 +124,10 @@ Use provided `install-agl-sdks` script, for example to install SDK for ARM64 and
 
 ```bash
 # Install ARM64 SDK (automatic download)
-/usr/local/bin/xds-utils/install-agl-sdks.sh --arch aarch64
+sudo /usr/local/bin/xds-utils/install-agl-sdks.sh --arch aarch64
 
 # Install Intel corei7-64 SDK (using an SDK tarball that has been built or downloaded manually)
-/usr/local/bin/xds-utils/install-agl-sdks.sh --arch corei7-64 --file /tmp/poky-agl-glibc-x86_64-agl-demo-platform-crosssdk-corei7-64-toolchain-
+sudo /usr/local/bin/xds-utils/install-agl-sdks.sh --arch corei7-64 --file /tmp/poky-agl-glibc-x86_64-agl-demo-platform-crosssdk-corei7-64-toolchain-
 3.99.1+snapshot.sh
 
 ```
