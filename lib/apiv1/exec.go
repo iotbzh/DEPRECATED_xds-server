@@ -177,6 +177,12 @@ func (s *APIService) execCmd(c *gin.Context) {
 	if envCmd := s.sdks.GetEnvCmd(args.SdkID, prj.DefaultSdk); len(envCmd) > 0 {
 		cmd = append(cmd, envCmd...)
 		cmd = append(cmd, "&&")
+	} else {
+		// It's an error if no envcmd found while a sdkid has been provided
+		if args.SdkID != "" {
+			common.APIError(c, "Unknown sdkid")
+			return
+		}
 	}
 
 	cmd = append(cmd, "cd", prj.GetFullPath(args.RPath), "&&", args.Cmd)
