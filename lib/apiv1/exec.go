@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"fmt"
+
 	"github.com/gin-gonic/gin"
 	common "github.com/iotbzh/xds-common/golib"
 )
@@ -36,6 +38,12 @@ type ExecExitMsg struct {
 	Timestamp string `json:"timestamp"`
 	Code      int    `json:"code"`
 	Error     error  `json:"error"`
+}
+
+// ExecSignalArgs JSON parameters of /exec/signal command
+type ExecSignalArgs struct {
+	CmdID  string `json:"cmdID" binding:"required"`  // command id
+	Signal string `json:"signal" binding:"required"` // signal number
 }
 
 // ExecOutEvent Event send in WS when characters are received
@@ -85,14 +93,26 @@ func (s *APIService) execCmd(c *gin.Context) {
 	}
 
 	execTmo := args.CmdTimeout
-	if execTmo == 0 {
+	if execTmo == -1 {
+		// -1 : no timeout
+		execTmo = 365 * 24 * 60 * 60 // 1 year == no timeout
+	} else if execTmo == 0 {
+		// 0 : default timeout
 		// TODO get default timeout from config.json file
 		execTmo = 24 * 60 * 60 // 1 day
 	}
 
+	// Define callback for input
+	/* SEB TODO
+	var iCB common.OnInputCB
+	iCB = func() {
+
+	}
+	*/
+
 	// Define callback for output
 	var oCB common.EmitOutputCB
-	oCB = func(sid string, id int, stdout, stderr string, data *map[string]interface{}) {
+	oCB = func(sid string, id string, stdout, stderr string, data *map[string]interface{}) {
 		// IO socket can be nil when disconnected
 		so := s.sessions.IOSocketGet(sid)
 		if so == nil {
@@ -110,9 +130,11 @@ func (s *APIService) execCmd(c *gin.Context) {
 
 		s.log.Debugf("%s emitted - WS sid %s - id:%d - prjID:%s", ExecOutEvent, sid, id, prjID)
 
+		fmt.Printf("SEB SEND out <%v>, err <%v>\n", stdout, stderr)
+
 		// FIXME replace by .BroadcastTo a room
 		err := (*so).Emit(ExecOutEvent, ExecOutMsg{
-			CmdID:     strconv.Itoa(id),
+			CmdID:     id,
 			Timestamp: time.Now().String(),
 			Stdout:    stdout,
 			Stderr:    stderr,
@@ -123,7 +145,7 @@ func (s *APIService) execCmd(c *gin.Context) {
 	}
 
 	// Define callback for output
-	eCB := func(sid string, id int, code int, err error, data *map[string]interface{}) {
+	eCB := func(sid string, id string, code int, err error, data *map[string]interface{}) {
 		s.log.Debugf("Command [Cmd ID %d] exited: code %d, error: %v", id, code, err)
 
 		// IO socket can be nil when disconnected
@@ -159,7 +181,7 @@ func (s *APIService) execCmd(c *gin.Context) {
 
 		// FIXME replace by .BroadcastTo a room
 		e := (*so).Emit(ExecExitEvent, ExecExitMsg{
-			CmdID:     strconv.Itoa(id),
+			CmdID:     id,
 			Timestamp: time.Now().String(),
 			Code:      code,
 			Error:     err,
@@ -169,7 +191,7 @@ func (s *APIService) execCmd(c *gin.Context) {
 		}
 	}
 
-	cmdID := execCommandID
+	cmdID := strconv.Itoa(execCommandID)
 	execCommandID++
 	cmd := []string{}
 
@@ -190,10 +212,13 @@ func (s *APIService) execCmd(c *gin.Context) {
 		cmd = append(cmd, args.Args...)
 	}
 
+	// SEB Workaround for stderr issue (order not respected with stdout)
+	cmd = append(cmd, " 2>&1")
+
 	// Append client project dir to environment
 	args.Env = append(args.Env, "CLIENT_PROJECT_DIR="+prj.RelativePath)
 
-	s.log.Debugf("Execute [Cmd ID %d]: %v", cmdID, cmd)
+	s.log.Debugf("Execute [Cmd ID %s]: %v", cmdID, cmd)
 
 	data := make(map[string]interface{})
 	data["ID"] = prj.ID
@@ -210,5 +235,27 @@ func (s *APIService) execCmd(c *gin.Context) {
 		gin.H{
 			"status": "OK",
 			"cmdID":  cmdID,
+		})
+}
+
+// ExecCmd executes remotely a command
+func (s *APIService) execSignalCmd(c *gin.Context) {
+	var args ExecSignalArgs
+
+	if c.BindJSON(&args) != nil {
+		common.APIError(c, "Invalid arguments")
+		return
+	}
+
+	s.log.Debugf("Signal %s for command ID %s", args.Signal, args.CmdID)
+	err := common.ExecSignal(args.CmdID, args.Signal)
+	if err != nil {
+		common.APIError(c, err.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK,
+		gin.H{
+			"status": "OK",
 		})
 }

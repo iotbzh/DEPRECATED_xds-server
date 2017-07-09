@@ -52,6 +52,7 @@ func New(r *gin.Engine, sess *session.Sessions, cfg *xdsconfig.Config, mfolder *
 
 	s.apiRouter.POST("/exec", s.execCmd)
 	s.apiRouter.POST("/exec/:id", s.execCmd)
+	s.apiRouter.POST("/signal", s.execSignalCmd)
 
 	return s
 }

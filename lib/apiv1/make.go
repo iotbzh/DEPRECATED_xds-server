@@ -92,11 +92,11 @@ func (s *APIService) buildMake(c *gin.Context) {
 
 	// Define callback for output
 	var oCB common.EmitOutputCB
-	oCB = func(sid string, id int, stdout, stderr string, data *map[string]interface{}) {
+	oCB = func(sid string, cmdID string, stdout, stderr string, data *map[string]interface{}) {
 		// IO socket can be nil when disconnected
 		so := s.sessions.IOSocketGet(sid)
 		if so == nil {
-			s.log.Infof("%s not emitted: WS closed - sid: %s - msg id:%d", MakeOutEvent, sid, id)
+			s.log.Infof("%s not emitted: WS closed - sid: %s - msg id:%s", MakeOutEvent, sid, cmdID)
 			return
 		}
 
@@ -112,7 +112,7 @@ func (s *APIService) buildMake(c *gin.Context) {
 
 		// FIXME replace by .BroadcastTo a room
 		err := (*so).Emit(MakeOutEvent, MakeOutMsg{
-			CmdID:     strconv.Itoa(id),
+			CmdID:     cmdID,
 			Timestamp: time.Now().String(),
 			Stdout:    stdout,
 			Stderr:    stderr,
@@ -123,13 +123,13 @@ func (s *APIService) buildMake(c *gin.Context) {
 	}
 
 	// Define callback for output
-	eCB := func(sid string, id int, code int, err error, data *map[string]interface{}) {
-		s.log.Debugf("Command [Cmd ID %d] exited: code %d, error: %v", id, code, err)
+	eCB := func(sid string, cmdID string, code int, err error, data *map[string]interface{}) {
+		s.log.Debugf("Command [Cmd ID %s] exited: code %d, error: %v", cmdID, code, err)
 
 		// IO socket can be nil when disconnected
 		so := s.sessions.IOSocketGet(sid)
 		if so == nil {
-			s.log.Infof("%s not emitted - WS closed (id:%d", MakeExitEvent, id)
+			s.log.Infof("%s not emitted - WS closed (id:%s", MakeExitEvent, cmdID)
 			return
 		}
 
@@ -159,7 +159,7 @@ func (s *APIService) buildMake(c *gin.Context) {
 
 		// FIXME replace by .BroadcastTo a room
 		e := (*so).Emit(MakeExitEvent, MakeExitMsg{
-			CmdID:     strconv.Itoa(id),
+			CmdID:     id,
 			Timestamp: time.Now().String(),
 			Code:      code,
 			Error:     err,
@@ -169,7 +169,7 @@ func (s *APIService) buildMake(c *gin.Context) {
 		}
 	}
 
-	cmdID := makeCommandID
+	cmdID := strconv.Itoa(makeCommandID)
 	makeCommandID++
 	cmd := []string{}
 
