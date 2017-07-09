@@ -73,3 +73,5 @@ if [ "$1" != "-dryrun" ]; then
     pid_xds=$(jobs -p)
     echo "pid=${pid_xds}"
 fi
+
+exit 0

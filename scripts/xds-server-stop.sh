@@ -16,3 +16,4 @@ if [ "$nbProc" != "0" ]; then
     pkill -KILL syncthing-inotify
 fi
 
+exit 0
