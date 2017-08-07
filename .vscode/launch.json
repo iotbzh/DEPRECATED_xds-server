@@ -1,7 +1,7 @@
 {
     "version": "0.2.0",
     "configurations": [{
-            "name": "XDS-Server local",
+            "name": "XDS-Server",
             "type": "go",
             "request": "launch",
             "mode": "debug",
@@ -14,6 +14,22 @@
                 "ROOT_DIR": "${workspaceRoot}/../../../.."
             },
             "args": ["-log", "debug", "-c", "config.json.in"],
+            "showLog": false
+        },
+{
+            "name": "XDS-Server local dev",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "remotePath": "",
+            "port": 2345,
+            "host": "127.0.0.1",
+            "program": "${workspaceRoot}",
+            "env": {
+                "GOPATH": "${workspaceRoot}/../../../..:${env:GOPATH}",
+                "ROOT_DIR": "${workspaceRoot}/../../../.."
+            },
+            "args": ["-log", "debug", "-c", "__config_local_dev.json"],
             "showLog": false
         },
         {
