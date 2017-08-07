@@ -157,6 +157,10 @@ package-all:
 vendor: tools/glide glide.yaml
 	$(LOCAL_TOOLSDIR)/glide install --strip-vendor
 
+vendor/debug: vendor
+	(cd vendor/github.com/iotbzh && \
+		rm -rf xds-common && ln -s ../../../../xds-common )
+
 .PHONY: tools/glide
 tools/glide:
 	@test -f $(LOCAL_TOOLSDIR)/glide || { \

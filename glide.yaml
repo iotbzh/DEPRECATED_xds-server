@@ -24,3 +24,6 @@ import:
 - package: github.com/iotbzh/xds-common
   subpackages:
   - golib/common
+  - golib/eows
+- package: github.com/kr/pty
+  version: ^1.0.0
