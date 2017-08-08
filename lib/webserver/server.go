@@ -2,6 +2,7 @@ package webserver
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 
@@ -36,20 +37,21 @@ const indexFilename = "index.html"
 const cookieMaxAge = "3600"
 
 // New creates an instance of Server
-func New(cfg *xdsconfig.Config, mfolder *model.Folder, sdks *crosssdk.SDKs, log *logrus.Logger) *Server {
+func New(cfg *xdsconfig.Config, mfolder *model.Folder, sdks *crosssdk.SDKs, logr *logrus.Logger) *Server {
 
 	// Setup logging for gin router
-	if log.Level == logrus.DebugLevel {
+	if logr.Level == logrus.DebugLevel {
 		gin.SetMode(gin.DebugMode)
 	} else {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	// TODO
-	//  - try to bind gin DefaultWriter & DefaultErrorWriter to logrus logger
-	//  - try to fix pb about isTerminal=false when out is in VSC Debug Console
-	//gin.DefaultWriter = ??
-	//gin.DefaultErrorWriter = ??
+	// Redirect gin logs into logrus logger
+	gin.DefaultWriter = logr.Out
+	gin.DefaultErrorWriter = logr.Out
+	log.SetOutput(logr.Out)
+
+	// FIXME - fix pb about isTerminal=false when out is in VSC Debug Console
 
 	// Creates gin router
 	r := gin.New()
@@ -63,7 +65,7 @@ func New(cfg *xdsconfig.Config, mfolder *model.Folder, sdks *crosssdk.SDKs, log 
 		sessions:  nil,
 		mfolder:   mfolder,
 		sdks:      sdks,
-		log:       log,
+		log:       logr,
 		stop:      make(chan struct{}),
 	}
 

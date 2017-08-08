@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -115,8 +116,25 @@ func xdsApp(cliCtx *cli.Context) error {
 	}
 	ctx.Config = cfg
 
-	// TODO allow to redirect stdout/sterr into logs file
-	//logFilename := filepath.Join(ctx.Config.FileConf.LogsDir + "xds-server.log")
+	// Logs redirected into a file when logsDir is set
+	logfilename := cliCtx.GlobalString("logfile")
+	if ctx.Config.FileConf.LogsDir != "" && logfilename != "stdout" {
+		if logfilename == "" {
+			logfilename = "xds-server.log"
+		}
+		// is it an absolute path ?
+		logFile := logfilename
+		if logfilename[0] == '.' || logfilename[0] != '/' {
+			logFile = filepath.Join(ctx.Config.FileConf.LogsDir, logfilename)
+		}
+		fmt.Printf("Logging file: %s\n", logFile)
+		fdL, err := os.OpenFile(logFile, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0666)
+		if err != nil {
+			msgErr := fmt.Sprintf("Cannot create log file %s", logFile)
+			return cli.NewExitError(msgErr, int(syscall.EPERM))
+		}
+		ctx.Log.Out = fdL
+	}
 
 	// FIXME - add a builder interface and support other builder type (eg. native)
 	builderType := "syncthing"
@@ -246,6 +264,12 @@ func main() {
 			Value:  "error",
 			Usage:  "logging level (supported levels: panic, fatal, error, warn, info, debug)\n\t",
 			EnvVar: "LOG_LEVEL",
+		},
+		cli.StringFlag{
+			Name:   "logfile",
+			Value:  "stdout",
+			Usage:  "filename where logs will be redirected (default stdout)\n\t",
+			EnvVar: "LOG_FILENAME",
 		},
 	}
 
