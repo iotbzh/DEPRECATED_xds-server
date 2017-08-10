@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
-	"strings"
 	"syscall"
 	"time"
 
@@ -48,7 +47,7 @@ type Context struct {
 	SThg        *st.SyncThing
 	SThgCmd     *exec.Cmd
 	SThgInotCmd *exec.Cmd
-	MFolder     *model.Folder
+	MFolders    *model.Folders
 	SDKs        *crosssdk.SDKs
 	WWWServer   *webserver.Server
 	Exit        chan os.Signal
@@ -99,7 +98,7 @@ func handlerSigTerm(ctx *Context) {
 		ctx.Log.Infof("Stoping Web server...")
 		ctx.WWWServer.Stop()
 	}
-	os.Exit(1)
+	os.Exit(0)
 }
 
 // XDS Server application main routine
@@ -112,7 +111,7 @@ func xdsApp(cliCtx *cli.Context) error {
 	// Load config
 	cfg, err := xdsconfig.Init(ctx.Cli, ctx.Log)
 	if err != nil {
-		return cli.NewExitError(err, 2)
+		return cli.NewExitError(err, -2)
 	}
 	ctx.Config = cfg
 
@@ -136,26 +135,24 @@ func xdsApp(cliCtx *cli.Context) error {
 		ctx.Log.Out = fdL
 	}
 
-	// FIXME - add a builder interface and support other builder type (eg. native)
-	builderType := "syncthing"
-
-	switch builderType {
-	case "syncthing":
-
-		// Start local instance of Syncthing and Syncthing-notify
+	// Create syncthing instance when section "syncthing" is present in config.json
+	if ctx.Config.FileConf.SThgConf != nil {
 		ctx.SThg = st.NewSyncThing(ctx.Config, ctx.Log)
+	}
 
+	// Start local instance of Syncthing and Syncthing-notify
+	if ctx.SThg != nil {
 		ctx.Log.Infof("Starting Syncthing...")
 		ctx.SThgCmd, err = ctx.SThg.Start()
 		if err != nil {
-			return cli.NewExitError(err, 2)
+			return cli.NewExitError(err, -4)
 		}
 		fmt.Printf("Syncthing started (PID %d)\n", ctx.SThgCmd.Process.Pid)
 
 		ctx.Log.Infof("Starting Syncthing-inotify...")
 		ctx.SThgInotCmd, err = ctx.SThg.StartInotify()
 		if err != nil {
-			return cli.NewExitError(err, 2)
+			return cli.NewExitError(err, -4)
 		}
 		fmt.Printf("Syncthing-inotify started (PID %d)\n", ctx.SThgInotCmd.Process.Pid)
 
@@ -174,64 +171,37 @@ func xdsApp(cliCtx *cli.Context) error {
 			retry--
 		}
 		if err != nil || retry == 0 {
-			return cli.NewExitError(err, 2)
+			return cli.NewExitError(err, -4)
 		}
 
-		// Retrieve Syncthing config
-		id, err := ctx.SThg.IDGet()
-		if err != nil {
-			return cli.NewExitError(err, 2)
+		// FIXME: do we still need Builder notion ? if no cleanup
+		if ctx.Config.Builder, err = xdsconfig.NewBuilderConfig(ctx.SThg.MyID); err != nil {
+			return cli.NewExitError(err, -4)
 		}
+	}
 
-		if ctx.Config.Builder, err = xdsconfig.NewBuilderConfig(id); err != nil {
-			return cli.NewExitError(err, 2)
-		}
+	// Init model folder
+	ctx.MFolders = model.FoldersNew(ctx.Config, ctx.SThg)
 
-		// Retrieve initial Syncthing config
-
-		// FIXME: cannot retrieve default SDK, need to save on disk or somewhere
-		// else all config to be able to restore it.
-		defaultSdk := ""
-		stCfg, err := ctx.SThg.ConfigGet()
-		if err != nil {
-			return cli.NewExitError(err, 2)
-		}
-		for _, stFld := range stCfg.Folders {
-			relativePath := strings.TrimPrefix(stFld.RawPath, ctx.Config.FileConf.ShareRootDir)
-			if relativePath == "" {
-				relativePath = stFld.RawPath
-			}
-
-			newFld := xdsconfig.NewFolderConfig(stFld.ID,
-				stFld.Label,
-				ctx.Config.FileConf.ShareRootDir,
-				strings.TrimRight(relativePath, "/"),
-				defaultSdk)
-			ctx.Config.Folders = ctx.Config.Folders.Update(xdsconfig.FoldersConfig{newFld})
-		}
-
-		// Init model folder
-		ctx.MFolder = model.NewFolder(ctx.Config, ctx.SThg)
-
-	default:
-		err = fmt.Errorf("Unsupported builder type")
-		return cli.NewExitError(err, 3)
+	// Load initial folders config from disk
+	if err := ctx.MFolders.LoadConfig(); err != nil {
+		return cli.NewExitError(err, -5)
 	}
 
 	// Init cross SDKs
 	ctx.SDKs, err = crosssdk.Init(ctx.Config, ctx.Log)
 	if err != nil {
-		return cli.NewExitError(err, 2)
+		return cli.NewExitError(err, -6)
 	}
 
 	// Create and start Web Server
-	ctx.WWWServer = webserver.New(ctx.Config, ctx.MFolder, ctx.SDKs, ctx.Log)
+	ctx.WWWServer = webserver.New(ctx.Config, ctx.MFolders, ctx.SDKs, ctx.Log)
 	if err = ctx.WWWServer.Serve(); err != nil {
 		ctx.Log.Println(err)
-		return cli.NewExitError(err, 3)
+		return cli.NewExitError(err, -7)
 	}
 
-	return cli.NewExitError("Program exited ", 4)
+	return cli.NewExitError("Program exited ", -99)
 }
 
 // main
@@ -270,6 +240,11 @@ func main() {
 			Value:  "stdout",
 			Usage:  "filename where logs will be redirected (default stdout)\n\t",
 			EnvVar: "LOG_FILENAME",
+		},
+		cli.BoolFlag{
+			Name:   "no-folderconfig, nfc",
+			Usage:  fmt.Sprintf("Do not read folder config file (%s)\n\t", xdsconfig.FoldersConfigFilename),
+			EnvVar: "NO_FOLDERCONFIG",
 		},
 	}
 

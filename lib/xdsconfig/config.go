@@ -2,7 +2,6 @@ package xdsconfig
 
 import (
 	"fmt"
-
 	"os"
 
 	"github.com/Sirupsen/logrus"
@@ -16,11 +15,19 @@ type Config struct {
 	APIVersion    string        `json:"apiVersion"`
 	VersionGitTag string        `json:"gitTag"`
 	Builder       BuilderConfig `json:"builder"`
-	Folders       FoldersConfig `json:"folders"`
 
 	// Private (un-exported fields in REST GET /config route)
+	Options  Options        `json:"-"`
 	FileConf FileConfig     `json:"-"`
 	Log      *logrus.Logger `json:"-"`
+}
+
+// Options set at the command line
+type Options struct {
+	ConfigFile     string
+	LogLevel       string
+	LogFile        string
+	NoFolderConfig bool
 }
 
 // Config default values
@@ -41,7 +48,13 @@ func Init(cliCtx *cli.Context, log *logrus.Logger) (*Config, error) {
 		APIVersion:    DefaultAPIVersion,
 		VersionGitTag: cliCtx.App.Metadata["git-tag"].(string),
 		Builder:       BuilderConfig{},
-		Folders:       FoldersConfig{},
+
+		Options: Options{
+			ConfigFile:     cliCtx.GlobalString("config"),
+			LogLevel:       cliCtx.GlobalString("log"),
+			LogFile:        cliCtx.GlobalString("logfile"),
+			NoFolderConfig: cliCtx.GlobalBool("no-folderconfig"),
+		},
 		FileConf: FileConfig{
 			WebAppDir:    "webapp/dist",
 			ShareRootDir: DefaultShareDir,
@@ -52,7 +65,7 @@ func Init(cliCtx *cli.Context, log *logrus.Logger) (*Config, error) {
 	}
 
 	// config file settings overwrite default config
-	err = updateConfigFromFile(&c, cliCtx.GlobalString("config"))
+	err = readGlobalConfig(&c, c.Options.ConfigFile)
 	if err != nil {
 		return nil, err
 	}

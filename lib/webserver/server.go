@@ -27,7 +27,7 @@ type Server struct {
 	webApp    *gin.RouterGroup
 	cfg       *xdsconfig.Config
 	sessions  *session.Sessions
-	mfolder   *model.Folder
+	mfolders  *model.Folders
 	sdks      *crosssdk.SDKs
 	log       *logrus.Logger
 	stop      chan struct{} // signals intentional stop
@@ -37,7 +37,7 @@ const indexFilename = "index.html"
 const cookieMaxAge = "3600"
 
 // New creates an instance of Server
-func New(cfg *xdsconfig.Config, mfolder *model.Folder, sdks *crosssdk.SDKs, logr *logrus.Logger) *Server {
+func New(cfg *xdsconfig.Config, mfolders *model.Folders, sdks *crosssdk.SDKs, logr *logrus.Logger) *Server {
 
 	// Setup logging for gin router
 	if logr.Level == logrus.DebugLevel {
@@ -63,7 +63,7 @@ func New(cfg *xdsconfig.Config, mfolder *model.Folder, sdks *crosssdk.SDKs, logr
 		webApp:    nil,
 		cfg:       cfg,
 		sessions:  nil,
-		mfolder:   mfolder,
+		mfolders:  mfolders,
 		sdks:      sdks,
 		log:       logr,
 		stop:      make(chan struct{}),
@@ -86,7 +86,7 @@ func (s *Server) Serve() error {
 	s.sessions = session.NewClientSessions(s.router, s.log, cookieMaxAge)
 
 	// Create REST API
-	s.api = apiv1.New(s.router, s.sessions, s.cfg, s.mfolder, s.sdks)
+	s.api = apiv1.New(s.router, s.sessions, s.cfg, s.mfolders, s.sdks)
 
 	// Websocket routes
 	s.sIOServer, err = socketio.NewServer(nil)

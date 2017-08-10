@@ -84,7 +84,7 @@ all: tools/syncthing build
 build: vendor xds webapp
 
 xds: scripts tools/syncthing/copytobin
-	@echo "### Build XDS server (version $(VERSION), subversion $(SUB_VERSION))";
+	@echo "### Build XDS server (version $(VERSION), subversion $(SUB_VERSION), $(BUILD_MODE))";
 	@cd $(ROOT_SRCDIR); $(BUILD_ENV_FLAGS) go build $(VERBOSE_$(V)) -i -o $(LOCAL_BINDIR)/xds-server$(EXT) -ldflags "$(GORELEASE) -X main.AppVersion=$(VERSION) -X main.AppSubVersion=$(SUB_VERSION)" .
 
 test: tools/glide

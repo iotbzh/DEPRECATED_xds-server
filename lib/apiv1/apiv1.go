@@ -16,19 +16,19 @@ type APIService struct {
 	apiRouter *gin.RouterGroup
 	sessions  *session.Sessions
 	cfg       *xdsconfig.Config
-	mfolder   *model.Folder
+	mfolders  *model.Folders
 	sdks      *crosssdk.SDKs
 	log       *logrus.Logger
 }
 
 // New creates a new instance of API service
-func New(r *gin.Engine, sess *session.Sessions, cfg *xdsconfig.Config, mfolder *model.Folder, sdks *crosssdk.SDKs) *APIService {
+func New(r *gin.Engine, sess *session.Sessions, cfg *xdsconfig.Config, mfolders *model.Folders, sdks *crosssdk.SDKs) *APIService {
 	s := &APIService{
 		router:    r,
 		sessions:  sess,
 		apiRouter: r.Group("/api/v1"),
 		cfg:       cfg,
-		mfolder:   mfolder,
+		mfolders:  mfolders,
 		sdks:      sdks,
 		log:       cfg.Log,
 	}

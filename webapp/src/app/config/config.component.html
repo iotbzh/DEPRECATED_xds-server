@@ -71,12 +71,23 @@
                 </div>
 
                 <div class="col-xs-6">
-                    <label>Folder Path </label>
-                    <input type="text" style="width:70%;" formControlName="path" placeholder="myProject">
+                    <label>Client/Local Path </label>
+                    <input type="text" style="width:70%;" formControlName="pathCli" placeholder="myProject">
+                </div>
+                <div class="col-xs-6">
+                    <label>Server Path </label>
+                    <input type="text" style="width:70%;" formControlName="pathSvr" placeholder="myProject">
                 </div>
                 <div class="col-xs-4">
                     <label>Label </label>
                     <input type="text" formControlName="label" (keyup)="onKeyLabel($event)">
+                </div>
+                <div class="col-xs-4">
+                    <label>Type </label>
+                    <select class="form-control" formControlName="type">
+                        <option *ngFor="let t of projectTypes" [value]="t.value">{{t.display}}
+                        </option>
+                    </select>
                 </div>
             </div>
         </form>

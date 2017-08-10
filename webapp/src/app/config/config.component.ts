@@ -7,7 +7,8 @@ import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/filter';
 import 'rxjs/add/operator/debounceTime';
 
-import { ConfigService, IConfig, IProject, ProjectType, IxdsAgentPackage } from "../services/config.service";
+import { ConfigService, IConfig, IProject, ProjectType, ProjectTypes,
+    IxdsAgentPackage } from "../services/config.service";
 import { XDSServerService, IServerStatus, IXDSAgentInfo } from "../services/xdsserver.service";
 import { XDSAgentService, IAgentStatus } from "../services/xdsagent.service";
 import { SyncthingService, ISyncThingStatus } from "../services/syncthing.service";
@@ -33,6 +34,7 @@ export class ConfigComponent implements OnInit {
     curProj: number;
     userEditedLabel: boolean = false;
     xdsAgentPackages: IxdsAgentPackage[] = [];
+    projectTypes = ProjectTypes;
 
     // TODO replace by reactive FormControl + add validation
     syncToolUrl: string;
@@ -45,8 +47,8 @@ export class ConfigComponent implements OnInit {
     };
 
     addProjectForm: FormGroup;
-    pathCtrl = new FormControl("", Validators.required);
-
+    pathCliCtrl = new FormControl("", Validators.required);
+    pathSvrCtrl = new FormControl("", Validators.required);
 
     constructor(
         private configSvr: ConfigService,
@@ -57,11 +59,16 @@ export class ConfigComponent implements OnInit {
         private alert: AlertService,
         private fb: FormBuilder
     ) {
-        // FIXME implement multi project support
+        // Define types (first one is special/placeholder)
+        this.projectTypes.unshift({value: -1, display: "--Select a type--"});
+        let selectedType = this.projectTypes[0].value;
+
         this.curProj = 0;
         this.addProjectForm = fb.group({
-            path: this.pathCtrl,
+            pathCli: this.pathCliCtrl,
+            pathSvr: this.pathSvrCtrl,
             label: ["", Validators.nullValidator],
+            type: [selectedType, Validators.pattern("[0-9]+")],
         });
     }
 
@@ -82,7 +89,7 @@ export class ConfigComponent implements OnInit {
         });
 
         // Auto create label name
-        this.pathCtrl.valueChanges
+        this.pathCliCtrl.valueChanges
             .debounceTime(100)
             .filter(n => n)
             .map(n => "Project_" + n.split('/')[0])
@@ -91,6 +98,9 @@ export class ConfigComponent implements OnInit {
                     this.addProjectForm.patchValue({ label: value });
                 }
             });
+
+        // Select 1 first type by default
+        // SEB this.typeCtrl.setValue({type: ProjectTypes[0].value});
     }
 
     onKeyLabel(event: any) {
@@ -118,19 +128,22 @@ export class ConfigComponent implements OnInit {
     }
 
     xdsAgentRestartConn() {
-        let aurl = this.xdsAgentUrl;
+        let aUrl = this.xdsAgentUrl;
         this.configSvr.syncToolURL = this.syncToolUrl;
-        this.configSvr.xdsAgentUrl = aurl;
+        this.configSvr.xdsAgentUrl = aUrl;
         this.configSvr.loadProjects();
     }
 
     onSubmit() {
         let formVal = this.addProjectForm.value;
 
+        let type = formVal['type'].value;
+        let numType = Number(formVal['type']);
         this.configSvr.addProject({
             label: formVal['label'],
-            path: formVal['path'],
-            type: ProjectType.SYNCTHING,
+            pathClient: formVal['pathCli'],
+            pathServer: formVal['pathSvr'],
+            type: numType,
             // FIXME: allow to set defaultSdkID from New Project config panel
         });
     }

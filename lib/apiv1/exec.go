@@ -113,11 +113,13 @@ func (s *APIService) execCmd(c *gin.Context) {
 		return
 	}
 
-	prj := s.mfolder.GetFolderFromID(id)
-	if prj == nil {
+	f := s.mfolders.Get(id)
+	if f == nil {
 		common.APIError(c, "Unknown id")
 		return
 	}
+	folder := *f
+	prj := folder.GetConfig()
 
 	// Build command line
 	cmd := []string{}
@@ -135,7 +137,7 @@ func (s *APIService) execCmd(c *gin.Context) {
 
 	// FIXME - SEB: exec prevents to use syntax:
 	//  xds-exec -l debug -c xds-config.env -- "cd build && cmake .."
-	cmd = append(cmd, "cd", prj.GetFullPath(args.RPath))
+	cmd = append(cmd, "cd", folder.GetFullPath(args.RPath))
 	cmd = append(cmd, "&&", "exec", args.Cmd)
 
 	// Process command arguments
@@ -163,7 +165,7 @@ func (s *APIService) execCmd(c *gin.Context) {
 	execWS.Log = s.log
 
 	// Append client project dir to environment
-	execWS.Env = append(args.Env, "CLIENT_PROJECT_DIR="+prj.RelativePath)
+	execWS.Env = append(args.Env, "CLIENT_PROJECT_DIR="+prj.ClientPath)
 
 	// Set command execution timeout
 	if args.CmdTimeout == 0 {
@@ -189,8 +191,8 @@ func (s *APIService) execCmd(c *gin.Context) {
 		// Set correct path
 		data := e.UserData
 		rootPath := (*data)["RootPath"].(string)
-		relaPath := (*data)["RelativePath"].(string)
-		stdin = strings.Replace(stdin, relaPath, rootPath+"/"+relaPath, -1)
+		clientPath := (*data)["ClientPath"].(string)
+		stdin = strings.Replace(stdin, clientPath, rootPath+"/"+clientPath, -1)
 
 		return stdin, nil
 	}
@@ -283,7 +285,7 @@ func (s *APIService) execCmd(c *gin.Context) {
 		exitImm := (*data)["ExitImmediate"].(bool)
 
 		// XXX - workaround to be sure that Syncthing detected all changes
-		if err := s.mfolder.ForceSync(prjID); err != nil {
+		if err := s.mfolders.ForceSync(prjID); err != nil {
 			s.log.Errorf("Error while syncing folder %s: %v", prjID, err)
 		}
 		if !exitImm {
@@ -291,8 +293,8 @@ func (s *APIService) execCmd(c *gin.Context) {
 			// FIXME pass as argument
 			tmo := 60
 			for t := tmo; t > 0; t-- {
-				s.log.Debugf("Wait file insync for %s (%d/%d)", prjID, t, tmo)
-				if sync, err := s.mfolder.IsFolderInSync(prjID); sync || err != nil {
+				s.log.Debugf("Wait file in-sync for %s (%d/%d)", prjID, t, tmo)
+				if sync, err := s.mfolders.IsFolderInSync(prjID); sync || err != nil {
 					if err != nil {
 						s.log.Errorf("ERROR IsFolderInSync (%s): %v", prjID, err)
 					}
@@ -326,7 +328,7 @@ func (s *APIService) execCmd(c *gin.Context) {
 	data := make(map[string]interface{})
 	data["ID"] = prj.ID
 	data["RootPath"] = prj.RootPath
-	data["RelativePath"] = prj.RelativePath
+	data["ClientPath"] = prj.ClientPath
 	data["ExitImmediate"] = args.ExitImmediate
 	if args.TTY && args.TTYGdbserverFix {
 		data["gdbServerTTY"] = "workaround"

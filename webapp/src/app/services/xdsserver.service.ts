@@ -20,7 +20,8 @@ import 'rxjs/add/operator/mergeMap';
 export interface IXDSConfigProject {
     id: string;
     path: string;
-    hostSyncThingID: string;
+    clientSyncThingID: string;
+    type: number;
     label?: string;
     defaultSdkID?: string;
 }
@@ -31,15 +32,28 @@ interface IXDSBuilderConfig {
     syncThingID: string;
 }
 
-interface IXDSFolderConfig {
+export interface IXDSFolderConfig {
     id: string;
     label: string;
     path: string;
     type: number;
-    syncThingID: string;
-    builderSThgID?: string;
     status?: string;
     defaultSdkID: string;
+
+    // FIXME better with union but tech pb with go code
+    //data?: IXDSPathMapConfig|IXDSCloudSyncConfig;
+    dataPathMap?:IXDSPathMapConfig;
+    dataCloudSync?:IXDSCloudSyncConfig;
+}
+
+export interface IXDSPathMapConfig {
+    // TODO
+    serverPath: string;
+}
+
+export interface IXDSCloudSyncConfig {
+    syncThingID: string;
+    builderSThgID?: string;
 }
 
 interface IXDSConfig {
@@ -172,16 +186,8 @@ export class XDSServerService {
         return this._get('/folders');
     }
 
-    addProject(cfg: IXDSConfigProject): Observable<IXDSFolderConfig> {
-        let folder: IXDSFolderConfig = {
-            id: cfg.id || null,
-            label: cfg.label || "",
-            path: cfg.path,
-            type: FOLDER_TYPE_CLOUDSYNC,
-            syncThingID: cfg.hostSyncThingID,
-            defaultSdkID: cfg.defaultSdkID || "",
-        };
-        return this._post('/folder', folder);
+    addProject(cfg: IXDSFolderConfig): Observable<IXDSFolderConfig> {
+        return this._post('/folder', cfg);
     }
 
     deleteProject(id: string): Observable<IXDSFolderConfig> {
@@ -244,7 +250,13 @@ export class XDSServerService {
 
     private _decodeError(err: any) {
         let e: string;
-        if (typeof err === "object") {
+        if (err instanceof Response) {
+            const body = err.json() || 'Server error';
+            e = body.error || JSON.stringify(body);
+            if (!e || e === "") {
+                e = `${err.status} - ${err.statusText || 'Unknown error'}`;
+            }
+        } else if (typeof err === "object") {
             if (err.statusText) {
                 e = err.statusText;
             } else if (err.error) {
@@ -253,7 +265,7 @@ export class XDSServerService {
                 e = JSON.stringify(err);
             }
         } else {
-            e = err.json().error || 'Server error';
+            e = err.message ? err.message : err.toString();
         }
         return Observable.throw(e);
     }

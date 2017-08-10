@@ -76,11 +76,13 @@ func (s *APIService) buildMake(c *gin.Context) {
 		return
 	}
 
-	prj := s.mfolder.GetFolderFromID(id)
-	if prj == nil {
+	pf := s.mfolders.Get(id)
+	if pf == nil {
 		common.APIError(c, "Unknown id")
 		return
 	}
+	folder := *pf
+	prj := folder.GetConfig()
 
 	execTmo := args.CmdTimeout
 	if execTmo == 0 {
@@ -138,7 +140,7 @@ func (s *APIService) buildMake(c *gin.Context) {
 		exitImm := (*data)["ExitImmediate"].(bool)
 
 		// XXX - workaround to be sure that Syncthing detected all changes
-		if err := s.mfolder.ForceSync(prjID); err != nil {
+		if err := s.mfolders.ForceSync(prjID); err != nil {
 			s.log.Errorf("Error while syncing folder %s: %v", prjID, err)
 		}
 		if !exitImm {
@@ -147,7 +149,7 @@ func (s *APIService) buildMake(c *gin.Context) {
 			tmo := 60
 			for t := tmo; t > 0; t-- {
 				s.log.Debugf("Wait file insync for %s (%d/%d)", prjID, t, tmo)
-				if sync, err := s.mfolder.IsFolderInSync(prjID); sync || err != nil {
+				if sync, err := s.mfolders.IsFolderInSync(prjID); sync || err != nil {
 					if err != nil {
 						s.log.Errorf("ERROR IsFolderInSync (%s): %v", prjID, err)
 					}
@@ -179,7 +181,7 @@ func (s *APIService) buildMake(c *gin.Context) {
 		cmd = append(cmd, "&&")
 	}
 
-	cmd = append(cmd, "cd", prj.GetFullPath(args.RPath), "&&", "make")
+	cmd = append(cmd, "cd", folder.GetFullPath(args.RPath), "&&", "make")
 	if len(args.Args) > 0 {
 		cmd = append(cmd, args.Args...)
 	}

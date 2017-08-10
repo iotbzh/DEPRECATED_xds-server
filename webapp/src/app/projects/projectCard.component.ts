@@ -19,14 +19,23 @@ import { ConfigService, IProject, ProjectType } from "../services/config.service
                 <td>{{ project.id }}</td>
             </tr>
             <tr>
-                <th><span class="fa fa-fw fa-folder-open-o"></span>&nbsp;<span>Folder path</span></th>
-                <td>{{ project.path}}</td>
-            </tr>
-            <tr>
-                <th><span class="fa fa-fw fa-exchange"></span>&nbsp;<span>Synchronization type</span></th>
+                <th><span class="fa fa-fw fa-exchange"></span>&nbsp;<span>Sharing type</span></th>
                 <td>{{ project.type | readableType }}</td>
             </tr>
-
+            <tr>
+                <th><span class="fa fa-fw fa-folder-open-o"></span>&nbsp;<span>Local path</span></th>
+                <td>{{ project.pathClient }}</td>
+            </tr>
+            <tr *ngIf="project.pathServer != ''">
+                <th><span class="fa fa-fw fa-folder-open-o"></span>&nbsp;<span>Server path</span></th>
+                <td>{{ project.pathServer }}</td>
+            </tr>
+            <!--
+            <tr>
+                <th><span class="fa fa-fw fa-status"></span>&nbsp;<span>Status</span></th>
+                <td>{{ project.remotePrjDef.status }}</td>
+            </tr>
+            -->
             </tbody>
         </table >
     `,
@@ -53,11 +62,11 @@ export class ProjectCardComponent {
 })
 
 export class ProjectReadableTypePipe implements PipeTransform {
-  transform(type: ProjectType): string {
-    switch (+type) {
-        case ProjectType.NATIVE:    return "Native";
-        case ProjectType.SYNCTHING: return "Cloud (Syncthing)";
-        default:                    return String(type);
+    transform(type: ProjectType): string {
+        switch (type) {
+            case ProjectType.NATIVE_PATHMAP: return "Native (path mapping)";
+            case ProjectType.SYNCTHING: return "Cloud (Syncthing)";
+            default: return String(type);
+        }
     }
-  }
 }

@@ -13,16 +13,21 @@ import 'rxjs/add/observable/throw';
 import 'rxjs/add/operator/mergeMap';
 
 
-import { XDSServerService, IXDSConfigProject } from "../services/xdsserver.service";
+import { XDSServerService, IXDSFolderConfig } from "../services/xdsserver.service";
 import { XDSAgentService } from "../services/xdsagent.service";
 import { SyncthingService, ISyncThingProject, ISyncThingStatus } from "../services/syncthing.service";
 import { AlertService, IAlert } from "../services/alert.service";
 import { UtilsService } from "../services/utils.service";
 
 export enum ProjectType {
-    NATIVE = 1,
+    NATIVE_PATHMAP = 1,
     SYNCTHING = 2
 }
+
+export var ProjectTypes = [
+    { value: ProjectType.NATIVE_PATHMAP, display: "Path mapping" },
+    { value: ProjectType.SYNCTHING, display: "Cloud Sync" }
+];
 
 export interface INativeProject {
     // TODO
@@ -31,7 +36,8 @@ export interface INativeProject {
 export interface IProject {
     id?: string;
     label: string;
-    path: string;
+    pathClient: string;
+    pathServer?: string;
     type: ProjectType;
     remotePrjDef?: INativeProject | ISyncThingProject;
     localPrjDef?: any;
@@ -172,7 +178,7 @@ export class ConfigService {
                     let zurl = this.confStore.xdsAgentPackages && this.confStore.xdsAgentPackages.filter(elem => elem.os === os);
                     if (zurl && zurl.length) {
                         msg += " Download XDS-Agent tarball for " + zurl[0].os + " host OS ";
-                        msg += "<a class=\"fa fa-download\" href=\"" +  zurl[0].url + "\" target=\"_blank\"></a>";
+                        msg += "<a class=\"fa fa-download\" href=\"" + zurl[0].url + "\" target=\"_blank\"></a>";
                     }
                     msg += "</span>";
                     this.alert.error(msg);
@@ -213,8 +219,9 @@ export class ConfigService {
                             let pp: IProject = {
                                 id: rPrj.id,
                                 label: rPrj.label,
-                                path: rPrj.path,
-                                type: ProjectType.SYNCTHING,    // FIXME support other types
+                                pathClient: rPrj.path,
+                                pathServer: rPrj.dataPathMap.serverPath,
+                                type: rPrj.type,
                                 remotePrjDef: Object.assign({}, rPrj),
                                 localPrjDef: Object.assign({}, lPrj[0]),
                             };
@@ -272,57 +279,46 @@ export class ConfigService {
 
     addProject(prj: IProject) {
         // Substitute tilde with to user home path
-        prj.path = prj.path.trim();
-        if (prj.path.charAt(0) === '~') {
-            prj.path = this.confStore.localSThg.tilde + prj.path.substring(1);
+        let pathCli = prj.pathClient.trim();
+        if (pathCli.charAt(0) === '~') {
+            pathCli = this.confStore.localSThg.tilde + pathCli.substring(1);
 
             // Must be a full path (on Linux or Windows)
-        } else if (!((prj.path.charAt(0) === '/') ||
-            (prj.path.charAt(1) === ':' && (prj.path.charAt(2) === '\\' || prj.path.charAt(2) === '/')))) {
-            prj.path = this.confStore.projectsRootDir + '/' + prj.path;
+        } else if (!((pathCli.charAt(0) === '/') ||
+            (pathCli.charAt(1) === ':' && (pathCli.charAt(2) === '\\' || pathCli.charAt(2) === '/')))) {
+            pathCli = this.confStore.projectsRootDir + '/' + pathCli;
         }
 
-        if (prj.id == null) {
-            // FIXME - must be done on server side
-            let prefix = this.getLabelRootName() || new Date().toISOString();
-            let splath = prj.path.split('/');
-            prj.id = prefix + "_" + splath[splath.length - 1];
-        }
-
-        if (this._getProjectIdx(prj.id) !== -1) {
-            this.alert.warning("Project already exist (id=" + prj.id + ")", true);
-            return;
-        }
-
-        // TODO - support others project types
-        if (prj.type !== ProjectType.SYNCTHING) {
-            this.alert.error('Project type not supported yet (type: ' + prj.type + ')');
-            return;
-        }
-
-        let sdkPrj: IXDSConfigProject = {
-            id: prj.id,
-            label: prj.label,
-            path: prj.path,
-            hostSyncThingID: this.confStore.localSThg.ID,
+        let xdsPrj: IXDSFolderConfig = {
+            id: "",
+            label: prj.label || "",
+            path: pathCli,
+            type: prj.type,
             defaultSdkID: prj.defaultSdkID,
+            dataPathMap: {
+                serverPath: prj.pathServer,
+            },
+            dataCloudSync: {
+                syncThingID: this.confStore.localSThg.ID,
+            }
         };
-
         // Send config to XDS server
         let newPrj = prj;
-        this.xdsServerSvr.addProject(sdkPrj)
+        this.xdsServerSvr.addProject(xdsPrj)
             .subscribe(resStRemotePrj => {
                 newPrj.remotePrjDef = resStRemotePrj;
+                newPrj.id = resStRemotePrj.id;
 
                 // FIXME REWORK local ST config
                 //  move logic to server side tunneling-back by WS
+                let stData = resStRemotePrj.dataCloudSync;
 
                 // Now setup local config
                 let stLocPrj: ISyncThingProject = {
-                    id: sdkPrj.id,
-                    label: sdkPrj.label,
-                    path: sdkPrj.path,
-                    remoteSyncThingID: resStRemotePrj.builderSThgID
+                    id: resStRemotePrj.id,
+                    label: xdsPrj.label,
+                    path: xdsPrj.path,
+                    serverSyncThingID: stData.builderSThgID
                 };
 
                 // Set local Syncthing config

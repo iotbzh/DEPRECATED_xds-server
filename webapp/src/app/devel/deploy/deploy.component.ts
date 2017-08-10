@@ -37,8 +37,8 @@ export class DeployComponent implements OnInit {
 
     ngOnInit() {
         this.deploying = false;
-        if (this.curProject && this.curProject.path) {
-            this.deployForm.patchValue({ wgtFile: this.curProject.path });
+        if (this.curProject && this.curProject.pathClient) {
+            this.deployForm.patchValue({ wgtFile: this.curProject.pathClient });
         }
     }
 
