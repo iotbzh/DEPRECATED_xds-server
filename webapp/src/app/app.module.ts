@@ -10,6 +10,7 @@ import { ModalModule } from 'ngx-bootstrap/modal';
 import { AccordionModule } from 'ngx-bootstrap/accordion';
 import { CarouselModule } from 'ngx-bootstrap/carousel';
 import { PopoverModule } from 'ngx-bootstrap/popover';
+import { CollapseModule } from 'ngx-bootstrap/collapse';
 import { BsDropdownModule } from 'ngx-bootstrap/dropdown';
 
 // Import the application components and services.
@@ -21,9 +22,11 @@ import { DlXdsAgentComponent, CapitalizePipe } from "./config/downloadXdsAgent.c
 import { ProjectCardComponent } from "./projects/projectCard.component";
 import { ProjectReadableTypePipe } from "./projects/projectCard.component";
 import { ProjectsListAccordionComponent } from "./projects/projectsListAccordion.component";
+import { ProjectAddModalComponent} from "./projects/projectAddModal.component";
 import { SdkCardComponent } from "./sdks/sdkCard.component";
 import { SdksListAccordionComponent } from "./sdks/sdksListAccordion.component";
 import { SdkSelectDropdownComponent } from "./sdks/sdkSelectDropdown.component";
+import { SdkAddModalComponent} from "./sdks/sdkAddModal.component";
 
 import { HomeComponent } from "./home/home.component";
 import { DevelComponent } from "./devel/devel.component";
@@ -52,6 +55,7 @@ import { SdkService } from "./services/sdk.service";
         AccordionModule.forRoot(),
         CarouselModule.forRoot(),
         PopoverModule.forRoot(),
+        CollapseModule.forRoot(),
         BsDropdownModule.forRoot(),
     ],
     declarations: [
@@ -67,9 +71,11 @@ import { SdkService } from "./services/sdk.service";
         ProjectCardComponent,
         ProjectReadableTypePipe,
         ProjectsListAccordionComponent,
+        ProjectAddModalComponent,
         SdkCardComponent,
         SdksListAccordionComponent,
         SdkSelectDropdownComponent,
+        SdkAddModalComponent,
     ],
     providers: [
         AppRoutingProviders,

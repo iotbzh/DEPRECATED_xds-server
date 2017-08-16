@@ -208,7 +208,7 @@ func (f *Folders) createUpdate(newF folder.FolderConfig, create bool) (*folder.F
 		fld = f.SThg.NewFolderST(f.Conf)
 	// PATH MAP
 	case folder.TypePathMap:
-		fld = folder.NewFolderPathMap()
+		fld = folder.NewFolderPathMap(f.Conf)
 	default:
 		return nil, fmt.Errorf("Unsupported folder type")
 	}

@@ -1,11 +1,18 @@
 <div class="panel panel-default">
-    <div class="panel-heading clearfix">
-        <h2 class="panel-title pull-left">Global Configuration</h2>
-        <div class="pull-right">
-            <span class="fa fa-fw fa-exchange fa-size-x2" [style.color]="((serverStatus$ | async)?.WS_connected)?'green':'red'"></span>
-        </div>
+    <div class="panel-heading">
+        <h2 class="panel-title" (click)="gConfigIsCollapsed = !gConfigIsCollapsed">
+            Global Configuration
+            <div class="pull-right">
+                <span class="fa fa-fw fa-exchange fa-size-x2" [style.color]="((serverStatus$ | async)?.WS_connected)?'green':'red'"></span>
+
+                <button class="btn btn-link" (click)="gConfigIsCollapsed = !gConfigIsCollapsed; $event.stopPropagation()">
+                    <span *ngIf="gConfigIsCollapsed" class="fa fa-angle-double-right fa-size-x2"></span>
+                    <span *ngIf="!gConfigIsCollapsed" class="fa fa-angle-double-down fa-size-x2"></span>
+                </button>
+            </div>
+        </h2>
     </div>
-    <div class="panel-body">
+    <div class="panel-body" [collapse]="gConfigIsCollapsed">
         <div class="row">
             <div class="col-xs-12">
                 <table class="table table-condensed">
@@ -50,9 +57,19 @@
 
 <div class="panel panel-default">
     <div class="panel-heading">
-        <h2 class="panel-title">Cross SDKs Configuration</h2>
+        <h2 class="panel-title" (click)="sdksIsCollapsed = !sdksIsCollapsed">
+            Cross SDKs
+            <div class="pull-right">
+                <button class="btn btn-link" (click)="childSdkModal.show(); $event.stopPropagation()"><span class="fa fa-plus fa-size-x2"></span></button>
+
+                <button class="btn btn-link" (click)="sdksIsCollapsed = !sdksIsCollapsed; $event.stopPropagation()">
+                    <span *ngIf="sdksIsCollapsed" class="fa fa-angle-double-right fa-size-x2"></span>
+                    <span *ngIf="!sdksIsCollapsed" class="fa fa-angle-double-down fa-size-x2"></span>
+                </button>
+            </div>
+        </h2>
     </div>
-    <div class="panel-body">
+    <div class="panel-body" [collapse]="sdksIsCollapsed">
         <div class="row col-xs-12">
             <sdks-list-accordion [sdks]="(sdks$ | async)"></sdks-list-accordion>
         </div>
@@ -61,43 +78,30 @@
 
 <div class="panel panel-default">
     <div class="panel-heading">
-        <h2 class="panel-title">Projects Configuration</h2>
-    </div>
-    <div class="panel-body">
-        <form [formGroup]="addProjectForm" (ngSubmit)="onSubmit()">
-            <div class="row ">
-                <div class="col-xs-2">
-                    <button class="btn btn-primary" type="submit" [disabled]="!addProjectForm.valid"><i class="fa fa-plus"></i>&nbsp;Add Folder</button>
-                </div>
+        <h2 class="panel-title" (click)="projectsIsCollapsed = !projectsIsCollapsed; $event.stopPropagation()">
+            Projects
+            <div class="pull-right">
+                <button class="btn btn-link" (click)="childProjectModal.show(); $event.stopPropagation()"><span class="fa fa-plus fa-size-x2"></span></button>
 
-                <div class="col-xs-6">
-                    <label>Client/Local Path </label>
-                    <input type="text" style="width:70%;" formControlName="pathCli" placeholder="myProject">
-                </div>
-                <div class="col-xs-6">
-                    <label>Server Path </label>
-                    <input type="text" style="width:70%;" formControlName="pathSvr" placeholder="myProject">
-                </div>
-                <div class="col-xs-4">
-                    <label>Label </label>
-                    <input type="text" formControlName="label" (keyup)="onKeyLabel($event)">
-                </div>
-                <div class="col-xs-4">
-                    <label>Type </label>
-                    <select class="form-control" formControlName="type">
-                        <option *ngFor="let t of projectTypes" [value]="t.value">{{t.display}}
-                        </option>
-                    </select>
-                </div>
+                <button class="btn btn-link" (click)="projectsIsCollapsed = !projectsIsCollapsed; $event.stopPropagation()">
+                        <span *ngIf="projectsIsCollapsed" class="fa fa-angle-double-right fa-size-x2"></span>
+                        <span *ngIf="!projectsIsCollapsed" class="fa fa-angle-double-down fa-size-x2"></span>
+                </button>
             </div>
-        </form>
-
+        </h2>
+    </div>
+    <div class="panel-body" [collapse]="projectsIsCollapsed">
         <div class="row col-xs-12">
             <projects-list-accordion [projects]="(config$ | async).projects"></projects-list-accordion>
         </div>
     </div>
 </div>
 
+<!-- Modals -->
+<project-add-modal #childProjectModal [title]="'Add a new project'">
+</project-add-modal>
+<sdk-add-modal  #childSdkModal [title]="'Add a new SDK'">
+</sdk-add-modal>
 
 <!-- only for debug -->
 <div *ngIf="false" class="row">

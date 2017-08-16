@@ -39,6 +39,7 @@
             'ngx-bootstrap/carousel': 'npm:ngx-bootstrap/bundles/ngx-bootstrap.umd.min.js',
             'ngx-bootstrap/popover': 'npm:ngx-bootstrap/bundles/ngx-bootstrap.umd.min.js',
             'ngx-bootstrap/dropdown': 'npm:ngx-bootstrap/bundles/ngx-bootstrap.umd.min.js',
+            'ngx-bootstrap/collapse': 'npm:ngx-bootstrap/bundles/ngx-bootstrap.umd.min.js',
             // other libraries
             'socket.io-client': 'npm:socket.io-client/dist/socket.io.min.js'
         },

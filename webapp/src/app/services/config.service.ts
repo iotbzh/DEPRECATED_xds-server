@@ -277,7 +277,7 @@ export class ConfigService {
         return id.slice(0, 15);
     }
 
-    addProject(prj: IProject) {
+    addProject(prj: IProject): Observable<IProject> {
         // Substitute tilde with to user home path
         let pathCli = prj.pathClient.trim();
         if (pathCli.charAt(0) === '~') {
@@ -304,57 +304,58 @@ export class ConfigService {
         };
         // Send config to XDS server
         let newPrj = prj;
-        this.xdsServerSvr.addProject(xdsPrj)
-            .subscribe(resStRemotePrj => {
+        return this.xdsServerSvr.addProject(xdsPrj)
+            .flatMap(resStRemotePrj => {
                 newPrj.remotePrjDef = resStRemotePrj;
                 newPrj.id = resStRemotePrj.id;
+                newPrj.pathClient = resStRemotePrj.path;
 
-                // FIXME REWORK local ST config
-                //  move logic to server side tunneling-back by WS
-                let stData = resStRemotePrj.dataCloudSync;
+                if (newPrj.type === ProjectType.SYNCTHING) {
+                    // FIXME REWORK local ST config
+                    //  move logic to server side tunneling-back by WS
+                    let stData = resStRemotePrj.dataCloudSync;
 
-                // Now setup local config
-                let stLocPrj: ISyncThingProject = {
-                    id: resStRemotePrj.id,
-                    label: xdsPrj.label,
-                    path: xdsPrj.path,
-                    serverSyncThingID: stData.builderSThgID
-                };
+                    // Now setup local config
+                    let stLocPrj: ISyncThingProject = {
+                        id: resStRemotePrj.id,
+                        label: xdsPrj.label,
+                        path: xdsPrj.path,
+                        serverSyncThingID: stData.builderSThgID
+                    };
 
-                // Set local Syncthing config
-                this.stSvr.addProject(stLocPrj)
-                    .subscribe(resStLocalPrj => {
-                        newPrj.localPrjDef = resStLocalPrj;
+                    // Set local Syncthing config
+                    return this.stSvr.addProject(stLocPrj);
 
-                        // FIXME: maybe reduce subject to only .project
-                        //this.confSubject.next(Object.assign({}, this.confStore).project);
-                        this.confStore.projects.push(Object.assign({}, newPrj));
-                        this.confSubject.next(Object.assign({}, this.confStore));
-                    },
-                    err => {
-                        this.alert.error("Configuration local ERROR: " + err);
-                    });
-            },
-            err => {
-                this.alert.error("Configuration remote ERROR: " + err);
+                } else {
+                    newPrj.pathServer = resStRemotePrj.dataPathMap.serverPath;
+                    return Observable.of(null);
+                }
+            })
+            .map(resStLocalPrj => {
+                newPrj.localPrjDef = resStLocalPrj;
+
+                // FIXME: maybe reduce subject to only .project
+                //this.confSubject.next(Object.assign({}, this.confStore).project);
+                this.confStore.projects.push(Object.assign({}, newPrj));
+                this.confSubject.next(Object.assign({}, this.confStore));
+
+                return newPrj;
             });
     }
 
-    deleteProject(prj: IProject) {
+    deleteProject(prj: IProject): Observable<IProject> {
         let idx = this._getProjectIdx(prj.id);
+        let delPrj = prj;
         if (idx === -1) {
             throw new Error("Invalid project id (id=" + prj.id + ")");
         }
-        this.xdsServerSvr.deleteProject(prj.id)
-            .subscribe(res => {
-                this.stSvr.deleteProject(prj.id)
-                    .subscribe(res => {
-                        this.confStore.projects.splice(idx, 1);
-                    }, err => {
-                        this.alert.error("Delete local ERROR: " + err);
-                    });
-            }, err => {
-                this.alert.error("Delete remote ERROR: " + err);
+        return this.xdsServerSvr.deleteProject(prj.id)
+            .flatMap(res => {
+                return this.stSvr.deleteProject(prj.id);
+            })
+            .map(res => {
+                this.confStore.projects.splice(idx, 1);
+                return delPrj;
             });
     }
 

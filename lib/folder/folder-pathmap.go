@@ -7,18 +7,22 @@ import (
 	"path/filepath"
 
 	common "github.com/iotbzh/xds-common/golib"
+	"github.com/iotbzh/xds-server/lib/xdsconfig"
 )
 
 // IFOLDER interface implementation for native/path mapping folders
 
 // PathMap .
 type PathMap struct {
-	config FolderConfig
+	globalConfig *xdsconfig.Config
+	config       FolderConfig
 }
 
 // NewFolderPathMap Create a new instance of PathMap
-func NewFolderPathMap() *PathMap {
-	f := PathMap{}
+func NewFolderPathMap(gc *xdsconfig.Config) *PathMap {
+	f := PathMap{
+		globalConfig: gc,
+	}
 	return &f
 }
 
@@ -28,8 +32,13 @@ func (f *PathMap) Add(cfg FolderConfig) (*FolderConfig, error) {
 		return nil, fmt.Errorf("ServerPath must be set")
 	}
 
-	// Sanity check
+	// Use shareRootDir if ServerPath is a relative path
 	dir := cfg.DataPathMap.ServerPath
+	if !filepath.IsAbs(dir) {
+		dir = filepath.Join(f.globalConfig.FileConf.ShareRootDir, dir)
+	}
+
+	// Sanity check
 	if !common.Exists(dir) {
 		// try to create if not existing
 		if err := os.MkdirAll(dir, 0755); err != nil {
@@ -52,7 +61,8 @@ func (f *PathMap) Add(cfg FolderConfig) (*FolderConfig, error) {
 	}
 
 	f.config = cfg
-	f.config.RootPath = cfg.DataPathMap.ServerPath
+	f.config.RootPath = dir
+	f.config.DataPathMap.ServerPath = dir
 	f.config.Status = StatusEnable
 
 	return &f.config, nil

@@ -1,5 +1,6 @@
 import { Component, Input, Pipe, PipeTransform } from '@angular/core';
 import { ConfigService, IProject, ProjectType } from "../services/config.service";
+import { AlertService } from "../services/alert.service";
 
 @Component({
     selector: 'project-card',
@@ -46,12 +47,19 @@ export class ProjectCardComponent {
 
     @Input() project: IProject;
 
-    constructor(private configSvr: ConfigService) {
+    constructor(
+        private alert: AlertService,
+        private configSvr: ConfigService
+    ) {
     }
 
 
     delete(prj: IProject) {
-        this.configSvr.deleteProject(prj);
+        this.configSvr.deleteProject(prj)
+            .subscribe(res => {
+            }, err => {
+                this.alert.error("Delete local ERROR: " + err);
+            });
     }
 
 }
