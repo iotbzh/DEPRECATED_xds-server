@@ -191,13 +191,11 @@ func (s *SyncThing) FolderStatus(folderID string) (*FolderStatus, error) {
 
 // IsFolderInSync Returns true when folder is in sync
 func (s *SyncThing) IsFolderInSync(folderID string) (bool, error) {
-	// FIXME better to detected FolderCompletion event (/rest/events)
-	// See https://docs.syncthing.net/dev/events.html
 	sts, err := s.FolderStatus(folderID)
 	if err != nil {
 		return false, err
 	}
-	return sts.NeedBytes == 0, nil
+	return sts.NeedBytes == 0 && sts.State == "idle", nil
 }
 
 // FolderScan Request immediate folder scan.

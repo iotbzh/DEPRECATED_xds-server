@@ -8,6 +8,7 @@ import (
 
 	common "github.com/iotbzh/xds-common/golib"
 	"github.com/iotbzh/xds-server/lib/xdsconfig"
+	uuid "github.com/satori/go.uuid"
 )
 
 // IFOLDER interface implementation for native/path mapping folders
@@ -24,6 +25,11 @@ func NewFolderPathMap(gc *xdsconfig.Config) *PathMap {
 		globalConfig: gc,
 	}
 	return &f
+}
+
+// NewUID Get a UUID
+func (f *PathMap) NewUID(suffix string) string {
+	return uuid.NewV1().String() + "_" + suffix
 }
 
 // Add a new folder
@@ -63,6 +69,7 @@ func (f *PathMap) Add(cfg FolderConfig) (*FolderConfig, error) {
 	f.config = cfg
 	f.config.RootPath = dir
 	f.config.DataPathMap.ServerPath = dir
+	f.config.IsInSync = true
 	f.config.Status = StatusEnable
 
 	return &f.config, nil
@@ -84,6 +91,16 @@ func (f *PathMap) GetFullPath(dir string) string {
 // Remove a folder
 func (f *PathMap) Remove() error {
 	// nothing to do
+	return nil
+}
+
+// RegisterEventChange requests registration for folder change event
+func (f *PathMap) RegisterEventChange(cb *EventCB, data *EventCBData) error {
+	return nil
+}
+
+// UnRegisterEventChange remove registered callback
+func (f *PathMap) UnRegisterEventChange() error {
 	return nil
 }
 

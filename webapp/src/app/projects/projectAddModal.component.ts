@@ -62,7 +62,17 @@ export class ProjectAddModalComponent {
         this.pathCliCtrl.valueChanges
             .debounceTime(100)
             .filter(n => n)
-            .map(n => "Project_" + n.split('/')[0])
+            .map(n => {
+                let last = n.split('/');
+                let nm = n;
+                if (last.length > 0) {
+                     nm = last.pop();
+                     if (nm === "" && last.length > 0) {
+                        nm = last.pop();
+                     }
+                }
+                return "Project_" + nm;
+            })
             .subscribe(value => {
                 if (value && !this.userEditedLabel) {
                     this.addProjectForm.patchValue({ label: value });
@@ -97,10 +107,10 @@ export class ProjectAddModalComponent {
 
     onChangeLocalProject(e) {
         if e.target.files.length < 1 {
-            console.log('SEB NO files');
+            console.log('NO files');
         }
         let dir = e.target.files[0].webkitRelativePath;
-        console.log("SEB files: " + dir);
+        console.log("files: " + dir);
         let u = URL.createObjectURL(e.target.files[0]);
     }
     */

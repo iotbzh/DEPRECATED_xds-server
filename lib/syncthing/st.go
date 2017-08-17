@@ -42,6 +42,7 @@ type SyncThing struct {
 	conf        *xdsconfig.Config
 	client      *common.HTTPClient
 	log         *logrus.Logger
+	Events      *Events
 }
 
 // ExitChan Channel used for process exit
@@ -125,6 +126,9 @@ func NewSyncThing(conf *xdsconfig.Config, log *logrus.Logger) *SyncThing {
 		log:     log,
 		conf:    conf,
 	}
+
+	// Create Events monitoring
+	s.Events = s.NewEventListener()
 
 	return &s
 }
@@ -316,6 +320,12 @@ func (s *SyncThing) Connect() error {
 	s.client.SetLogger(s.log)
 
 	s.MyID, err = s.IDGet()
+	if err != nil {
+		return fmt.Errorf("ERROR: cannot retrieve ID")
+	}
+
+	// Start events monitoring
+	err = s.Events.Start()
 
 	return err
 }

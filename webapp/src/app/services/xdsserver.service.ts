@@ -38,12 +38,13 @@ export interface IXDSFolderConfig {
     path: string;
     type: number;
     status?: string;
+    isInSync?: boolean;
     defaultSdkID: string;
 
     // FIXME better with union but tech pb with go code
     //data?: IXDSPathMapConfig|IXDSCloudSyncConfig;
-    dataPathMap?:IXDSPathMapConfig;
-    dataCloudSync?:IXDSCloudSyncConfig;
+    dataPathMap?: IXDSPathMapConfig;
+    dataCloudSync?: IXDSCloudSyncConfig;
 }
 
 export interface IXDSPathMapConfig {
@@ -106,7 +107,9 @@ export class XDSServerService {
 
     public CmdOutput$ = <Subject<ICmdOutput>>new Subject();
     public CmdExit$ = <Subject<ICmdExit>>new Subject();
+    public FolderStateChange$ = <Subject<IXDSFolderConfig>>new Subject();
     public Status$: Observable<IServerStatus>;
+
 
     private baseUrl: string;
     private wsUrl: string;
@@ -127,6 +130,7 @@ export class XDSServerService {
         } else {
             this.wsUrl = 'ws://' + re[1];
             this._handleIoSocket();
+            this._RegisterEvents();
         }
     }
 
@@ -172,6 +176,22 @@ export class XDSServerService {
             this.CmdExit$.next(Object.assign({}, <ICmdExit>data));
         });
 
+        this.socket.on('event:FolderStateChanged', ev => {
+            if (ev && ev.folder) {
+                this.FolderStateChange$.next(Object.assign({}, ev.folder));
+            }
+        });
+    }
+
+    private _RegisterEvents() {
+        let ev = "FolderStateChanged";
+        this._post('/events/register', { "name": ev })
+            .subscribe(
+            res => { },
+            error => {
+                this.alert.error("ERROR while registering events " + ev + ": ", error);
+            }
+            );
     }
 
     getSdks(): Observable<ISdk[]> {
@@ -192,6 +212,10 @@ export class XDSServerService {
 
     deleteProject(id: string): Observable<IXDSFolderConfig> {
         return this._delete('/folder/' + id);
+    }
+
+    syncProject(id: string): Observable<string> {
+        return this._post('/folder/sync/' + id, {});
     }
 
     exec(prjID: string, dir: string, cmd: string, sdkid?: string, args?: string[], env?: string[]): Observable<any> {

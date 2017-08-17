@@ -14,16 +14,24 @@ const (
 	StatusErrorConfig = "ErrorConfig"
 	StatusDisable     = "Disable"
 	StatusEnable      = "Enable"
+	StatusPause       = "Pause"
+	StatusSyncing     = "Syncing"
 )
+
+type EventCBData map[string]interface{}
+type EventCB func(cfg *FolderConfig, data *EventCBData)
 
 // IFOLDER Folder interface
 type IFOLDER interface {
-	Add(cfg FolderConfig) (*FolderConfig, error) // Add a new folder
-	GetConfig() FolderConfig                     // Get folder public configuration
-	GetFullPath(dir string) string               // Get folder full path
-	Remove() error                               // Remove a folder
-	Sync() error                                 // Force folder files synchronization
-	IsInSync() (bool, error)                     // Check if folder files are in-sync
+	NewUID(suffix string) string                              // Get a new folder UUID
+	Add(cfg FolderConfig) (*FolderConfig, error)              // Add a new folder
+	GetConfig() FolderConfig                                  // Get folder public configuration
+	GetFullPath(dir string) string                            // Get folder full path
+	Remove() error                                            // Remove a folder
+	RegisterEventChange(cb *EventCB, data *EventCBData) error // Request events registration (sent through WS)
+	UnRegisterEventChange() error                             // Un-register events
+	Sync() error                                              // Force folder files synchronization
+	IsInSync() (bool, error)                                  // Check if folder files are in-sync
 }
 
 // FolderConfig is the config for one folder
@@ -33,6 +41,7 @@ type FolderConfig struct {
 	ClientPath string     `json:"path"`
 	Type       FolderType `json:"type"`
 	Status     string     `json:"status"`
+	IsInSync   bool       `json:"isInSync"`
 	DefaultSdk string     `json:"defaultSdk"`
 
 	// Not exported fields from REST API point of view

@@ -29,18 +29,15 @@ export var ProjectTypes = [
     { value: ProjectType.SYNCTHING, display: "Cloud Sync" }
 ];
 
-export interface INativeProject {
-    // TODO
-}
-
 export interface IProject {
     id?: string;
     label: string;
     pathClient: string;
     pathServer?: string;
     type: ProjectType;
-    remotePrjDef?: INativeProject | ISyncThingProject;
-    localPrjDef?: any;
+    status?: string;
+    isInSync?: boolean;
+    serverPrjDef?: IXDSFolderConfig;
     isExpanded?: boolean;
     visible?: boolean;
     defaultSdkID?: string;
@@ -139,6 +136,17 @@ export class ConfigService {
             );
             this.confSubject.next(Object.assign({}, this.confStore));
         });
+
+        // Update Project data
+        this.xdsServerSvr.FolderStateChange$.subscribe(prj => {
+            let i = this._getProjectIdx(prj.id);
+            if (i >= 0) {
+                // XXX for now, only isInSync and status may change
+                this.confStore.projects[i].isInSync = prj.isInSync;
+                this.confStore.projects[i].status = prj.status;
+                this.confSubject.next(Object.assign({}, this.confStore));
+            }
+        });
     }
 
     // Save config into cookie
@@ -215,17 +223,8 @@ export class ConfigService {
                 this.stSvr.getProjects().subscribe(localPrj => {
                     remotePrj.forEach(rPrj => {
                         let lPrj = localPrj.filter(item => item.id === rPrj.id);
-                        if (lPrj.length > 0) {
-                            let pp: IProject = {
-                                id: rPrj.id,
-                                label: rPrj.label,
-                                pathClient: rPrj.path,
-                                pathServer: rPrj.dataPathMap.serverPath,
-                                type: rPrj.type,
-                                remotePrjDef: Object.assign({}, rPrj),
-                                localPrjDef: Object.assign({}, lPrj[0]),
-                            };
-                            this.confStore.projects.push(pp);
+                        if (lPrj.length > 0 || rPrj.type === ProjectType.NATIVE_PATHMAP) {
+                            this._addProject(rPrj, true);
                         }
                     });
                     this.confSubject.next(Object.assign({}, this.confStore));
@@ -306,18 +305,15 @@ export class ConfigService {
         let newPrj = prj;
         return this.xdsServerSvr.addProject(xdsPrj)
             .flatMap(resStRemotePrj => {
-                newPrj.remotePrjDef = resStRemotePrj;
-                newPrj.id = resStRemotePrj.id;
-                newPrj.pathClient = resStRemotePrj.path;
-
-                if (newPrj.type === ProjectType.SYNCTHING) {
+                xdsPrj = resStRemotePrj;
+                if (xdsPrj.type === ProjectType.SYNCTHING) {
                     // FIXME REWORK local ST config
                     //  move logic to server side tunneling-back by WS
-                    let stData = resStRemotePrj.dataCloudSync;
+                    let stData = xdsPrj.dataCloudSync;
 
                     // Now setup local config
                     let stLocPrj: ISyncThingProject = {
-                        id: resStRemotePrj.id,
+                        id: xdsPrj.id,
                         label: xdsPrj.label,
                         path: xdsPrj.path,
                         serverSyncThingID: stData.builderSThgID
@@ -327,18 +323,11 @@ export class ConfigService {
                     return this.stSvr.addProject(stLocPrj);
 
                 } else {
-                    newPrj.pathServer = resStRemotePrj.dataPathMap.serverPath;
                     return Observable.of(null);
                 }
             })
             .map(resStLocalPrj => {
-                newPrj.localPrjDef = resStLocalPrj;
-
-                // FIXME: maybe reduce subject to only .project
-                //this.confSubject.next(Object.assign({}, this.confStore).project);
-                this.confStore.projects.push(Object.assign({}, newPrj));
-                this.confSubject.next(Object.assign({}, this.confStore));
-
+                this._addProject(xdsPrj);
                 return newPrj;
             });
     }
@@ -351,7 +340,10 @@ export class ConfigService {
         }
         return this.xdsServerSvr.deleteProject(prj.id)
             .flatMap(res => {
-                return this.stSvr.deleteProject(prj.id);
+                if (prj.type === ProjectType.SYNCTHING) {
+                    return this.stSvr.deleteProject(prj.id);
+                }
+                return Observable.of(null);
             })
             .map(res => {
                 this.confStore.projects.splice(idx, 1);
@@ -359,8 +351,51 @@ export class ConfigService {
             });
     }
 
+    syncProject(prj: IProject): Observable<string> {
+        let idx = this._getProjectIdx(prj.id);
+        if (idx === -1) {
+            throw new Error("Invalid project id (id=" + prj.id + ")");
+        }
+        return this.xdsServerSvr.syncProject(prj.id);
+    }
+
     private _getProjectIdx(id: string): number {
         return this.confStore.projects.findIndex((item) => item.id === id);
     }
 
+    private _addProject(rPrj: IXDSFolderConfig, noNext?: boolean) {
+
+        // Convert XDSFolderConfig to IProject
+        let pp: IProject = {
+            id: rPrj.id,
+            label: rPrj.label,
+            pathClient: rPrj.path,
+            pathServer: rPrj.dataPathMap.serverPath,
+            type: rPrj.type,
+            status: rPrj.status,
+            isInSync: rPrj.isInSync,
+            defaultSdkID: rPrj.defaultSdkID,
+            serverPrjDef: Object.assign({}, rPrj),  // do a copy
+        };
+
+        // add new project
+        this.confStore.projects.push(pp);
+
+        // sort project array
+        this.confStore.projects.sort((a, b) => {
+            if (a.label < b.label) {
+                return -1;
+            }
+            if (a.label > b.label) {
+                return 1;
+            }
+            return 0;
+        });
+
+        // FIXME: maybe reduce subject to only .project
+        //this.confSubject.next(Object.assign({}, this.confStore).project);
+        if (!noNext) {
+            this.confSubject.next(Object.assign({}, this.confStore));
+        }
+    }
 }

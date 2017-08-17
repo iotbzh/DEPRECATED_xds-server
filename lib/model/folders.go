@@ -7,13 +7,13 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/Sirupsen/logrus"
 	common "github.com/iotbzh/xds-common/golib"
 	"github.com/iotbzh/xds-server/lib/folder"
 	"github.com/iotbzh/xds-server/lib/syncthing"
 	"github.com/iotbzh/xds-server/lib/xdsconfig"
-	uuid "github.com/satori/go.uuid"
 	"github.com/syncthing/syncthing/lib/sync"
 )
 
@@ -24,6 +24,12 @@ type Folders struct {
 	Log        *logrus.Logger
 	SThg       *st.SyncThing
 	folders    map[string]*folder.IFOLDER
+	registerCB []RegisteredCB
+}
+
+type RegisteredCB struct {
+	cb   *folder.EventCB
+	data *folder.EventCBData
 }
 
 // Mutex to make add/delete atomic
@@ -39,6 +45,7 @@ func FoldersNew(cfg *xdsconfig.Config, st *st.SyncThing) *Folders {
 		Log:        cfg.Log,
 		SThg:       st,
 		folders:    make(map[string]*folder.IFOLDER),
+		registerCB: []RegisteredCB{},
 	}
 }
 
@@ -114,12 +121,15 @@ func (f *Folders) LoadConfig() error {
 	// Update folders
 	f.Log.Infof("Loading initial folders config: %d folders found", len(flds))
 	for _, fc := range flds {
-		if _, err := f.createUpdate(fc, false); err != nil {
+		if _, err := f.createUpdate(fc, false, true); err != nil {
 			return err
 		}
 	}
 
-	return nil
+	// Save config on disk
+	err := f.SaveConfig()
+
+	return err
 }
 
 // SaveConfig Save folders configuration to disk
@@ -164,11 +174,11 @@ func (f *Folders) getConfigArrUnsafe() []folder.FolderConfig {
 
 // Add adds a new folder
 func (f *Folders) Add(newF folder.FolderConfig) (*folder.FolderConfig, error) {
-	return f.createUpdate(newF, true)
+	return f.createUpdate(newF, true, false)
 }
 
 // CreateUpdate creates or update a folder
-func (f *Folders) createUpdate(newF folder.FolderConfig, create bool) (*folder.FolderConfig, error) {
+func (f *Folders) createUpdate(newF folder.FolderConfig, create bool, initial bool) (*folder.FolderConfig, error) {
 
 	fcMutex.Lock()
 	defer fcMutex.Unlock()
@@ -181,23 +191,7 @@ func (f *Folders) createUpdate(newF folder.FolderConfig, create bool) (*folder.F
 		return nil, fmt.Errorf("ClientPath must be set")
 	}
 
-	// Allocate a new UUID
-	if create {
-		newF.ID = uuid.NewV1().String()
-	}
-	if !create && newF.ID == "" {
-		return nil, fmt.Errorf("Cannot update folder with null ID")
-	}
-
-	// Set default value if needed
-	if newF.Status == "" {
-		newF.Status = folder.StatusDisable
-	}
-
-	if newF.Label == "" {
-		newF.Label = filepath.Base(newF.ClientPath) + "_" + newF.ID[0:8]
-	}
-
+	// Create a new folder object
 	var fld folder.IFOLDER
 	switch newF.Type {
 	// SYNCTHING
@@ -213,6 +207,26 @@ func (f *Folders) createUpdate(newF folder.FolderConfig, create bool) (*folder.F
 		return nil, fmt.Errorf("Unsupported folder type")
 	}
 
+	// Set default value if needed
+	if newF.Status == "" {
+		newF.Status = folder.StatusDisable
+	}
+	if newF.Label == "" {
+		newF.Label = filepath.Base(newF.ClientPath) + "_" + newF.ID[0:8]
+	}
+
+	// Allocate a new UUID
+	if create {
+		i := len(newF.Label)
+		if i > 20 {
+			i = 20
+		}
+		newF.ID = fld.NewUID(newF.Label[:i])
+	}
+	if !create && newF.ID == "" {
+		return nil, fmt.Errorf("Cannot update folder with null ID")
+	}
+
 	// Normalize path (needed for Windows path including bashlashes)
 	newF.ClientPath = common.PathNormalize(newF.ClientPath)
 
@@ -224,13 +238,31 @@ func (f *Folders) createUpdate(newF folder.FolderConfig, create bool) (*folder.F
 		return newFolder, err
 	}
 
-	// Register folder object
+	// Add to folders list
 	f.folders[newF.ID] = &fld
 
 	// Save config on disk
-	err = f.SaveConfig()
+	if !initial {
+		if err := f.SaveConfig(); err != nil {
+			return newFolder, err
+		}
+	}
 
-	return newFolder, err
+	// Register event change callback
+	for _, rcb := range f.registerCB {
+		if err := fld.RegisterEventChange(rcb.cb, rcb.data); err != nil {
+			return newFolder, err
+		}
+	}
+
+	// Force sync after creation
+	// (need to defer to be sure that WS events will arrive after HTTP creation reply)
+	go func() {
+		time.Sleep(time.Millisecond * 500)
+		fld.Sync()
+	}()
+
+	return newFolder, nil
 }
 
 // Delete deletes a specific folder
@@ -258,6 +290,29 @@ func (f *Folders) Delete(id string) (folder.FolderConfig, error) {
 	err = f.SaveConfig()
 
 	return fld, err
+}
+
+// RegisterEventChange requests registration for folder event change
+func (f *Folders) RegisterEventChange(id string, cb *folder.EventCB, data *folder.EventCBData) error {
+
+	flds := make(map[string]*folder.IFOLDER)
+	if id != "" {
+		// Register to a specific folder
+		flds[id] = f.Get(id)
+	} else {
+		// Register to all folders
+		flds = f.folders
+		f.registerCB = append(f.registerCB, RegisteredCB{cb: cb, data: data})
+	}
+
+	for _, fld := range flds {
+		err := (*fld).RegisterEventChange(cb, data)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // ForceSync Force the synchronization of a folder

@@ -43,6 +43,21 @@ func (s *APIService) addFolder(c *gin.Context) {
 	c.JSON(http.StatusOK, newFld)
 }
 
+// syncFolder force synchronization of folder files
+func (s *APIService) syncFolder(c *gin.Context) {
+	id := c.Param("id")
+
+	s.log.Debugln("Sync folder id: ", id)
+
+	err := s.mfolders.ForceSync(id)
+	if err != nil {
+		common.APIError(c, err.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK, "")
+}
+
 // delFolder deletes folder from server config
 func (s *APIService) delFolder(c *gin.Context) {
 	id := c.Param("id")
@@ -55,5 +70,4 @@ func (s *APIService) delFolder(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, delEntry)
-
 }

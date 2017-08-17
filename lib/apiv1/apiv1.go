@@ -42,6 +42,7 @@ func New(r *gin.Engine, sess *session.Sessions, cfg *xdsconfig.Config, mfolders 
 	s.apiRouter.GET("/folders", s.getFolders)
 	s.apiRouter.GET("/folder/:id", s.getFolder)
 	s.apiRouter.POST("/folder", s.addFolder)
+	s.apiRouter.POST("/folder/sync/:id", s.syncFolder)
 	s.apiRouter.DELETE("/folder/:id", s.delFolder)
 
 	s.apiRouter.GET("/sdks", s.getSdks)
@@ -53,6 +54,10 @@ func New(r *gin.Engine, sess *session.Sessions, cfg *xdsconfig.Config, mfolders 
 	s.apiRouter.POST("/exec", s.execCmd)
 	s.apiRouter.POST("/exec/:id", s.execCmd)
 	s.apiRouter.POST("/signal", s.execSignalCmd)
+
+	s.apiRouter.GET("/events", s.eventsList)
+	s.apiRouter.POST("/events/register", s.eventsRegister)
+	s.apiRouter.POST("/events/unregister", s.eventsUnRegister)
 
 	return s
 }
