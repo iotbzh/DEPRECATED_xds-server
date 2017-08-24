@@ -135,10 +135,13 @@ func (s *APIService) execCmd(c *gin.Context) {
 		}
 	}
 
-	// FIXME - SEB: exec prevents to use syntax:
-	//  xds-exec -l debug -c xds-config.env -- "cd build && cmake .."
 	cmd = append(cmd, "cd", folder.GetFullPath(args.RPath))
-	cmd = append(cmd, "&&", "exec", args.Cmd)
+	// FIXME - add 'exec' prevents to use syntax:
+	//       xds-exec -l debug -c xds-config.env -- "cd build && cmake .."
+	//  but exec is mandatory to allow to pass correctly signals
+	//  As workaround, exec is set for now on client side (eg. in xds-gdb)
+	//cmd = append(cmd, "&&", "exec", args.Cmd)
+	cmd = append(cmd, "&&", args.Cmd)
 
 	// Process command arguments
 	cmdArgs := make([]string, len(args.Args)+1)
