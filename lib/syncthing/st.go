@@ -317,7 +317,10 @@ func (s *SyncThing) Connect() error {
 		return fmt.Errorf("ERROR: cannot connect to Syncthing (null client)")
 	}
 
-	s.client.SetLogger(s.log)
+	// Redirect HTTP log into a file
+	s.client.SetLogLevel(s.conf.Log.Level.String())
+	s.client.LoggerPrefix = "SYNCTHING: "
+	s.client.LoggerOut = s.conf.LogVerboseOut
 
 	s.MyID, err = s.IDGet()
 	if err != nil {

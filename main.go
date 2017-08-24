@@ -117,22 +117,34 @@ func xdsApp(cliCtx *cli.Context) error {
 
 	// Logs redirected into a file when logsDir is set
 	logfilename := cliCtx.GlobalString("logfile")
-	if ctx.Config.FileConf.LogsDir != "" && logfilename != "stdout" {
-		if logfilename == "" {
-			logfilename = "xds-server.log"
+	ctx.Config.LogVerboseOut = os.Stderr
+	if ctx.Config.FileConf.LogsDir != "" {
+		if logfilename != "stdout" {
+			if logfilename == "" {
+				logfilename = "xds-server.log"
+			}
+			// is it an absolute path ?
+			logFile := logfilename
+			if logfilename[0] == '.' || logfilename[0] != '/' {
+				logFile = filepath.Join(ctx.Config.FileConf.LogsDir, logfilename)
+			}
+			fmt.Printf("Logging file: %s\n", logFile)
+			fdL, err := os.OpenFile(logFile, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0666)
+			if err != nil {
+				msgErr := fmt.Sprintf("Cannot create log file %s", logFile)
+				return cli.NewExitError(msgErr, int(syscall.EPERM))
+			}
+			ctx.Log.Out = fdL
 		}
-		// is it an absolute path ?
-		logFile := logfilename
-		if logfilename[0] == '.' || logfilename[0] != '/' {
-			logFile = filepath.Join(ctx.Config.FileConf.LogsDir, logfilename)
-		}
-		fmt.Printf("Logging file: %s\n", logFile)
-		fdL, err := os.OpenFile(logFile, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0666)
+
+		logFileHTTPReq := filepath.Join(ctx.Config.FileConf.LogsDir, "xds-server-verbose.log")
+		fmt.Printf("Logging file for HTTP requests: %s\n", logFileHTTPReq)
+		fdLH, err := os.OpenFile(logFileHTTPReq, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0666)
 		if err != nil {
-			msgErr := fmt.Sprintf("Cannot create log file %s", logFile)
+			msgErr := fmt.Sprintf("Cannot create log file %s", logFileHTTPReq)
 			return cli.NewExitError(msgErr, int(syscall.EPERM))
 		}
-		ctx.Log.Out = fdL
+		ctx.Config.LogVerboseOut = fdLH
 	}
 
 	// Create syncthing instance when section "syncthing" is present in config.json

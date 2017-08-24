@@ -2,6 +2,7 @@ package xdsconfig
 
 import (
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/Sirupsen/logrus"
@@ -17,9 +18,10 @@ type Config struct {
 	Builder       BuilderConfig `json:"builder"`
 
 	// Private (un-exported fields in REST GET /config route)
-	Options  Options        `json:"-"`
-	FileConf FileConfig     `json:"-"`
-	Log      *logrus.Logger `json:"-"`
+	Options       Options        `json:"-"`
+	FileConf      FileConfig     `json:"-"`
+	Log           *logrus.Logger `json:"-"`
+	LogVerboseOut io.Writer      `json:"-"`
 }
 
 // Options set at the command line

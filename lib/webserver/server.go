@@ -46,10 +46,10 @@ func New(cfg *xdsconfig.Config, mfolders *model.Folders, sdks *crosssdk.SDKs, lo
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	// Redirect gin logs into logrus logger
-	gin.DefaultWriter = logr.Out
-	gin.DefaultErrorWriter = logr.Out
-	log.SetOutput(logr.Out)
+	// Redirect gin logs into another logger (LogVerboseOut may be stderr or a file)
+	gin.DefaultWriter = cfg.LogVerboseOut
+	gin.DefaultErrorWriter = cfg.LogVerboseOut
+	log.SetOutput(cfg.LogVerboseOut)
 
 	// FIXME - fix pb about isTerminal=false when out is in VSC Debug Console
 
