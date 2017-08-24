@@ -11,7 +11,7 @@
             </div>
         </h2>
     </div>
-    <div class="panel-body" [collapse]="gConfigIsCollapsed">
+    <div class="panel-body" [collapse]="gConfigIsCollapsed && (agentStatus$ | async)?.connected">
         <div class="row">
             <div class="col-xs-12">
                 <table class="table table-condensed">
