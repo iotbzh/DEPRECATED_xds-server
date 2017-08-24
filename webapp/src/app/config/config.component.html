@@ -6,8 +6,7 @@
                 <span class="fa fa-fw fa-exchange fa-size-x2" [style.color]="((serverStatus$ | async)?.WS_connected)?'green':'red'"></span>
 
                 <button class="btn btn-link" (click)="gConfigIsCollapsed = !gConfigIsCollapsed; $event.stopPropagation()">
-                    <span *ngIf="gConfigIsCollapsed" class="fa fa-angle-double-right fa-size-x2"></span>
-                    <span *ngIf="!gConfigIsCollapsed" class="fa fa-angle-double-down fa-size-x2"></span>
+                    <span class="fa fa-big" [ngClass]="{'fa-angle-double-down': gConfigIsCollapsed, 'fa-angle-double-right': !gConfigIsCollapsed}"></span>
                 </button>
             </div>
         </h2>
@@ -63,8 +62,7 @@
                 <button class="btn btn-link" (click)="childSdkModal.show(); $event.stopPropagation()"><span class="fa fa-plus fa-size-x2"></span></button>
 
                 <button class="btn btn-link" (click)="sdksIsCollapsed = !sdksIsCollapsed; $event.stopPropagation()">
-                    <span *ngIf="sdksIsCollapsed" class="fa fa-angle-double-right fa-size-x2"></span>
-                    <span *ngIf="!sdksIsCollapsed" class="fa fa-angle-double-down fa-size-x2"></span>
+                    <span class="fa fa-big" [ngClass]="{'fa-angle-double-down': sdksIsCollapsed, 'fa-angle-double-right': !sdksIsCollapsed}"></span>
                 </button>
             </div>
         </h2>
@@ -84,8 +82,7 @@
                 <button class="btn btn-link" (click)="childProjectModal.show(); $event.stopPropagation()"><span class="fa fa-plus fa-size-x2"></span></button>
 
                 <button class="btn btn-link" (click)="projectsIsCollapsed = !projectsIsCollapsed; $event.stopPropagation()">
-                        <span *ngIf="projectsIsCollapsed" class="fa fa-angle-double-right fa-size-x2"></span>
-                        <span *ngIf="!projectsIsCollapsed" class="fa fa-angle-double-down fa-size-x2"></span>
+                       <span class="fa fa-big" [ngClass]="{'fa-angle-double-down': projectsIsCollapsed, 'fa-angle-double-right': !projectsIsCollapsed}"></span>
                 </button>
             </div>
         </h2>

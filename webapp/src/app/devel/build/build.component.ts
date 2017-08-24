@@ -23,10 +23,10 @@ export class BuildComponent implements OnInit, AfterViewChecked {
 
     @Input() curProject: IProject;
 
-    buildForm: FormGroup;
-    subpathCtrl = new FormControl("", Validators.required);
-    debugEnable: boolean = false;
-
+    public buildForm: FormGroup;
+    public subpathCtrl = new FormControl("", Validators.required);
+    public debugEnable: boolean = false;
+    public buildIsCollapsed: boolean = false;
     public cmdOutput: string;
     public cmdInfo: string;
 
@@ -67,7 +67,8 @@ export class BuildComponent implements OnInit, AfterViewChecked {
 
         // Command output data tunneling
         this.xdsSvr.CmdOutput$.subscribe(data => {
-            this.cmdOutput += data.stdout + "\n";
+            this.cmdOutput += data.stdout;
+            this.cmdOutput += data.stderr;
         });
 
         // Command exit
