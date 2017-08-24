@@ -148,6 +148,8 @@ func (e *Events) getEvents(since int) ([]STEvent, error) {
 func (e *Events) monitorLoop() {
 	e.log.Infof("Event monitoring running...")
 	since := 0
+	cntErrConn := 0
+	cntErrRetry := 1
 	for {
 		select {
 		case <-e.stop:
@@ -155,11 +157,32 @@ func (e *Events) monitorLoop() {
 			return
 
 		case <-time.After(e.MonitorTime * time.Millisecond):
+
+			if !e.st.Connected {
+				cntErrConn++
+				time.Sleep(time.Second)
+				if cntErrConn > cntErrRetry {
+					e.log.Error("ST Event monitor: ST connection down")
+					cntErrConn = 0
+					cntErrRetry *= 2
+					if _, err := e.getEvents(since); err == nil {
+						e.st.Connected = true
+						cntErrRetry = 1
+						// XXX - should we reset since value ?
+						goto readEvent
+					}
+				}
+				continue
+			}
+
+		readEvent:
 			stEvArr, err := e.getEvents(since)
 			if err != nil {
 				e.log.Errorf("Syncthing Get Events: %v", err)
+				e.st.Connected = false
 				continue
 			}
+
 			// Process events
 			for _, stEv := range stEvArr {
 				since = stEv.SubscriptionID

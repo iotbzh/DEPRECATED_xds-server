@@ -27,12 +27,13 @@ import (
 
 // SyncThing .
 type SyncThing struct {
-	BaseURL string
-	APIKey  string
-	Home    string
-	STCmd   *exec.Cmd
-	STICmd  *exec.Cmd
-	MyID    string
+	BaseURL   string
+	APIKey    string
+	Home      string
+	STCmd     *exec.Cmd
+	STICmd    *exec.Cmd
+	MyID      string
+	Connected bool
 
 	// Private fields
 	binDir      string
@@ -301,6 +302,7 @@ func (s *SyncThing) StopInotify() {
 // Connect Establish HTTP connection with Syncthing
 func (s *SyncThing) Connect() error {
 	var err error
+	s.Connected = false
 	s.client, err = common.HTTPNewClient(s.BaseURL,
 		common.HTTPClientConfig{
 			URLPrefix:           "/rest",
@@ -326,6 +328,8 @@ func (s *SyncThing) Connect() error {
 	if err != nil {
 		return fmt.Errorf("ERROR: cannot retrieve ID")
 	}
+
+	s.Connected = true
 
 	// Start events monitoring
 	err = s.Events.Start()
