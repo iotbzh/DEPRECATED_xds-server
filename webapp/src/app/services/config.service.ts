@@ -29,6 +29,14 @@ export var ProjectTypes = [
     { value: ProjectType.SYNCTHING, display: "Cloud Sync" }
 ];
 
+export var ProjectStatus = {
+    ErrorConfig: "ErrorConfig",
+    Disable: "Disable",
+    Enable: "Enable",
+    Pause: "Pause",
+    Syncing: "Syncing"
+};
+
 export interface IProject {
     id?: string;
     label: string;
@@ -37,6 +45,7 @@ export interface IProject {
     type: ProjectType;
     status?: string;
     isInSync?: boolean;
+    isUsable?: boolean;
     serverPrjDef?: IXDSFolderConfig;
     isExpanded?: boolean;
     visible?: boolean;
@@ -144,6 +153,7 @@ export class ConfigService {
                 // XXX for now, only isInSync and status may change
                 this.confStore.projects[i].isInSync = prj.isInSync;
                 this.confStore.projects[i].status = prj.status;
+                this.confStore.projects[i].isUsable = this._isUsableProject(prj);
                 this.confSubject.next(Object.assign({}, this.confStore));
             }
         });
@@ -359,6 +369,12 @@ export class ConfigService {
         return this.xdsServerSvr.syncProject(prj.id);
     }
 
+    private _isUsableProject(p) {
+        return p && p.isInSync &&
+            (p.status === ProjectStatus.Enable) &&
+            (p.status !== ProjectStatus.Syncing);
+    }
+
     private _getProjectIdx(id: string): number {
         return this.confStore.projects.findIndex((item) => item.id === id);
     }
@@ -374,6 +390,7 @@ export class ConfigService {
             type: rPrj.type,
             status: rPrj.status,
             isInSync: rPrj.isInSync,
+            isUsable: this._isUsableProject(rPrj),
             defaultSdkID: rPrj.defaultSdkID,
             serverPrjDef: Object.assign({}, rPrj),  // do a copy
         };

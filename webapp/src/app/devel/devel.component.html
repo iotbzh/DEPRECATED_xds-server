@@ -10,8 +10,11 @@
                     {{curPrj.label}} <span class="caret" style="float: right; margin-top: 8px;"></span>
                                     </button>
                             <ul *dropdownMenu class="dropdown-menu" role="menu">
-                                <li role="menuitem"><a class="dropdown-item" *ngFor="let prj of (config$ | async)?.projects" (click)="curPrj=prj">{{prj.label}}</a>
+                                <li role="menuitem"><a class="dropdown-item" *ngFor="let prj of (config$ | async)?.projects"
+                                        [class.disabled]="!prj.isUsable"
+                                        (click)="curPrj=prj">{{prj.label}}</a>
                                 </li>
+
                             </ul>
                         </div>
                         <span *ngIf="!curPrj" style="color:red; font-style: italic;">

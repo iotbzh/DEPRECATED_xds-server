@@ -12,3 +12,8 @@
 .table-borderless>thead>tr>th {
     border: none;
 }
+
+a.dropdown-item.disabled {
+    pointer-events:none;
+    opacity:0.4;
+}
