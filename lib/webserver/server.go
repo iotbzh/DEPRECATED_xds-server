@@ -2,6 +2,7 @@ package webserver
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 
@@ -26,7 +27,7 @@ type Server struct {
 	webApp    *gin.RouterGroup
 	cfg       *xdsconfig.Config
 	sessions  *session.Sessions
-	mfolder   *model.Folder
+	mfolders  *model.Folders
 	sdks      *crosssdk.SDKs
 	log       *logrus.Logger
 	stop      chan struct{} // signals intentional stop
@@ -36,20 +37,21 @@ const indexFilename = "index.html"
 const cookieMaxAge = "3600"
 
 // New creates an instance of Server
-func New(cfg *xdsconfig.Config, mfolder *model.Folder, sdks *crosssdk.SDKs, log *logrus.Logger) *Server {
+func New(cfg *xdsconfig.Config, mfolders *model.Folders, sdks *crosssdk.SDKs, logr *logrus.Logger) *Server {
 
 	// Setup logging for gin router
-	if log.Level == logrus.DebugLevel {
+	if logr.Level == logrus.DebugLevel {
 		gin.SetMode(gin.DebugMode)
 	} else {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	// TODO
-	//  - try to bind gin DefaultWriter & DefaultErrorWriter to logrus logger
-	//  - try to fix pb about isTerminal=false when out is in VSC Debug Console
-	//gin.DefaultWriter = ??
-	//gin.DefaultErrorWriter = ??
+	// Redirect gin logs into another logger (LogVerboseOut may be stderr or a file)
+	gin.DefaultWriter = cfg.LogVerboseOut
+	gin.DefaultErrorWriter = cfg.LogVerboseOut
+	log.SetOutput(cfg.LogVerboseOut)
+
+	// FIXME - fix pb about isTerminal=false when out is in VSC Debug Console
 
 	// Creates gin router
 	r := gin.New()
@@ -61,9 +63,9 @@ func New(cfg *xdsconfig.Config, mfolder *model.Folder, sdks *crosssdk.SDKs, log 
 		webApp:    nil,
 		cfg:       cfg,
 		sessions:  nil,
-		mfolder:   mfolder,
+		mfolders:  mfolders,
 		sdks:      sdks,
-		log:       log,
+		log:       logr,
 		stop:      make(chan struct{}),
 	}
 
@@ -84,7 +86,7 @@ func (s *Server) Serve() error {
 	s.sessions = session.NewClientSessions(s.router, s.log, cookieMaxAge)
 
 	// Create REST API
-	s.api = apiv1.New(s.router, s.sessions, s.cfg, s.mfolder, s.sdks)
+	s.api = apiv1.New(s.router, s.sessions, s.cfg, s.mfolders, s.sdks)
 
 	// Websocket routes
 	s.sIOServer, err = socketio.NewServer(nil)

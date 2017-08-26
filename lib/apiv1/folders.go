@@ -2,49 +2,39 @@ package apiv1
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	common "github.com/iotbzh/xds-common/golib"
-	"github.com/iotbzh/xds-server/lib/xdsconfig"
+	"github.com/iotbzh/xds-server/lib/folder"
 )
 
 // getFolders returns all folders configuration
 func (s *APIService) getFolders(c *gin.Context) {
-	confMut.Lock()
-	defer confMut.Unlock()
-
-	c.JSON(http.StatusOK, s.cfg.Folders)
+	c.JSON(http.StatusOK, s.mfolders.GetConfigArr())
 }
 
 // getFolder returns a specific folder configuration
 func (s *APIService) getFolder(c *gin.Context) {
-	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil || id < 0 || id > len(s.cfg.Folders) {
+	f := s.mfolders.Get(c.Param("id"))
+	if f == nil {
 		common.APIError(c, "Invalid id")
 		return
 	}
 
-	confMut.Lock()
-	defer confMut.Unlock()
-
-	c.JSON(http.StatusOK, s.cfg.Folders[id])
+	c.JSON(http.StatusOK, (*f).GetConfig())
 }
 
 // addFolder adds a new folder to server config
 func (s *APIService) addFolder(c *gin.Context) {
-	var cfgArg xdsconfig.FolderConfig
+	var cfgArg folder.FolderConfig
 	if c.BindJSON(&cfgArg) != nil {
 		common.APIError(c, "Invalid arguments")
 		return
 	}
 
-	confMut.Lock()
-	defer confMut.Unlock()
-
 	s.log.Debugln("Add folder config: ", cfgArg)
 
-	newFld, err := s.mfolder.UpdateFolder(cfgArg)
+	newFld, err := s.mfolders.Add(cfgArg)
 	if err != nil {
 		common.APIError(c, err.Error())
 		return
@@ -53,25 +43,31 @@ func (s *APIService) addFolder(c *gin.Context) {
 	c.JSON(http.StatusOK, newFld)
 }
 
-// delFolder deletes folder from server config
-func (s *APIService) delFolder(c *gin.Context) {
+// syncFolder force synchronization of folder files
+func (s *APIService) syncFolder(c *gin.Context) {
 	id := c.Param("id")
-	if id == "" {
-		common.APIError(c, "Invalid id")
+
+	s.log.Debugln("Sync folder id: ", id)
+
+	err := s.mfolders.ForceSync(id)
+	if err != nil {
+		common.APIError(c, err.Error())
 		return
 	}
 
-	confMut.Lock()
-	defer confMut.Unlock()
+	c.JSON(http.StatusOK, "")
+}
+
+// delFolder deletes folder from server config
+func (s *APIService) delFolder(c *gin.Context) {
+	id := c.Param("id")
 
 	s.log.Debugln("Delete folder id ", id)
 
-	var delEntry xdsconfig.FolderConfig
-	var err error
-	if delEntry, err = s.mfolder.DeleteFolder(id); err != nil {
+	delEntry, err := s.mfolders.Delete(id)
+	if err != nil {
 		common.APIError(c, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, delEntry)
-
 }

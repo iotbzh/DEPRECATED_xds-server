@@ -75,7 +75,7 @@ if [ "$FILE" = "" ]; then
         exit 1
     fi
     SDK_FILE=${XDT_SDK}/${FILE}
-elif [ ! -f $FILE ]; then
+elif [ ! -f "$FILE" ]; then
     echo "SDK file not found: $FILE"
     exit 1
 else
@@ -108,14 +108,14 @@ cleanExit ()
 }
 
 # Get SDK installer
-if [ ! -f ${SDK_FILE} ]; then
+if [ ! -f "${SDK_FILE}" ]; then
     do_cleanup=true
-    wget "$SDK_BASEURL/$FILE" -O ${SDK_FILE} || exit 1
+    wget "$SDK_BASEURL/$FILE" -O "${SDK_FILE}" || exit 1
 fi
 
 # Retreive default install dir to extract version
-offset=$(grep -na -m1 "^MARKER:$" ${SDK_FILE} | cut -d':' -f1)
-eval $(head -n $offset ${SDK_FILE} | grep ^DEFAULT_INSTALL_DIR= )
+offset=$(grep -na -m1 "^MARKER:$" "${SDK_FILE}" | cut -d':' -f1)
+eval $(head -n $offset "${SDK_FILE}" | grep ^DEFAULT_INSTALL_DIR= )
 VERSION=$(basename $DEFAULT_INSTALL_DIR)
 
 [ "$PROFILE" = "" ] && { echo "PROFILE is not set"; exit 1; }

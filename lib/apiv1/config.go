@@ -36,10 +36,5 @@ func (s *APIService) setConfig(c *gin.Context) {
 
 	s.log.Debugln("SET config: ", cfgArg)
 
-	if err := s.mfolder.UpdateAll(cfgArg); err != nil {
-		common.APIError(c, err.Error())
-		return
-	}
-
-	c.JSON(http.StatusOK, s.cfg)
+	common.APIError(c, "Not Supported")
 }

@@ -1,7 +1,7 @@
 {
     "version": "0.2.0",
     "configurations": [{
-            "name": "XDS-Server local",
+            "name": "XDS-Server",
             "type": "go",
             "request": "launch",
             "mode": "debug",
@@ -17,21 +17,20 @@
             "showLog": false
         },
         {
-            "name": "XDS-Server IN DOCKER",
+            "name": "XDS-Server local dev",
             "type": "go",
             "request": "launch",
             "mode": "debug",
-            "port": 22000,
-            "host": "172.17.0.2",
-            "remotePath": "/xds/src/github.com/iotbzh/xds-server/bin/xds-server",
+            "remotePath": "",
+            "port": 2345,
+            "host": "127.0.0.1",
             "program": "${workspaceRoot}",
             "env": {
                 "GOPATH": "${workspaceRoot}/../../../..:${env:GOPATH}",
                 "ROOT_DIR": "${workspaceRoot}/../../../.."
             },
-            "args": [],
-            "showLog": true
+            "args": ["-log", "debug", "-c", "__config_local_dev.json"],
+            "showLog": false
         }
-
     ]
 }

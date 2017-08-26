@@ -76,11 +76,13 @@ func (s *APIService) buildMake(c *gin.Context) {
 		return
 	}
 
-	prj := s.mfolder.GetFolderFromID(id)
-	if prj == nil {
+	pf := s.mfolders.Get(id)
+	if pf == nil {
 		common.APIError(c, "Unknown id")
 		return
 	}
+	folder := *pf
+	prj := folder.GetConfig()
 
 	execTmo := args.CmdTimeout
 	if execTmo == 0 {
@@ -92,11 +94,11 @@ func (s *APIService) buildMake(c *gin.Context) {
 
 	// Define callback for output
 	var oCB common.EmitOutputCB
-	oCB = func(sid string, id int, stdout, stderr string, data *map[string]interface{}) {
+	oCB = func(sid string, cmdID string, stdout, stderr string, data *map[string]interface{}) {
 		// IO socket can be nil when disconnected
 		so := s.sessions.IOSocketGet(sid)
 		if so == nil {
-			s.log.Infof("%s not emitted: WS closed - sid: %s - msg id:%d", MakeOutEvent, sid, id)
+			s.log.Infof("%s not emitted: WS closed - sid: %s - msg id:%s", MakeOutEvent, sid, cmdID)
 			return
 		}
 
@@ -112,7 +114,7 @@ func (s *APIService) buildMake(c *gin.Context) {
 
 		// FIXME replace by .BroadcastTo a room
 		err := (*so).Emit(MakeOutEvent, MakeOutMsg{
-			CmdID:     strconv.Itoa(id),
+			CmdID:     cmdID,
 			Timestamp: time.Now().String(),
 			Stdout:    stdout,
 			Stderr:    stderr,
@@ -123,13 +125,13 @@ func (s *APIService) buildMake(c *gin.Context) {
 	}
 
 	// Define callback for output
-	eCB := func(sid string, id int, code int, err error, data *map[string]interface{}) {
-		s.log.Debugf("Command [Cmd ID %d] exited: code %d, error: %v", id, code, err)
+	eCB := func(sid string, cmdID string, code int, err error, data *map[string]interface{}) {
+		s.log.Debugf("Command [Cmd ID %s] exited: code %d, error: %v", cmdID, code, err)
 
 		// IO socket can be nil when disconnected
 		so := s.sessions.IOSocketGet(sid)
 		if so == nil {
-			s.log.Infof("%s not emitted - WS closed (id:%d", MakeExitEvent, id)
+			s.log.Infof("%s not emitted - WS closed (id:%s", MakeExitEvent, cmdID)
 			return
 		}
 
@@ -138,7 +140,7 @@ func (s *APIService) buildMake(c *gin.Context) {
 		exitImm := (*data)["ExitImmediate"].(bool)
 
 		// XXX - workaround to be sure that Syncthing detected all changes
-		if err := s.mfolder.ForceSync(prjID); err != nil {
+		if err := s.mfolders.ForceSync(prjID); err != nil {
 			s.log.Errorf("Error while syncing folder %s: %v", prjID, err)
 		}
 		if !exitImm {
@@ -147,7 +149,7 @@ func (s *APIService) buildMake(c *gin.Context) {
 			tmo := 60
 			for t := tmo; t > 0; t-- {
 				s.log.Debugf("Wait file insync for %s (%d/%d)", prjID, t, tmo)
-				if sync, err := s.mfolder.IsFolderInSync(prjID); sync || err != nil {
+				if sync, err := s.mfolders.IsFolderInSync(prjID); sync || err != nil {
 					if err != nil {
 						s.log.Errorf("ERROR IsFolderInSync (%s): %v", prjID, err)
 					}
@@ -159,7 +161,7 @@ func (s *APIService) buildMake(c *gin.Context) {
 
 		// FIXME replace by .BroadcastTo a room
 		e := (*so).Emit(MakeExitEvent, MakeExitMsg{
-			CmdID:     strconv.Itoa(id),
+			CmdID:     id,
 			Timestamp: time.Now().String(),
 			Code:      code,
 			Error:     err,
@@ -169,7 +171,7 @@ func (s *APIService) buildMake(c *gin.Context) {
 		}
 	}
 
-	cmdID := makeCommandID
+	cmdID := strconv.Itoa(makeCommandID)
 	makeCommandID++
 	cmd := []string{}
 
@@ -179,7 +181,7 @@ func (s *APIService) buildMake(c *gin.Context) {
 		cmd = append(cmd, "&&")
 	}
 
-	cmd = append(cmd, "cd", prj.GetFullPath(args.RPath), "&&", "make")
+	cmd = append(cmd, "cd", folder.GetFullPath(args.RPath), "&&", "make")
 	if len(args.Args) > 0 {
 		cmd = append(cmd, args.Args...)
 	}

@@ -13,28 +13,40 @@ import 'rxjs/add/observable/throw';
 import 'rxjs/add/operator/mergeMap';
 
 
-import { XDSServerService, IXDSConfigProject } from "../services/xdsserver.service";
+import { XDSServerService, IXDSFolderConfig } from "../services/xdsserver.service";
 import { XDSAgentService } from "../services/xdsagent.service";
 import { SyncthingService, ISyncThingProject, ISyncThingStatus } from "../services/syncthing.service";
 import { AlertService, IAlert } from "../services/alert.service";
 import { UtilsService } from "../services/utils.service";
 
 export enum ProjectType {
-    NATIVE = 1,
+    NATIVE_PATHMAP = 1,
     SYNCTHING = 2
 }
 
-export interface INativeProject {
-    // TODO
-}
+export var ProjectTypes = [
+    { value: ProjectType.NATIVE_PATHMAP, display: "Path mapping" },
+    { value: ProjectType.SYNCTHING, display: "Cloud Sync" }
+];
+
+export var ProjectStatus = {
+    ErrorConfig: "ErrorConfig",
+    Disable: "Disable",
+    Enable: "Enable",
+    Pause: "Pause",
+    Syncing: "Syncing"
+};
 
 export interface IProject {
     id?: string;
     label: string;
-    path: string;
+    pathClient: string;
+    pathServer?: string;
     type: ProjectType;
-    remotePrjDef?: INativeProject | ISyncThingProject;
-    localPrjDef?: any;
+    status?: string;
+    isInSync?: boolean;
+    isUsable?: boolean;
+    serverPrjDef?: IXDSFolderConfig;
     isExpanded?: boolean;
     visible?: boolean;
     defaultSdkID?: string;
@@ -133,6 +145,18 @@ export class ConfigService {
             );
             this.confSubject.next(Object.assign({}, this.confStore));
         });
+
+        // Update Project data
+        this.xdsServerSvr.FolderStateChange$.subscribe(prj => {
+            let i = this._getProjectIdx(prj.id);
+            if (i >= 0) {
+                // XXX for now, only isInSync and status may change
+                this.confStore.projects[i].isInSync = prj.isInSync;
+                this.confStore.projects[i].status = prj.status;
+                this.confStore.projects[i].isUsable = this._isUsableProject(prj);
+                this.confSubject.next(Object.assign({}, this.confStore));
+            }
+        });
     }
 
     // Save config into cookie
@@ -172,7 +196,7 @@ export class ConfigService {
                     let zurl = this.confStore.xdsAgentPackages && this.confStore.xdsAgentPackages.filter(elem => elem.os === os);
                     if (zurl && zurl.length) {
                         msg += " Download XDS-Agent tarball for " + zurl[0].os + " host OS ";
-                        msg += "<a class=\"fa fa-download\" href=\"" +  zurl[0].url + "\" target=\"_blank\"></a>";
+                        msg += "<a class=\"fa fa-download\" href=\"" + zurl[0].url + "\" target=\"_blank\"></a>";
                     }
                     msg += "</span>";
                     this.alert.error(msg);
@@ -209,16 +233,8 @@ export class ConfigService {
                 this.stSvr.getProjects().subscribe(localPrj => {
                     remotePrj.forEach(rPrj => {
                         let lPrj = localPrj.filter(item => item.id === rPrj.id);
-                        if (lPrj.length > 0) {
-                            let pp: IProject = {
-                                id: rPrj.id,
-                                label: rPrj.label,
-                                path: rPrj.path,
-                                type: ProjectType.SYNCTHING,    // FIXME support other types
-                                remotePrjDef: Object.assign({}, rPrj),
-                                localPrjDef: Object.assign({}, lPrj[0]),
-                            };
-                            this.confStore.projects.push(pp);
+                        if (lPrj.length > 0 || rPrj.type === ProjectType.NATIVE_PATHMAP) {
+                            this._addProject(rPrj, true);
                         }
                     });
                     this.confSubject.next(Object.assign({}, this.confStore));
@@ -270,100 +286,133 @@ export class ConfigService {
         return id.slice(0, 15);
     }
 
-    addProject(prj: IProject) {
+    addProject(prj: IProject): Observable<IProject> {
         // Substitute tilde with to user home path
-        prj.path = prj.path.trim();
-        if (prj.path.charAt(0) === '~') {
-            prj.path = this.confStore.localSThg.tilde + prj.path.substring(1);
+        let pathCli = prj.pathClient.trim();
+        if (pathCli.charAt(0) === '~') {
+            pathCli = this.confStore.localSThg.tilde + pathCli.substring(1);
 
             // Must be a full path (on Linux or Windows)
-        } else if (!((prj.path.charAt(0) === '/') ||
-            (prj.path.charAt(1) === ':' && (prj.path.charAt(2) === '\\' || prj.path.charAt(2) === '/')))) {
-            prj.path = this.confStore.projectsRootDir + '/' + prj.path;
+        } else if (!((pathCli.charAt(0) === '/') ||
+            (pathCli.charAt(1) === ':' && (pathCli.charAt(2) === '\\' || pathCli.charAt(2) === '/')))) {
+            pathCli = this.confStore.projectsRootDir + '/' + pathCli;
         }
 
-        if (prj.id == null) {
-            // FIXME - must be done on server side
-            let prefix = this.getLabelRootName() || new Date().toISOString();
-            let splath = prj.path.split('/');
-            prj.id = prefix + "_" + splath[splath.length - 1];
-        }
-
-        if (this._getProjectIdx(prj.id) !== -1) {
-            this.alert.warning("Project already exist (id=" + prj.id + ")", true);
-            return;
-        }
-
-        // TODO - support others project types
-        if (prj.type !== ProjectType.SYNCTHING) {
-            this.alert.error('Project type not supported yet (type: ' + prj.type + ')');
-            return;
-        }
-
-        let sdkPrj: IXDSConfigProject = {
-            id: prj.id,
-            label: prj.label,
-            path: prj.path,
-            hostSyncThingID: this.confStore.localSThg.ID,
+        let xdsPrj: IXDSFolderConfig = {
+            id: "",
+            label: prj.label || "",
+            path: pathCli,
+            type: prj.type,
             defaultSdkID: prj.defaultSdkID,
+            dataPathMap: {
+                serverPath: prj.pathServer,
+            },
+            dataCloudSync: {
+                syncThingID: this.confStore.localSThg.ID,
+            }
         };
-
         // Send config to XDS server
         let newPrj = prj;
-        this.xdsServerSvr.addProject(sdkPrj)
-            .subscribe(resStRemotePrj => {
-                newPrj.remotePrjDef = resStRemotePrj;
+        return this.xdsServerSvr.addProject(xdsPrj)
+            .flatMap(resStRemotePrj => {
+                xdsPrj = resStRemotePrj;
+                if (xdsPrj.type === ProjectType.SYNCTHING) {
+                    // FIXME REWORK local ST config
+                    //  move logic to server side tunneling-back by WS
+                    let stData = xdsPrj.dataCloudSync;
 
-                // FIXME REWORK local ST config
-                //  move logic to server side tunneling-back by WS
+                    // Now setup local config
+                    let stLocPrj: ISyncThingProject = {
+                        id: xdsPrj.id,
+                        label: xdsPrj.label,
+                        path: xdsPrj.path,
+                        serverSyncThingID: stData.builderSThgID
+                    };
 
-                // Now setup local config
-                let stLocPrj: ISyncThingProject = {
-                    id: sdkPrj.id,
-                    label: sdkPrj.label,
-                    path: sdkPrj.path,
-                    remoteSyncThingID: resStRemotePrj.builderSThgID
-                };
+                    // Set local Syncthing config
+                    return this.stSvr.addProject(stLocPrj);
 
-                // Set local Syncthing config
-                this.stSvr.addProject(stLocPrj)
-                    .subscribe(resStLocalPrj => {
-                        newPrj.localPrjDef = resStLocalPrj;
-
-                        // FIXME: maybe reduce subject to only .project
-                        //this.confSubject.next(Object.assign({}, this.confStore).project);
-                        this.confStore.projects.push(Object.assign({}, newPrj));
-                        this.confSubject.next(Object.assign({}, this.confStore));
-                    },
-                    err => {
-                        this.alert.error("Configuration local ERROR: " + err);
-                    });
-            },
-            err => {
-                this.alert.error("Configuration remote ERROR: " + err);
+                } else {
+                    return Observable.of(null);
+                }
+            })
+            .map(resStLocalPrj => {
+                this._addProject(xdsPrj);
+                return newPrj;
             });
     }
 
-    deleteProject(prj: IProject) {
+    deleteProject(prj: IProject): Observable<IProject> {
+        let idx = this._getProjectIdx(prj.id);
+        let delPrj = prj;
+        if (idx === -1) {
+            throw new Error("Invalid project id (id=" + prj.id + ")");
+        }
+        return this.xdsServerSvr.deleteProject(prj.id)
+            .flatMap(res => {
+                if (prj.type === ProjectType.SYNCTHING) {
+                    return this.stSvr.deleteProject(prj.id);
+                }
+                return Observable.of(null);
+            })
+            .map(res => {
+                this.confStore.projects.splice(idx, 1);
+                return delPrj;
+            });
+    }
+
+    syncProject(prj: IProject): Observable<string> {
         let idx = this._getProjectIdx(prj.id);
         if (idx === -1) {
             throw new Error("Invalid project id (id=" + prj.id + ")");
         }
-        this.xdsServerSvr.deleteProject(prj.id)
-            .subscribe(res => {
-                this.stSvr.deleteProject(prj.id)
-                    .subscribe(res => {
-                        this.confStore.projects.splice(idx, 1);
-                    }, err => {
-                        this.alert.error("Delete local ERROR: " + err);
-                    });
-            }, err => {
-                this.alert.error("Delete remote ERROR: " + err);
-            });
+        return this.xdsServerSvr.syncProject(prj.id);
+    }
+
+    private _isUsableProject(p) {
+        return p && p.isInSync &&
+            (p.status === ProjectStatus.Enable) &&
+            (p.status !== ProjectStatus.Syncing);
     }
 
     private _getProjectIdx(id: string): number {
         return this.confStore.projects.findIndex((item) => item.id === id);
     }
 
+    private _addProject(rPrj: IXDSFolderConfig, noNext?: boolean) {
+
+        // Convert XDSFolderConfig to IProject
+        let pp: IProject = {
+            id: rPrj.id,
+            label: rPrj.label,
+            pathClient: rPrj.path,
+            pathServer: rPrj.dataPathMap.serverPath,
+            type: rPrj.type,
+            status: rPrj.status,
+            isInSync: rPrj.isInSync,
+            isUsable: this._isUsableProject(rPrj),
+            defaultSdkID: rPrj.defaultSdkID,
+            serverPrjDef: Object.assign({}, rPrj),  // do a copy
+        };
+
+        // add new project
+        this.confStore.projects.push(pp);
+
+        // sort project array
+        this.confStore.projects.sort((a, b) => {
+            if (a.label < b.label) {
+                return -1;
+            }
+            if (a.label > b.label) {
+                return 1;
+            }
+            return 0;
+        });
+
+        // FIXME: maybe reduce subject to only .project
+        //this.confSubject.next(Object.assign({}, this.confStore).project);
+        if (!noNext) {
+            this.confSubject.next(Object.assign({}, this.confStore));
+        }
+    }
 }

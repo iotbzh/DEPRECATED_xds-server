@@ -36,6 +36,9 @@ func Init(cfg *xdsconfig.Config, log *logrus.Logger) (*SDKs, error) {
 		defer s.mutex.Unlock()
 
 		for _, d := range dirs {
+			if !common.IsDir(d) {
+				continue
+			}
 			sdk, err := NewCrossSDK(d)
 			if err != nil {
 				log.Debugf("Error while processing SDK dir=%s, err=%s", d, err.Error())

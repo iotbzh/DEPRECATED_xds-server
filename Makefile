@@ -84,7 +84,7 @@ all: tools/syncthing build
 build: vendor xds webapp
 
 xds: scripts tools/syncthing/copytobin
-	@echo "### Build XDS server (version $(VERSION), subversion $(SUB_VERSION))";
+	@echo "### Build XDS server (version $(VERSION), subversion $(SUB_VERSION), $(BUILD_MODE))";
 	@cd $(ROOT_SRCDIR); $(BUILD_ENV_FLAGS) go build $(VERBOSE_$(V)) -i -o $(LOCAL_BINDIR)/xds-server$(EXT) -ldflags "$(GORELEASE) -X main.AppVersion=$(VERSION) -X main.AppSubVersion=$(SUB_VERSION)" .
 
 test: tools/glide
@@ -156,6 +156,10 @@ package-all:
 
 vendor: tools/glide glide.yaml
 	$(LOCAL_TOOLSDIR)/glide install --strip-vendor
+
+vendor/debug: vendor
+	(cd vendor/github.com/iotbzh && \
+		rm -rf xds-common && ln -s ../../../../xds-common )
 
 .PHONY: tools/glide
 tools/glide:

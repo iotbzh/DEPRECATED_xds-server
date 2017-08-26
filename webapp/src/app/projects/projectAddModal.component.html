@@ -1,0 +1,54 @@
+<div bsModal #childProjectModal="bs-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="mySmallModalLabel"
+    [config]="{backdrop: 'static'}" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title pull-left">{{title}}</h4>
+                <button type="button" class="close pull-right" aria-label="Close" (click)="hide()">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+            </div>
+
+            <form [formGroup]="addProjectForm" (ngSubmit)="onSubmit()">
+                <div class="modal-body">
+                    <div class="row ">
+                        <div class="col-xs-12">
+                            <table class="table table-borderless">
+                                <tbody>
+                                    <tr>
+                                        <th><label>Sharing Type </label></th>
+                                        <td><select class="form-control" formControlName="type">
+                                            <option *ngFor="let t of projectTypes" [value]="t.value">{{t.display}}
+                                            </option>
+                                        </select>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th><label for="select-local-path">Local Path </label></th>
+                                        <td><input type="text" id="select-local-path" formControlName="pathCli" placeholder="/tmp/myProject" (change)="onChangeLocalProject($event)"></td>
+                                    </tr>
+                                    <tr>
+                                        <th><label for="select-server-path">Server Path </label></th>
+                                        <td><input type="text" id="select-server-path" formControlName="pathSvr"></td>
+                                    </tr>
+                                    <tr>
+                                        <th><label for="select-label">Label </label></th>
+                                        <td><input type="text" formControlName="label" id="select-label" (keyup)="onKeyLabel($event)"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <div class="pull-left">
+                        <button class="btn btn-default" (click)="cancelAction=true; hide()"> Cancel </button>
+                    </div>
+                    <div class="">
+                        <button class="btn btn-primary" type="submit" [disabled]="!addProjectForm.valid">Add Folder</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

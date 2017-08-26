@@ -30,8 +30,10 @@ export class AlertService {
         this.uid = 0;
     }
 
-    public error(msg: string) {
-        this.add({ type: "danger", msg: msg, dismissible: true });
+    public error(msg: string, dismissTime?: number) {
+        this.add({
+            type: "danger", msg: msg, dismissible: true, dismissTimeout: dismissTime
+        });
     }
 
     public warning(msg: string, dismissible?: boolean) {

@@ -11,6 +11,7 @@ import (
 	common "github.com/iotbzh/xds-common/golib"
 )
 
+// XDSAgentTarball .
 type XDSAgentTarball struct {
 	OS         string `json:"os"`
 	Arch       string `json:"arch"`
@@ -18,6 +19,8 @@ type XDSAgentTarball struct {
 	RawVersion string `json:"raw-version"`
 	FileURL    string `json:"fileUrl"`
 }
+
+// XDSAgentInfo .
 type XDSAgentInfo struct {
 	Tarballs []XDSAgentTarball `json:"tarballs"`
 }

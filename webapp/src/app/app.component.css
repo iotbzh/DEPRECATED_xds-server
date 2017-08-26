@@ -1,12 +1,17 @@
-.navbar-inverse  {
-    background-color: #330066;
+.navbar {
+    background-color: whitesmoke;
 }
 
 .navbar-brand {
-    background: #330066;
-    color: white;
     font-size: x-large;
+    font-variant: small-caps;
+    color: #5a28a1;
 }
+
+a.navbar-brand {
+    margin-top: 5px;
+}
+
 
 .navbar-nav ul li a {
     color: #fff;
@@ -14,4 +19,13 @@
 
 .menu-text {
     color: #fff;
+}
+
+#logo-iot {
+    padding: 0 2px;
+    height: 60px;
+}
+
+li>a {
+    color:#5a28a1;
 }

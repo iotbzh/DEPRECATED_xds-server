@@ -1,18 +1,16 @@
-import { Component, OnInit } from "@angular/core";
+import { Component, ViewChild, OnInit } from "@angular/core";
 import { Observable } from 'rxjs/Observable';
 import { FormControl, FormGroup, Validators, FormBuilder } from '@angular/forms';
+import { CollapseModule } from 'ngx-bootstrap/collapse';
 
-// Import RxJs required methods
-import 'rxjs/add/operator/map';
-import 'rxjs/add/operator/filter';
-import 'rxjs/add/operator/debounceTime';
-
-import { ConfigService, IConfig, IProject, ProjectType, IxdsAgentPackage } from "../services/config.service";
+import { ConfigService, IConfig, IxdsAgentPackage } from "../services/config.service";
 import { XDSServerService, IServerStatus, IXDSAgentInfo } from "../services/xdsserver.service";
 import { XDSAgentService, IAgentStatus } from "../services/xdsagent.service";
 import { SyncthingService, ISyncThingStatus } from "../services/syncthing.service";
 import { AlertService } from "../services/alert.service";
 import { ISdk, SdkService } from "../services/sdk.service";
+import { ProjectAddModalComponent } from "../projects/projectAddModal.component";
+import { SdkAddModalComponent } from "../sdks/sdkAddModal.component";
 
 @Component({
     templateUrl: './app/config/config.component.html',
@@ -23,6 +21,8 @@ import { ISdk, SdkService } from "../services/sdk.service";
 // and from http://plnkr.co/edit/vCdjZM?p=preview
 
 export class ConfigComponent implements OnInit {
+    @ViewChild('childProjectModal') childProjectModal: ProjectAddModalComponent;
+    @ViewChild('childSdkModal') childSdkModal: SdkAddModalComponent;
 
     config$: Observable<IConfig>;
     sdks$: Observable<ISdk[]>;
@@ -34,19 +34,19 @@ export class ConfigComponent implements OnInit {
     userEditedLabel: boolean = false;
     xdsAgentPackages: IxdsAgentPackage[] = [];
 
+    gConfigIsCollapsed: boolean = true;
+    sdksIsCollapsed: boolean = true;
+    projectsIsCollapsed: boolean = false;
+
     // TODO replace by reactive FormControl + add validation
     syncToolUrl: string;
     xdsAgentUrl: string;
     xdsAgentRetry: string;
-    projectsRootDir: string;
+    projectsRootDir: string;    // FIXME: should be remove when projectAddModal will always return full path
     showApplyBtn = {    // Used to show/hide Apply buttons
         "retry": false,
         "rootDir": false,
     };
-
-    addProjectForm: FormGroup;
-    pathCtrl = new FormControl("", Validators.required);
-
 
     constructor(
         private configSvr: ConfigService,
@@ -55,14 +55,7 @@ export class ConfigComponent implements OnInit {
         private stSvr: SyncthingService,
         private sdkSvr: SdkService,
         private alert: AlertService,
-        private fb: FormBuilder
     ) {
-        // FIXME implement multi project support
-        this.curProj = 0;
-        this.addProjectForm = fb.group({
-            path: this.pathCtrl,
-            label: ["", Validators.nullValidator],
-        });
     }
 
     ngOnInit() {
@@ -81,20 +74,6 @@ export class ConfigComponent implements OnInit {
             this.xdsAgentPackages = cfg.xdsAgentPackages;
         });
 
-        // Auto create label name
-        this.pathCtrl.valueChanges
-            .debounceTime(100)
-            .filter(n => n)
-            .map(n => "Project_" + n.split('/')[0])
-            .subscribe(value => {
-                if (value && !this.userEditedLabel) {
-                    this.addProjectForm.patchValue({ label: value });
-                }
-            });
-    }
-
-    onKeyLabel(event: any) {
-        this.userEditedLabel = (this.addProjectForm.value.label !== "");
     }
 
     submitGlobConf(field: string) {
@@ -118,21 +97,10 @@ export class ConfigComponent implements OnInit {
     }
 
     xdsAgentRestartConn() {
-        let aurl = this.xdsAgentUrl;
+        let aUrl = this.xdsAgentUrl;
         this.configSvr.syncToolURL = this.syncToolUrl;
-        this.configSvr.xdsAgentUrl = aurl;
+        this.configSvr.xdsAgentUrl = aUrl;
         this.configSvr.loadProjects();
-    }
-
-    onSubmit() {
-        let formVal = this.addProjectForm.value;
-
-        this.configSvr.addProject({
-            label: formVal['label'],
-            path: formVal['path'],
-            type: ProjectType.SYNCTHING,
-            // FIXME: allow to set defaultSdkID from New Project config panel
-        });
     }
 
 }

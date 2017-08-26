@@ -1,3 +1,8 @@
+.fa-big {
+    font-size: 20px;
+    font-weight: bold;
+}
+
 .fa-size-x2 {
     font-size: 20px;
 }
@@ -23,4 +28,8 @@ tr.info>th {
 
 tr.info>td {
     vertical-align: middle;
+}
+
+.panel-heading {
+    background: aliceblue;
 }

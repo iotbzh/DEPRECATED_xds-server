@@ -33,8 +33,9 @@
     width: 10em;
 }
 
-.fa-size-x2 {
+.fa-big {
     font-size: 18px;
+    font-weight: bold;
 }
 
 .textarea-scroll {
@@ -46,4 +47,8 @@ h2 {
     font-family: sans-serif;
     font-variant: small-caps;
     font-size: x-large;
+}
+
+.panel-heading {
+    background: aliceblue;
 }

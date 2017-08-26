@@ -16,7 +16,7 @@ import 'rxjs/add/operator/retryWhen';
 export interface ISyncThingProject {
     id: string;
     path: string;
-    remoteSyncThingID: string;
+    serverSyncThingID: string;
     label?: string;
 }
 
@@ -180,7 +180,7 @@ export class SyncthingService {
         return this.getID()
             .flatMap(() => this._getConfig())
             .flatMap((stCfg) => {
-                let newDevID = prj.remoteSyncThingID;
+                let newDevID = prj.serverSyncThingID;
 
                 // Add new Device if needed
                 let dev = stCfg.devices.filter(item => item.deviceID === newDevID);

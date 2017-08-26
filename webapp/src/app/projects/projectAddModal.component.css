@@ -1,9 +1,3 @@
-.table-center {
-    width: 60%;
-    margin-left: auto;
-    margin-right: auto;
-}
-
 .table-borderless>tbody>tr>td,
 .table-borderless>tbody>tr>th,
 .table-borderless>tfoot>tr>td,
@@ -13,7 +7,18 @@
     border: none;
 }
 
-a.dropdown-item.disabled {
-    pointer-events:none;
-    opacity:0.4;
+tr>th {
+    vertical-align: middle;
+}
+
+tr>td {
+    vertical-align: middle;
+}
+
+th label {
+    margin-bottom: 0;
+}
+
+td input {
+    width: 100%;
 }

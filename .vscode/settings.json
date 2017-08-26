@@ -1,45 +1,59 @@
 // Place your settings in this file to overwrite default and user settings.
 {
-    // Configure glob patterns for excluding files and folders.
-    "files.exclude": {
-        ".tmp": true,
-        ".git": true,
-        "glide.lock": true,
-        "vendor": true,
-        "debug": true,
-        "bin": true,
-        "tools": true,
-        "webapp/dist": true,
-        "webapp/node_modules": true
-    },
-
-    // Words to add to dictionary for a workspace.
-    "cSpell.words": [
-        "apiv",
-        "gonic",
-        "devel",
-        "csrffound",
-        "Syncthing",
-        "STID",
-        "ISTCONFIG",
-        "socketio",
-        "ldflags",
-        "SThg",
-        "Intf",
-        "dismissible",
-        "rpath",
-        "WSID",
-        "sess",
-        "IXDS",
-        "xdsconfig",
-        "xdsserver",
-        "mfolder",
-        "inotify",
-        "Inot",
-        "pname",
-        "pkill",
-        "sdkid",
-        "CLOUDSYNC",
-        "xdsagent"
-    ]
+  // Configure glob patterns for excluding files and folders.
+  "files.exclude": {
+    ".tmp": true,
+    ".git": true,
+    "glide.lock": true,
+    "vendor": true,
+    "debug": true,
+    "bin": true,
+    "tools": true,
+    "webapp/dist": true,
+    "webapp/node_modules": true
+  },
+  // Specify paths/files to ignore. (Supports Globs)
+  "cSpell.ignorePaths": [
+    "**/node_modules/**",
+    "**/vscode-extension/**",
+    "**/.git/**",
+    "**/vendor/**",
+    ".vscode",
+    "typings"
+  ],
+  // Words to add to dictionary for a workspace.
+  "cSpell.words": [
+    "apiv",
+    "gonic",
+    "devel",
+    "csrffound",
+    "Syncthing",
+    "STID",
+    "ISTCONFIG",
+    "socketio",
+    "ldflags",
+    "SThg",
+    "Intf",
+    "dismissible",
+    "rpath",
+    "WSID",
+    "sess",
+    "IXDS",
+    "xdsconfig",
+    "xdsserver",
+    "mfolder",
+    "inotify",
+    "Inot",
+    "pname",
+    "pkill",
+    "sdkid",
+    "CLOUDSYNC",
+    "xdsagent",
+    "gdbserver",
+    "golib",
+    "eows",
+    "mfolders",
+    "IFOLDER",
+    "flds"
+  ]
 }

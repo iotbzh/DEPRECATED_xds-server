@@ -22,7 +22,10 @@ export class DevelComponent {
     ngOnInit() {
         this.config$ = this.configSvr.conf;
         this.config$.subscribe((cfg) => {
-            if ("projects" in cfg) {
+            // Select project if no one is selected or no project exists
+            if (this.curPrj && "id" in this.curPrj) {
+                this.curPrj = cfg.projects.find(p => p.id === this.curPrj.id) || cfg.projects[0];
+            } else if (this.curPrj == null && "projects" in cfg) {
                 this.curPrj = cfg.projects[0];
             } else {
                 this.curPrj = null;
