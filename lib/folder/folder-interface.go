@@ -27,6 +27,8 @@ type IFOLDER interface {
 	Add(cfg FolderConfig) (*FolderConfig, error)              // Add a new folder
 	GetConfig() FolderConfig                                  // Get folder public configuration
 	GetFullPath(dir string) string                            // Get folder full path
+	ConvPathCli2Svr(s string) string                          // Convert path from Client to Server
+	ConvPathSvr2Cli(s string) string                          // Convert path from Server to Client
 	Remove() error                                            // Remove a folder
 	RegisterEventChange(cb *EventCB, data *EventCBData) error // Request events registration (sent through WS)
 	UnRegisterEventChange() error                             // Un-register events

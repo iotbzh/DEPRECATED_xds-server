@@ -3,6 +3,7 @@ package st
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/iotbzh/xds-server/lib/folder"
 	"github.com/iotbzh/xds-server/lib/xdsconfig"
@@ -93,7 +94,7 @@ func (f *STFolder) GetConfig() folder.FolderConfig {
 	return f.fConfig
 }
 
-// GetFullPath returns the full path
+// GetFullPath returns the full path of a directory (from server POV)
 func (f *STFolder) GetFullPath(dir string) string {
 	if &dir == nil {
 		dir = ""
@@ -102,6 +103,28 @@ func (f *STFolder) GetFullPath(dir string) string {
 		return filepath.Join(f.fConfig.RootPath, dir)
 	}
 	return filepath.Join(f.fConfig.RootPath, f.fConfig.ClientPath, dir)
+}
+
+// ConvPathCli2Svr Convert path from Client to Server
+func (f *STFolder) ConvPathCli2Svr(s string) string {
+	if f.fConfig.ClientPath != "" && f.fConfig.RootPath != "" {
+		return strings.Replace(s,
+			f.fConfig.ClientPath,
+			f.fConfig.RootPath+"/"+f.fConfig.ClientPath,
+			-1)
+	}
+	return s
+}
+
+// ConvPathSvr2Cli Convert path from Server to Client
+func (f *STFolder) ConvPathSvr2Cli(s string) string {
+	if f.fConfig.ClientPath != "" && f.fConfig.RootPath != "" {
+		return strings.Replace(s,
+			f.fConfig.RootPath+"/"+f.fConfig.ClientPath,
+			f.fConfig.ClientPath,
+			-1)
+	}
+	return s
 }
 
 // Remove a folder

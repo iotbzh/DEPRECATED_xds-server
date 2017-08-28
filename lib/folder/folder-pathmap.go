@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	common "github.com/iotbzh/xds-common/golib"
 	"github.com/iotbzh/xds-server/lib/xdsconfig"
@@ -80,12 +81,34 @@ func (f *PathMap) GetConfig() FolderConfig {
 	return f.config
 }
 
-// GetFullPath returns the full path
+// GetFullPath returns the full path of a directory (from server POV)
 func (f *PathMap) GetFullPath(dir string) string {
 	if &dir == nil {
 		return f.config.DataPathMap.ServerPath
 	}
 	return filepath.Join(f.config.DataPathMap.ServerPath, dir)
+}
+
+// ConvPathCli2Svr Convert path from Client to Server
+func (f *PathMap) ConvPathCli2Svr(s string) string {
+	if f.config.ClientPath != "" && f.config.DataPathMap.ServerPath != "" {
+		return strings.Replace(s,
+			f.config.ClientPath,
+			f.config.DataPathMap.ServerPath,
+			-1)
+	}
+	return s
+}
+
+// ConvPathSvr2Cli Convert path from Server to Client
+func (f *PathMap) ConvPathSvr2Cli(s string) string {
+	if f.config.ClientPath != "" && f.config.DataPathMap.ServerPath != "" {
+		return strings.Replace(s,
+			f.config.DataPathMap.ServerPath,
+			f.config.ClientPath,
+			-1)
+	}
+	return s
 }
 
 // Remove a folder

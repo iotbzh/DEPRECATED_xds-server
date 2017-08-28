@@ -118,8 +118,8 @@ func (s *APIService) execCmd(c *gin.Context) {
 		common.APIError(c, "Unknown id")
 		return
 	}
-	folder := *f
-	prj := folder.GetConfig()
+	fld := *f
+	prj := fld.GetConfig()
 
 	// Build command line
 	cmd := []string{}
@@ -135,7 +135,7 @@ func (s *APIService) execCmd(c *gin.Context) {
 		}
 	}
 
-	cmd = append(cmd, "cd", folder.GetFullPath(args.RPath))
+	cmd = append(cmd, "cd", fld.GetFullPath(args.RPath))
 	// FIXME - add 'exec' prevents to use syntax:
 	//       xds-exec -l debug -c xds-config.env -- "cd build && cmake .."
 	//  but exec is mandatory to allow to pass correctly signals
@@ -145,7 +145,15 @@ func (s *APIService) execCmd(c *gin.Context) {
 
 	// Process command arguments
 	cmdArgs := make([]string, len(args.Args)+1)
-	copy(cmdArgs, args.Args)
+
+	// Copy and Translate path from client to server
+	for _, aa := range args.Args {
+		if strings.Contains(aa, prj.ClientPath) {
+			cmdArgs = append(cmdArgs, fld.ConvPathCli2Svr(aa))
+		} else {
+			cmdArgs = append(cmdArgs, aa)
+		}
+	}
 
 	// Allocate pts if tty if used
 	if args.TTY {
@@ -193,9 +201,14 @@ func (s *APIService) execCmd(c *gin.Context) {
 
 		// Set correct path
 		data := e.UserData
-		rootPath := (*data)["RootPath"].(string)
-		clientPath := (*data)["ClientPath"].(string)
-		stdin = strings.Replace(stdin, clientPath, rootPath+"/"+clientPath, -1)
+		prjID := (*data)["ID"].(string)
+		f := s.mfolders.Get(prjID)
+		if f == nil {
+			s.log.Errorf("InputCB: Cannot get folder ID %s", prjID)
+		} else {
+			// Translate paths from client to server
+			stdin = (*f).ConvPathCli2Svr(stdin)
+		}
 
 		return stdin, nil
 	}
@@ -212,12 +225,16 @@ func (s *APIService) execCmd(c *gin.Context) {
 		// Retrieve project ID and RootPath
 		data := e.UserData
 		prjID := (*data)["ID"].(string)
-		prjRootPath := (*data)["RootPath"].(string)
 		gdbServerTTY := (*data)["gdbServerTTY"].(string)
 
-		// Cleanup any references to internal rootpath in stdout & stderr
-		stdout = strings.Replace(stdout, prjRootPath, "", -1)
-		stderr = strings.Replace(stderr, prjRootPath, "", -1)
+		f := s.mfolders.Get(prjID)
+		if f == nil {
+			s.log.Errorf("OutputCB: Cannot get folder ID %s", prjID)
+		} else {
+			// Translate paths from server to client
+			stdout = (*f).ConvPathSvr2Cli(stdout)
+			stderr = (*f).ConvPathSvr2Cli(stderr)
+		}
 
 		s.log.Debugf("%s emitted - WS sid[4:] %s - id:%s - prjID:%s", ExecOutEvent, e.Sid[4:], e.CmdID, prjID)
 		if stdout != "" {
@@ -330,8 +347,6 @@ func (s *APIService) execCmd(c *gin.Context) {
 	// User data (used within callbacks)
 	data := make(map[string]interface{})
 	data["ID"] = prj.ID
-	data["RootPath"] = prj.RootPath
-	data["ClientPath"] = prj.ClientPath
 	data["ExitImmediate"] = args.ExitImmediate
 	if args.TTY && args.TTYGdbserverFix {
 		data["gdbServerTTY"] = "workaround"
@@ -341,7 +356,7 @@ func (s *APIService) execCmd(c *gin.Context) {
 	execWS.UserData = &data
 
 	// Start command execution
-	s.log.Debugf("Execute [Cmd ID %s]: %v %v", execWS.CmdID, execWS.Cmd, execWS.Args)
+	s.log.Infof("Execute [Cmd ID %s]: %v %v", execWS.CmdID, execWS.Cmd, execWS.Args)
 
 	err = execWS.Start()
 	if err != nil {
