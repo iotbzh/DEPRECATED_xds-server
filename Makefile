@@ -1,7 +1,7 @@
 # Makefile used to build XDS daemon Web Server
 
 # Application Version
-VERSION := 0.1.0
+VERSION := 0.2.1
 
 # Syncthing version to install
 SYNCTHING_VERSION = 0.14.28
@@ -14,7 +14,8 @@ ifeq ($(origin SUB_VERSION), undefined)
 	ifneq ($(SUB_VERSION), )
 		VERSION := $(firstword $(subst -, ,$(SUB_VERSION)))
 		SUB_VERSION := $(word 2,$(subst -, ,$(SUB_VERSION)))
-	else
+	endif
+	ifeq ($(SUB_VERSION), )
 		SUB_VERSION := $(shell git rev-parse --short HEAD)
 		ifeq ($(SUB_VERSION), )
 			SUB_VERSION := unknown-dev
