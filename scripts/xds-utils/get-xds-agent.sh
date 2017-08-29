@@ -39,6 +39,13 @@ if [ ! -d ${DEST_DIR} ]; then
     exit 1
 fi
 
+# Fisrt check if we can access to iot.bzh (aka ovh.iot)
+ping -c 1 -W 5 www.ovh.iot > /dev/null
+if [ "$?" != "0" ]; then
+    echo "iot.bzh website not accessible !"
+    exit 1
+fi
+
 # Get not existing tarballs
 exitCode=0
 for file in $TARBALLS; do
