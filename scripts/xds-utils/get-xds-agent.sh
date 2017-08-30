@@ -5,6 +5,13 @@
 [ -z "$XDS_AGENT_BASEURL" ] && XDS_AGENT_BASEURL="http://iot.bzh/download/public/2017/XDS/xds-agent/"
 [ -z "$DEST_DIR" ] && DEST_DIR=./webapp/dist/assets/xds-agent-tarballs
 
+# Fisrt check if we can access to iot.bzh (aka ovh.iot)
+ping -c 1 -W 2 www.ovh.iot > /dev/null
+if [ "$?" != "0" ]; then
+    echo "iot.bzh website not accessible !"
+    exit 1
+fi
+
 TARBALLS=$(curl -s ${XDS_AGENT_BASEURL} | grep -oP  'href="[^"]*.zip"' | cut -d '"' -f 2)
 
 usage() {
@@ -36,13 +43,6 @@ done
 
 if [ ! -d ${DEST_DIR} ]; then
     echo "Invalid destination directory: ${DEST_DIR}"
-    exit 1
-fi
-
-# Fisrt check if we can access to iot.bzh (aka ovh.iot)
-ping -c 1 -W 5 www.ovh.iot > /dev/null
-if [ "$?" != "0" ]; then
-    echo "iot.bzh website not accessible !"
     exit 1
 fi
 
