@@ -62,7 +62,7 @@ Use provided script to create a new docker image and start a new container:
 seb@laptop ~$ wget https://raw.githubusercontent.com/iotbzh/xds-server/master/scripts/xds-docker-create-container.sh
 
 # Create new XDS worker container
-seb@laptop ~$ bash ./xds-docker-create-container.sh docker.automotivelinux.org/agl/worker-xds:X.Y
+seb@laptop ~$ bash ./xds-docker-create-container.sh
 
 # Check that new container is running
 seb@laptop ~$ docker ps | grep worker-xds
