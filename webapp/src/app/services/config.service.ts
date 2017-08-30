@@ -117,7 +117,7 @@ export class ConfigService {
             this.confStore = {
                 xdsServerURL: this._window.location.origin + '/api/v1',
                 xdsAgent: {
-                    URL: 'http://localhost:8000',
+                    URL: 'http://localhost:8010',
                     retry: 10,
                 },
                 xdsAgentPackages: [],
