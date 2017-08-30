@@ -37,13 +37,15 @@ been integrated into AGL SDK docker container.
 ### Get the container
 
 Load the pre-build AGL SDK docker image including `xds-server`:
+
 ```bash
 wget -O - http://iot.bzh/download/public/2017/XDS/docker/docker_agl_worker-xds-latest.tar.xz | docker load
 ```
 
 ### List container
+
 You should get `docker.automotivelinux.org/agl/worker-xds:X.Y` image
- 
+
 ```bash
 # List image that we just built
 docker images | grep worker-xds
@@ -54,95 +56,113 @@ docker.automotivelinux.org/agl/worker-xds       3.2                 786d65b2792c
 ### Start xds-server within the container
 
 Use provided script to create a new docker image and start a new container:
+
 ```bash
 # Get script
-wget https://raw.githubusercontent.com/iotbzh/xds-server/master/scripts/xds-docker-create-container.sh
-# [snip...]
+seb@laptop ~$ wget https://raw.githubusercontent.com/iotbzh/xds-server/master/scripts/xds-docker-create-container.sh
 
 # Create new XDS worker container
-bash ./xds-docker-create-container.sh 0 docker.automotivelinux.org/agl/worker-xds:3.99.1
-# [snip...]
+seb@laptop ~$ bash ./xds-docker-create-container.sh 0 docker.automotivelinux.org/agl/worker-xds:3.99.1
 
 # Check that new container is running
-docker ps | grep worker-xds
+seb@laptop ~$ docker ps | grep worker-xds
 
-b985d81af40c        docker.automotivelinux.org/agl/worker-xds:3.99.1       "/usr/bin/wait_for..."   6 days ago           Up 4 hours          0.0.0.0:8000->8000/tcp, 0.0.0.0:69->69/udp, 0.0.0.0:10809->10809/tcp, 0.0.0.0:2222->22/tcp    agl-worker-seb-laptop-0-seb
+b985d81af40c        docker.automotivelinux.org/agl/worker-xds:3.99.1       "/usr/bin/wait_for..."   6 days ago           Up 4 hours          0.0.0.0:8000->8000/tcp, 0.0.0.0:69->69/udp, 0.0.0.0:10809->10809/tcp, 0.0.0.0:2222->22/tcp    agl-worker-seb@laptop-0-seb
 ```
 
 This container (ID=0) exposes following ports:
-  - 8000 : `xds-server` to serve XDS Dashboard
-  - 69   : TFTP
-  - 2222 : ssh
+
+- 8000 : `xds-server` to serve XDS Dashboard
+- 69   : TFTP
+- 2222 : ssh
 
 **`xds-server` is automatically started** as a service on container startup.
 
 If the container is running on your localhost, you can access the web interface (what we call the "Dashboard"):
+
 ```bash
-xdg-open http://localhost:8000
+seb@laptop ~$ xdg-open http://localhost:8000
 ```
 
 If needed you can status / stop / start  it manually using following commands:
+
 ```bash
 # Log into docker container
-ssh -p 2222 devel@localhost
+seb@laptop ~$ ssh -p 2222 devel@localhost
 
 # Status XDS server:
-sudo systemctl status xds-server.service
+devel@docker ~$ sudo systemctl status xds-server.service
 
 # Stop XDS server
-sudo systemctl stop xds-server.service
+devel@docker ~$ sudo systemctl stop xds-server.service
 
 # Start XDS server
-sudo systemctl start xds-server.service
+devel@docker ~$ sudo systemctl start xds-server.service
 
 # Get XDS server logs
-sudo journalctl --unit=xds-server.service --output=cat
+devel@docker ~$ sudo journalctl --unit=xds-server.service --output=cat
 ```
 
 ### Manually Start XDS server
 
 XDS server is started as a service by Systemd.
+
 ```bash
 /lib/systemd/system/xds-server.service
 ```
+
 This Systemd service starts a bash script `/usr/local/bin/xds-server-start.sh`
 
-If you needed you can change default setting by defining specific environment variables in `/etc/default/xds-server`.
-For example to control log level, just set LOGLEVEL env variable knowing that supported *level* are: panic, fatal, error, warn, info, debug.
+If you needed you can change default setting by defining specific environment
+variables in `/etc/default/xds-server`.
+For example to control log level, just set LOGLEVEL env variable knowing that
+supported *level* are: panic, fatal, error, warn, info, debug.
+
 ```bash
-echo 'LOGLEVEL=debug' | sudo tee --append /etc/default/xds-server > /dev/null
-sudo systemctl restart xds-server.service
-tail -f /tmp/xds-server/logs/xds-server.log
+seb@laptop ~$ ssh -p 2222 devel@localhost
+devel@docker ~$ echo 'LOGLEVEL=debug' | sudo tee --append /etc/default/xds-server > /dev/null
+devel@docker ~$ sudo systemctl restart xds-server.service
+devel@docker ~$ tail -f /tmp/xds-server/logs/xds-server.log
 ```
 
 ### Install SDK cross-toolchain
 
-`xds-server` uses cross-toolchain install into directory pointed by `sdkRootDir` setting (see configuration section below for more details).
-For now, you need to install manually SDK cross toolchain. There are not embedded into docker image by default because the size of these tarballs is too big.
+`xds-server` uses cross-toolchain install into directory pointed by `sdkRootDir`
+setting (see configuration section below for more details).
+For now, you need to install manually SDK cross toolchain. There are not embedded
+into docker image by default because the size of these tarballs is too big.
 
-Use provided `install-agl-sdks` script, for example to install SDK for ARM64 and Intel corei7-64:
+Use provided `install-agl-sdks` script, for example to install SDK for ARM64 and
+Intel corei7-64:
 
 ```bash
+seb@laptop ~$ ssh -p 2222 devel@localhost
+
 # Install ARM64 SDK (automatic download)
-sudo /usr/local/bin/xds-utils/install-agl-sdks.sh --arch aarch64
+devel@docker ~$ sudo /usr/local/bin/xds-utils/install-agl-sdks.sh --arch aarch64
 
 # Install Intel corei7-64 SDK (using an SDK tarball that has been built or downloaded manually)
-sudo /usr/local/bin/xds-utils/install-agl-sdks.sh --arch corei7-64 --file /tmp/poky-agl-glibc-x86_64-agl-demo-platform-crosssdk-corei7-64-toolchain-
+devel@docker ~$ sudo /usr/local/bin/xds-utils/install-agl-sdks.sh --arch corei7-64 --file /tmp/poky-agl-glibc-x86_64-agl-demo-platform-crosssdk-corei7-64-toolchain-
 3.99.1+snapshot.sh
 
 ```
 
 ### XDS Dashboard
 
-`xds-server` serves a web-application at [http://localhost:8000](http://localhost:8000) when XDS server is running on your host. Just replace `localhost` by the host name or ip when XDS server is running on another host. So you can now connect your browser to this url and use what we call the **XDS dashboard**.
+`xds-server` serves a web-application at [http://localhost:8000](http://localhost:8000)
+when XDS server is running on your host. Just replace `localhost` by the host
+name or ip when XDS server is running on another host. So you can now connect
+your browser to this url and use what we call the **XDS dashboard**.
+
 ```bash
 xdg-open http://localhost:8000
 ```
 
 Then follow instructions provided by this dashboard, knowing that the first time
-you need to download and start `xds-agent` on your local machine. 
+you need to download and start `xds-agent` on your local machine.
 
-To download this tool, just click on download icon in dashboard configuration page or download one of `xds-agent` released tarball: [https://github.com/iotbzh/xds-agent/releases](https://github.com/iotbzh/xds-agent/releases).
+To download this tool, just click on download icon in dashboard configuration
+page or download one of `xds-agent` released tarball: [https://github.com/iotbzh/xds-agent/releases](https://github.com/iotbzh/xds-agent/releases).
 
 See also `xds-agent` [README file](https://github.com/iotbzh/xds-agent) for more details.
 
@@ -176,11 +196,13 @@ Don't forget to open new user session after installing the packages.
 #### Native build
 
 Create a GOPATH variable(must be a full path):
+
 ```bash
  export GOPATH=$(realpath ~/workspace_go)
 ```
 
 Clone this repo into your `$GOPATH/src/github.com/iotbzh` and use delivered Makefile:
+
 ```bash
  mkdir -p $GOPATH/src/github.com/iotbzh
  cd $GOPATH/src/github.com/iotbzh
@@ -190,6 +212,7 @@ Clone this repo into your `$GOPATH/src/github.com/iotbzh` and use delivered Make
 ```
 
 And to install `xds-server` (by default in `/usr/local/bin`):
+
 ```bash
  make install
 ```
@@ -201,8 +224,8 @@ And to install `xds-server` (by default in `/usr/local/bin`):
 
 #### XDS docker image
 
-As an alternative to a pre-build image, you can rebuild the container from scratch. 
-`xds-server` has been integrated as a flavour of AGL SDK docker image. 
+As an alternative to a pre-build image, you can rebuild the container from scratch.
+`xds-server` has been integrated as a flavour of AGL SDK docker image.
 So to rebuild docker image just execute following commands:
 
 ```bash
@@ -218,30 +241,42 @@ make build FLAVOUR=xds
 `xds-server` configuration is driven by a JSON config file (`config.json`).
 
 Here is the logic to determine which `config.json` file will be used:
-1. from command line option: `--config myConfig.json`
-2. `$HOME/.xds/config.json` file
-3. `<current dir>/config.json` file
-4. `<xds-server executable dir>/config.json` file
 
-Supported fields in configuration file are (all fields are optional and listed values are the default values):
-```
+1. from command line option: `--config myConfig.json`
+1. `$HOME/.xds/config.json` file
+1. `<current dir>/config.json` file
+1. `<xds-server executable dir>/config.json` file
+
+Supported fields in configuration file are (all fields are optional and example
+below corresponds to the default values):
+
+- **httpPort** : HTTP port of client webapp / dashboard
+- **webAppDir** : location of client dashboard (default: webapp/dist)
+- **shareRootDir** : root directory where projects will be copied
+- **logsDir**  : directory to store logs (eg. syncthing output)
+- **sdkRootDir** : root directory where cross SDKs are installed
+- **syncthing.binDir** : syncthing binaries directory (default: executable directory)
+- **syncthing.home"** : syncthing home directory (usually .../syncthing-config)
+- **syncthing.gui-address** : syncthing gui url (default http://localhost:8384)
+- **syncthing.gui-apikey** : syncthing api-key to use (default auto-generated)
+
+```json
 {
-    "httpPort": 8000,                               # HTTP port of client webapp / dashboard
-    "webAppDir": "webapp/dist",                     # location of client dashboard (default: webapp/dist)
-    "shareRootDir": "${HOME}/.xds/projects",        # root directory where projects will be copied
-    "logsDir": "/tmp/logs",                         # directory to store logs (eg. syncthing output)
-    "sdkRootDir": "/xdt/sdk",                       # root directory where cross SDKs are installed
+    "httpPort": 8000,
+    "webAppDir": "webapp/dist",
+    "shareRootDir": "${HOME}/.xds/projects",
+    "logsDir": "/tmp/logs",
+    "sdkRootDir": "/xdt/sdk",
     "syncthing": {
-        "binDir": "./bin",                          # syncthing binaries directory (default: executable directory)
-        "home": "${HOME}/.xds/syncthing-config",    # syncthing home directory (usually .../syncthing-config)
-        "gui-address": "http://localhost:8384",     # syncthing gui url (default http://localhost:8384)
-        "gui-apikey": "123456789",                  # syncthing api-key to use (default auto-generated)
+        "binDir": "./bin",
+        "home": "${HOME}/.xds/syncthing-config",
+        "gui-address": "http://localhost:8384",
+        "gui-apikey": "123456789",
     }
 }
 ```
 
 >**NOTE:** environment variables are supported by using `${MY_VAR}` syntax.
-
 
 ## Debugging
 
@@ -277,8 +312,7 @@ The server part is written in *Go* and web app / dashboard (client part) in
 
 Visual Studio Code launcher settings can be found into `.vscode/launch.json`.
 
-
-## TODO:
+## TODO
 
 - replace makefile by build.go to make Windows build support easier
 - add more tests
