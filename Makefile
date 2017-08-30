@@ -109,7 +109,7 @@ clean:
 
 .PHONY: distclean
 distclean: clean
-	rm -rf $(LOCAL_BINDIR) $(ROOT_SRCDIR)/tools glide.lock vendor webapp/node_modules webapp/dist
+	rm -rf $(LOCAL_BINDIR) $(ROOT_SRCDIR)/tools glide.lock vendor webapp/node_modules webapp/dist webapp/assets/xds-agent-tarballs/*.zip
 
 webapp: webapp/install
 	(cd webapp && gulp build)
@@ -146,14 +146,14 @@ install:
 package: clean
 	make -f $(ROOT_SRCDIR)/Makefile all install  DESTDIR=$(PACKAGE_DIR)/xds-server
 	make -f $(ROOT_SRCDIR)/Makefile conffile  DESTDIR=$(PACKAGE_DIR)/xds-server DESTDIR_WWW=www-xds-server
+	rm -f $(ROOT_SRCDIR)/$(PACKAGE_ZIPFILE)
 	(cd $(PACKAGE_DIR) && zip -r $(ROOT_SRCDIR)/$(PACKAGE_ZIPFILE) ./xds-server)
 
 .PHONY: package-all
 package-all:
 	@echo "# Build linux amd64..."
 	GOOS=linux GOARCH=amd64 RELEASE=1 make -f $(ROOT_SRCDIR)/Makefile package
-	@echo "# Build windows amd64..."
-	GOOS=windows GOARCH=amd64 RELEASE=1 make -f $(ROOT_SRCDIR)/Makefile package
+	make -f $(ROOT_SRCDIR)/Makefile clean
 
 vendor: tools/glide glide.yaml
 	$(LOCAL_TOOLSDIR)/glide install --strip-vendor
