@@ -22,7 +22,7 @@ REGISTRY=docker.automotivelinux.org
 REPO=agl
 NAME=worker
 FLAVOUR=xds
-VERSION=3.99.1
+VERSION=4.0
 
 # ---------------------------------------------------
 # --- computed - don't touch !
@@ -61,7 +61,11 @@ while [ $# -ne 0 ]; do
     shift
 done
 
-[ "$ID" = "" ] && usage
+[ "$ID" = "" ] && ID=0
+
+docker ps -a |grep "$IMAGE" > /dev/null
+[ "$?" = "0" ] && { echo "Image name already exist ! (use -h option to read help)"; exit 1; }
+
 
 USER=$(id -un)
 echo "Using instance ID #$ID (user $(id -un))"

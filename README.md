@@ -39,7 +39,7 @@ been integrated into AGL SDK docker container.
 Load the pre-build AGL SDK docker image including `xds-server`:
 
 ```bash
-wget -O - http://iot.bzh/download/public/2017/XDS/docker/docker_agl_worker-xds-latest.tar.xz | docker load
+seb@laptop ~$ wget -O - http://iot.bzh/download/public/2017/XDS/docker/docker_agl_worker-xds-latest.tar.xz | docker load
 ```
 
 ### List container
@@ -48,9 +48,9 @@ You should get `docker.automotivelinux.org/agl/worker-xds:X.Y` image
 
 ```bash
 # List image that we just built
-docker images | grep worker-xds
+seb@laptop ~$ docker images | grep worker-xds
 
-docker.automotivelinux.org/agl/worker-xds       3.2                 786d65b2792c        6 days ago          602MB
+docker.automotivelinux.org/agl/worker-xds       3.99.1              786d65b2792c        6 days ago          602MB
 ```
 
 ### Start xds-server within the container
@@ -62,12 +62,12 @@ Use provided script to create a new docker image and start a new container:
 seb@laptop ~$ wget https://raw.githubusercontent.com/iotbzh/xds-server/master/scripts/xds-docker-create-container.sh
 
 # Create new XDS worker container
-seb@laptop ~$ bash ./xds-docker-create-container.sh 0 docker.automotivelinux.org/agl/worker-xds:3.99.1
+seb@laptop ~$ bash ./xds-docker-create-container.sh docker.automotivelinux.org/agl/worker-xds:X.Y
 
 # Check that new container is running
 seb@laptop ~$ docker ps | grep worker-xds
 
-b985d81af40c        docker.automotivelinux.org/agl/worker-xds:3.99.1       "/usr/bin/wait_for..."   6 days ago           Up 4 hours          0.0.0.0:8000->8000/tcp, 0.0.0.0:69->69/udp, 0.0.0.0:10809->10809/tcp, 0.0.0.0:2222->22/tcp    agl-worker-seb@laptop-0-seb
+b985d81af40c        docker.automotivelinux.org/agl/worker-xds:3.99.1       "/usr/bin/wait_for..."   6 days ago           Up 4 hours          0.0.0.0:8000->8000/tcp, 0.0.0.0:69->69/udp, 0.0.0.0:10809->10809/tcp, 0.0.0.0:2222->22/tcp    agl-xds-seb@laptop-0-seb
 ```
 
 This container (ID=0) exposes following ports:
