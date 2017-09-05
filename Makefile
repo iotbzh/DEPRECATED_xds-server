@@ -1,7 +1,7 @@
 # Makefile used to build XDS daemon Web Server
 
 # Application Version
-VERSION := 0.2.1
+VERSION := 0.2.2
 
 # Syncthing version to install
 SYNCTHING_VERSION = 0.14.28
@@ -36,7 +36,7 @@ ifeq ($(origin DESTDIR), undefined)
 	DESTDIR := /usr/local/bin
 endif
 ifeq ($(origin DESTDIR_WWW), undefined)
-	DESTDIR_WWW := $(DESTDIR)/www-xds-server
+	DESTDIR_WWW := $(DESTDIR)/www
 endif
 
 HOST_GOOS=$(shell go env GOOS)
@@ -145,7 +145,8 @@ install:
 .PHONY: package
 package: clean
 	make -f $(ROOT_SRCDIR)/Makefile all install  DESTDIR=$(PACKAGE_DIR)/xds-server
-	make -f $(ROOT_SRCDIR)/Makefile conffile  DESTDIR=$(PACKAGE_DIR)/xds-server DESTDIR_WWW=www-xds-server
+	make -f $(ROOT_SRCDIR)/Makefile conffile  DESTDIR=$(PACKAGE_DIR)/xds-server DESTDIR_WWW=www
+	cp -r $(ROOT_SRCDIR)/conf.d $(PACKAGE_DIR)/xds-server
 	rm -f $(ROOT_SRCDIR)/$(PACKAGE_ZIPFILE)
 	(cd $(PACKAGE_DIR) && zip -r $(ROOT_SRCDIR)/$(PACKAGE_ZIPFILE) ./xds-server)
 

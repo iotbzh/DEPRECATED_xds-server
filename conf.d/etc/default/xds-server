@@ -1,0 +1,11 @@
+# defaults file for XDS Server
+# this file is used for service environment in /lib/systemd/system/xds-server.service
+
+# JSON config file to use
+#APP_CONFIG=/home/devel/.config/xds/server/config.json
+
+# Logging level (supported levels: panic, fatal, error, warn, info, debug)
+#LOG_LEVEL=info
+
+# Filename where logs will be redirected (default stdout)
+#LOG_FILENAME=/tmp/xds/logs/xds-server.logs
