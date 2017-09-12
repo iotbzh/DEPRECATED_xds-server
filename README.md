@@ -84,16 +84,20 @@ If you plan to **use path-mapping sharing type for your projects**, you need to 
 seb@laptop ~$ export CONTAINER_NAME=agl-xds-seb@laptop-0-seb
 
 # First stop xds-server
-seb@laptop ~$ docker exec ${CONTAINER_NAME} bash -c ""
+seb@laptop ~$ docker exec ${CONTAINER_NAME} bash -c "systemctl stop xds-server"
 
 # Change user and group id inside docker to match your ids
 seb@laptop ~$ docker exec ${CONTAINER_NAME} bash -c "usermod -u $(id -u) devel"
 seb@laptop ~$ docker exec ${CONTAINER_NAME} bash -c "groupmod -g $(id -g) devel"
 
 # Update some files ownership
-seb@laptop ~$ docker exec ${CONTAINER_NAME} bash -c "chown -R devel:devel /home/devel /tmp/xds"
+seb@laptop ~$ docker exec ${CONTAINER_NAME} bash -c "chown -R devel:devel /home/devel /tmp/xds*"
+
+# Restart xds-server
+seb@laptop ~$ docker exec ${CONTAINER_NAME} bash -c "systemctl start xds-server"
 ```
 
+## Check if xds-server is running (open XDS Dashboard)
 
 **`xds-server` is automatically started** as a service on container startup.
 
