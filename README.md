@@ -76,6 +76,25 @@ This container (ID=0) exposes following ports:
 - 69   : TFTP
 - 2222 : ssh
 
+#### Manually setup docker user id
+
+If you plan to **use path-mapping sharing type for your projects**, you need to have the same user id and group id inside and outside docker. By default user and group name inside docker is set `devel` (id `1664`), use following commands to replace id `1664` with your user/group id:
+```bash
+# Set docker container name to use (usually agl-xds-xxx where xxx is USERNAME@MACHINENAME-IDX-NAME)
+seb@laptop ~$ export CONTAINER_NAME=agl-xds-seb@laptop-0-seb
+
+# First stop xds-server
+seb@laptop ~$ docker exec ${CONTAINER_NAME} bash -c ""
+
+# Change user and group id inside docker to match your ids
+seb@laptop ~$ docker exec ${CONTAINER_NAME} bash -c "usermod -u $(id -u) devel"
+seb@laptop ~$ docker exec ${CONTAINER_NAME} bash -c "groupmod -g $(id -g) devel"
+
+# Update some files ownership
+seb@laptop ~$ docker exec ${CONTAINER_NAME} bash -c "chown -R devel:devel /home/devel /tmp/xds"
+```
+
+
 **`xds-server` is automatically started** as a service on container startup.
 
 If the container is running on your localhost, you can access the web interface (what we call the "Dashboard"):
