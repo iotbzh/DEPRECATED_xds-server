@@ -51,14 +51,18 @@ function usage() {
 
 ID=""
 IMAGE=$DEFIMAGE
-FORCE=false
+FORCE_RESTART=false
+UPDATE_UID=true
 while [ $# -ne 0 ]; do
     case $1 in
         -h|--help|"")
             usage
             ;;
         -fr|-force-restart)
-            FORCE=true
+            FORCE_RESTART=true
+            ;;
+        -no-uid-update)
+            UPDATE_UID=false
             ;;
         *)
             if [[ "$1" =~ ^[0-9]+$ ]]; then
@@ -84,13 +88,15 @@ docker ps -a |grep "$NAME" > /dev/null
 MIRRORDIR=$HOME/ssd/localmirror_$ID
 XDTDIR=$HOME/ssd/xdt_$ID
 SHAREDDIR=$HOME/$DOCKER_USER/docker/share
+XDS_WKS=$HOME/xds-workspace
 
 SSH_PORT=$((2222 + ID))
 WWW_PORT=$((8000 + ID))
 BOOT_PORT=$((69 + ID))
 NBD_PORT=$((10809 + ID))
 
-mkdir -p $MIRRORDIR $XDTDIR $SHAREDDIR || exit 1
+### Create the new container
+mkdir -p $MIRRORDIR $XDTDIR $SHAREDDIR $XDS_WKS || exit 1
 docker run \
 	--publish=${SSH_PORT}:22 \
 	--publish=${WWW_PORT}:8000 \
@@ -101,6 +107,7 @@ docker run \
 	--privileged -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
 	-v $MIRRORDIR:/home/$DOCKER_USER/mirror \
 	-v $SHAREDDIR:/home/$DOCKER_USER/share \
+	-v $XDS_WKS:/home/$DOCKER_USER/xds-workspace \
 	-v $XDTDIR:/xdt \
 	-it $IMAGE
 if [ "$?" != "0" ]; then
@@ -108,16 +115,8 @@ if [ "$?" != "0" ]; then
     exit 1
 fi
 
-if ($FORCE); then
-    echo "Stopping xds-server..."
-    docker exec -t ${NAME} bash -c "systemctl stop xds-server" || exit 1
-    sleep 1
-    echo "Starting xds-server..."
-    docker exec -t ${NAME} bash -c "systemctl start xds-server" || exit 1
-fi
-
+### Ssh key
 echo "Copying your identity to container $NAME"
-#wait ssh service
 echo -n wait ssh service .
 res=3
 max=30
@@ -132,10 +131,29 @@ done
 echo
 
 ssh-keygen -R [$(hostname)]:$SSH_PORT -f ~/.ssh/known_hosts
-docker exec ${NAME} bash -c "mkdir -p /home/devel/.ssh"
-docker cp ~/.ssh/id_rsa.pub ${NAME}:/home/devel/.ssh/authorized_keys
-docker exec ${NAME} bash -c "chown devel:devel -R /home/devel/.ssh ;chmod 0700 /home/devel/.ssh;chmod 0600 /home/devel/.ssh/*"
-ssh -o StrictHostKeyChecking=no -p $SSH_PORT devel@$(hostname) exit
+docker exec ${NAME} bash -c "mkdir -p /home/$DOCKER_USER/.ssh"
+docker cp ~/.ssh/id_rsa.pub ${NAME}:/home/$DOCKER_USER/.ssh/authorized_keys
+docker exec ${NAME} bash -c "chown $DOCKER_USER:$DOCKER_USER -R /home/$DOCKER_USER/.ssh ;chmod 0700 /home/$DOCKER_USER/.ssh; chmod 0600 /home/$DOCKER_USER/.ssh/*"
+ssh -o StrictHostKeyChecking=no -p $SSH_PORT $DOCKER_USER@$(hostname) exit
 
 echo "You can now login using:"
 echo "   ssh -p $SSH_PORT $DOCKER_USER@$(hostname)"
+
+### User / Group id
+if ($UPDATE_UID); then
+    echo "Setup docker user and group id to match yours"
+    docker exec -t ${NAME} bash -c "systemctl stop xds-server" || exit 1
+    docker exec -t ${NAME} bash -c "usermod -u $(id -u) $DOCKER_USER && groupmod -g $(id -g) $DOCKER_USER" || exit 1
+    docker exec -t ${NAME} bash -c "chown -R $DOCKER_USER:$DOCKER_USER /home/$DOCKER_USER /tmp/xds*" || exit 1
+    docker exec -t ${NAME} bash -c "systemctl start xds-server" || exit 1
+    docker exec -t ${NAME} bash -c "systemctl start xds-server" || exit 1
+fi
+
+### Force xds-server restart
+if ($FORCE_RESTART); then
+    echo "Stopping xds-server..."
+    docker exec -t ${NAME} bash -c "systemctl stop xds-server" || exit 1
+    sleep 1
+    echo "Starting xds-server..."
+    docker exec -t ${NAME} bash -c "systemctl start xds-server" || exit 1
+fi
