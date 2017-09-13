@@ -134,16 +134,16 @@ XDS server is started as a service by Systemd.
 /lib/systemd/system/xds-server.service
 ```
 
-This Systemd service starts a bash script `/usr/local/bin/xds-server-start.sh`
+This Systemd service starts a bash script `/opt/AGL/xds/server/xds-server-start.sh`
 
 If you needed you can change default setting by defining specific environment
 variables in `/etc/default/xds-server`.
-For example to control log level, just set LOGLEVEL env variable knowing that
+For example to control log level, just set LOG_LEVEL env variable knowing that
 supported *level* are: panic, fatal, error, warn, info, debug.
 
 ```bash
 seb@laptop ~$ ssh -p 2222 devel@localhost
-devel@docker ~$ echo 'LOGLEVEL=debug' | sudo tee --append /etc/default/xds-server > /dev/null
+devel@docker ~$ echo 'LOG_LEVEL=debug' | sudo tee --append /etc/default/xds-server > /dev/null
 devel@docker ~$ sudo systemctl restart xds-server.service
 devel@docker ~$ tail -f /tmp/xds-server/logs/xds-server.log
 ```
@@ -162,10 +162,10 @@ Intel corei7-64:
 seb@laptop ~$ ssh -p 2222 devel@localhost
 
 # Install ARM64 SDK (automatic download)
-devel@docker ~$ sudo /usr/local/bin/xds-utils/install-agl-sdks.sh --arch aarch64
+devel@docker ~$ sudo /opt/AGL/xds/server/xds-utils/install-agl-sdks.sh --arch aarch64
 
 # Install Intel corei7-64 SDK (using an SDK tarball that has been built or downloaded manually)
-devel@docker ~$ sudo /usr/local/bin/xds-utils/install-agl-sdks.sh --arch corei7-64 --file /tmp/poky-agl-glibc-x86_64-agl-demo-platform-crosssdk-corei7-64-toolchain-
+devel@docker ~$ sudo /opt/AGL/xds/server/xds-utils/install-agl-sdks.sh --arch corei7-64 --file /tmp/poky-agl-glibc-x86_64-agl-demo-platform-crosssdk-corei7-64-toolchain-
 3.99.1+snapshot.sh
 
 ```
@@ -234,7 +234,7 @@ Clone this repo into your `$GOPATH/src/github.com/iotbzh` and use delivered Make
  make all
 ```
 
-And to install `xds-server` (by default in `/usr/local/bin`):
+And to install `xds-server` (by default in `/opt/AGL/xds/server`):
 
 ```bash
  make install
@@ -266,8 +266,8 @@ make build FLAVOUR=xds
 Here is the logic to determine which `config.json` file will be used:
 
 1. from command line option: `--config myConfig.json`
-1. `$HOME/.xds/config.json` file
-1. `<current dir>/config.json` file
+1. `$HOME/.xds-server/config.json` file
+1. `/etc/xds-server/config.json` file
 1. `<xds-server executable dir>/config.json` file
 
 Supported fields in configuration file are (all fields are optional and example
@@ -287,12 +287,12 @@ below corresponds to the default values):
 {
     "httpPort": 8000,
     "webAppDir": "webapp/dist",
-    "shareRootDir": "${HOME}/.xds/projects",
+    "shareRootDir": "${HOME}/.xds-server/projects",
     "logsDir": "/tmp/logs",
     "sdkRootDir": "/xdt/sdk",
     "syncthing": {
         "binDir": "./bin",
-        "home": "${HOME}/.xds/syncthing-config",
+        "home": "${HOME}/.xds-server/syncthing-config",
         "gui-address": "http://localhost:8384",
         "gui-apikey": "123456789",
     }

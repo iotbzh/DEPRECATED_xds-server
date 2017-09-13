@@ -101,6 +101,14 @@ func handlerSigTerm(ctx *Context) {
 	os.Exit(0)
 }
 
+// Helper function to log message on both stdout and logger
+func logPrint(ctx *Context, format string, args ...interface{}) {
+	fmt.Printf(format, args...)
+	if ctx.Log.Out != os.Stdout {
+		ctx.Log.Infof(format, args...)
+	}
+}
+
 // XDS Server application main routine
 func xdsApp(cliCtx *cli.Context) error {
 	var err error
@@ -115,36 +123,31 @@ func xdsApp(cliCtx *cli.Context) error {
 	}
 	ctx.Config = cfg
 
-	// Logs redirected into a file when logsDir is set
-	logfilename := cliCtx.GlobalString("logfile")
+	// Logs redirected into a file when logfile option or logsDir config is set
 	ctx.Config.LogVerboseOut = os.Stderr
 	if ctx.Config.FileConf.LogsDir != "" {
-		if logfilename != "stdout" {
-			if logfilename == "" {
-				logfilename = "xds-server.log"
-			}
-			// is it an absolute path ?
-			logFile := logfilename
-			if logfilename[0] == '.' || logfilename[0] != '/' {
-				logFile = filepath.Join(ctx.Config.FileConf.LogsDir, logfilename)
-			}
-			fmt.Printf("Logging file: %s\n", logFile)
+		if ctx.Config.Options.LogFile != "stdout" {
+			logFile := ctx.Config.Options.LogFile
+
 			fdL, err := os.OpenFile(logFile, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0666)
 			if err != nil {
 				msgErr := fmt.Sprintf("Cannot create log file %s", logFile)
 				return cli.NewExitError(msgErr, int(syscall.EPERM))
 			}
 			ctx.Log.Out = fdL
+
+			logPrint(ctx, "Logging file: %s\n", logFile)
 		}
 
 		logFileHTTPReq := filepath.Join(ctx.Config.FileConf.LogsDir, "xds-server-verbose.log")
-		fmt.Printf("Logging file for HTTP requests: %s\n", logFileHTTPReq)
 		fdLH, err := os.OpenFile(logFileHTTPReq, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0666)
 		if err != nil {
 			msgErr := fmt.Sprintf("Cannot create log file %s", logFileHTTPReq)
 			return cli.NewExitError(msgErr, int(syscall.EPERM))
 		}
 		ctx.Config.LogVerboseOut = fdLH
+
+		logPrint(ctx, "Logging file for HTTP requests: %s\n", logFileHTTPReq)
 	}
 
 	// Create syncthing instance when section "syncthing" is present in config.json
@@ -159,17 +162,17 @@ func xdsApp(cliCtx *cli.Context) error {
 		if err != nil {
 			return cli.NewExitError(err, -4)
 		}
-		fmt.Printf("Syncthing started (PID %d)\n", ctx.SThgCmd.Process.Pid)
+		logPrint(ctx, "Syncthing started (PID %d)\n", ctx.SThgCmd.Process.Pid)
 
 		ctx.Log.Infof("Starting Syncthing-inotify...")
 		ctx.SThgInotCmd, err = ctx.SThg.StartInotify()
 		if err != nil {
 			return cli.NewExitError(err, -4)
 		}
-		fmt.Printf("Syncthing-inotify started (PID %d)\n", ctx.SThgInotCmd.Process.Pid)
+		logPrint(ctx, "Syncthing-inotify started (PID %d)\n", ctx.SThgInotCmd.Process.Pid)
 
 		// Establish connection with local Syncthing (retry if connection fail)
-		fmt.Printf("Establishing connection with Syncthing...\n")
+		logPrint(ctx, "Establishing connection with Syncthing...\n")
 		time.Sleep(2 * time.Second)
 		maxRetry := 30
 		retry := maxRetry

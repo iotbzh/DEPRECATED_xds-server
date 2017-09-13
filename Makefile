@@ -31,9 +31,9 @@ ifneq ($(origin INSTALL_WEBAPP_DIR), undefined)
 	DESTDIR_WWW := $(INSTALL_WEBAPP_DIR)
 endif
 
-# Configurable variables for installation (default /usr/local/...)
+# Configurable variables for installation (default /opt/AGL/...)
 ifeq ($(origin DESTDIR), undefined)
-	DESTDIR := /usr/local/bin
+	DESTDIR := /opt/AGL/xds/server
 endif
 ifeq ($(origin DESTDIR_WWW), undefined)
 	DESTDIR_WWW := $(DESTDIR)/www
@@ -130,7 +130,7 @@ conffile:
 	cat config.json.in \
 		| sed -e s,"webapp/dist","$(DESTDIR_WWW)",g \
 		| sed -e s,"\./bin","",g \
-		 > $(DESTDIR)/config.json
+		 > $(DESTDIR)/config.json.in
 
 .PHONY: install
 install:
@@ -142,19 +142,23 @@ install:
 	mkdir -p $(DESTDIR_WWW) \
 		&& cp -a webapp/dist/* $(DESTDIR_WWW)
 
-.PHONY: package
-package: clean
+.PHONY: _package
+_package: clean
 	make -f $(ROOT_SRCDIR)/Makefile all install  DESTDIR=$(PACKAGE_DIR)/xds-server
 	make -f $(ROOT_SRCDIR)/Makefile conffile  DESTDIR=$(PACKAGE_DIR)/xds-server DESTDIR_WWW=www
 	cp -r $(ROOT_SRCDIR)/conf.d $(PACKAGE_DIR)/xds-server
 	rm -f $(ROOT_SRCDIR)/$(PACKAGE_ZIPFILE)
 	(cd $(PACKAGE_DIR) && zip -r $(ROOT_SRCDIR)/$(PACKAGE_ZIPFILE) ./xds-server)
 
-.PHONY: package-all
-package-all:
+# On support Linux for now
+.PHONY: package
+package:
 	@echo "# Build linux amd64..."
-	GOOS=linux GOARCH=amd64 RELEASE=1 make -f $(ROOT_SRCDIR)/Makefile package
+	GOOS=linux GOARCH=amd64 RELEASE=1 make -f $(ROOT_SRCDIR)/Makefile _package
 	make -f $(ROOT_SRCDIR)/Makefile clean
+
+.PHONY: package-all
+package-all: package
 
 vendor: tools/glide glide.yaml
 	$(LOCAL_TOOLSDIR)/glide install --strip-vendor

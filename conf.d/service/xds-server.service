@@ -5,7 +5,8 @@ Description=XDS Server
 User=devel
 Type=forking
 EnvironmentFile=-/etc/default/xds-server
-ExecStart=/opt/AGL/xds/xds-server-start.sh
+ExecStart=/opt/AGL/xds/server/xds-server-start.sh
+ExecStop=/opt/AGL/xds/server/xds-server-stop.sh
 
 [Install]
 WantedBy=multi-user.target

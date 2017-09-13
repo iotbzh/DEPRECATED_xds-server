@@ -13,7 +13,7 @@ import (
 
 const (
 	// ConfigDir Directory in user HOME directory where xds config will be saved
-	ConfigDir = ".xds"
+	ConfigDir = ".xds-server"
 	// GlobalConfigFilename Global config filename
 	GlobalConfigFilename = "config.json"
 	// FoldersConfigFilename Folders config filename
@@ -42,8 +42,8 @@ type FileConfig struct {
 // readGlobalConfig reads configuration from a config file.
 // Order to determine which config file is used:
 //  1/ from command line option: "--config myConfig.json"
-//  2/ $HOME/.xds/config.json file
-//  3/ <current_dir>/config.json file
+//  2/ $HOME/.xds-server/config.json file
+//  3/ /etc/xds-server/config.json file
 //  4/ <xds-server executable dir>/config.json file
 func readGlobalConfig(c *Config, confFile string) error {
 
@@ -55,14 +55,20 @@ func readGlobalConfig(c *Config, confFile string) error {
 		searchIn = append(searchIn, path.Join(usr.HomeDir, ConfigDir,
 			GlobalConfigFilename))
 	}
-	cwd, err := os.Getwd()
+
+	searchIn = append(searchIn, "/etc/xds-server/config.json")
+
+	exePath := os.Args[0]
+	exeAbsPath, err := filepath.Abs(os.Args[0])
 	if err == nil {
-		searchIn = append(searchIn, path.Join(cwd, "config.json"))
+		exePath, err = filepath.EvalSymlinks(exeAbsPath)
+		if err == nil {
+			exePath = filepath.Dir(exePath)
+		} else {
+			exePath = filepath.Dir(exeAbsPath)
+		}
 	}
-	exePath, err := filepath.Abs(filepath.Dir(os.Args[0]))
-	if err == nil {
-		searchIn = append(searchIn, path.Join(exePath, "config.json"))
-	}
+	searchIn = append(searchIn, path.Join(exePath, "config.json"))
 
 	var cFile *string
 	for _, p := range searchIn {
@@ -75,7 +81,6 @@ func readGlobalConfig(c *Config, confFile string) error {
 		// No config file found
 		return nil
 	}
-
 	c.Log.Infof("Use config file: %s", *cFile)
 
 	// TODO move on viper package to support comments in JSON and also
@@ -117,12 +122,17 @@ func readGlobalConfig(c *Config, confFile string) error {
 	if fCfg.HTTPPort == "" {
 		fCfg.HTTPPort = c.FileConf.HTTPPort
 	}
+	if fCfg.LogsDir == "" {
+		fCfg.LogsDir = c.FileConf.LogsDir
+	}
 
 	// Resolve webapp dir (support relative or full path)
 	fCfg.WebAppDir = strings.Trim(fCfg.WebAppDir, " ")
 	if !strings.HasPrefix(fCfg.WebAppDir, "/") && exePath != "" {
+		cwd, _ := os.Getwd()
+
 		// Check first from current directory
-		for _, rootD := range []string{cwd, exePath} {
+		for _, rootD := range []string{exePath, cwd} {
 			ff := path.Join(rootD, fCfg.WebAppDir, "index.html")
 			if common.Exists(ff) {
 				fCfg.WebAppDir = path.Join(rootD, fCfg.WebAppDir)

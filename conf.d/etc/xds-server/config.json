@@ -1,12 +1,11 @@
 {
     "webAppDir": "www",
     "httpPort": "8000",
-    "shareRootDir": "${HOME}/.xds/share",
-    "logsDir": "/tmp/xds-server/logs",
+    "shareRootDir": "${HOME}/.xds-server/projects",
     "sdkRootDir": "/xdt/sdk",
     "syncthing": {
         "binDir": "",
-        "home": "${HOME}/.xds/syncthing-config",
+        "home": "${HOME}/.xds-server/syncthing-config",
         "gui-address": "http://localhost:8384"
     }
 }

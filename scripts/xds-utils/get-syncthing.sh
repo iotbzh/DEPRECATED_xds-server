@@ -6,7 +6,7 @@
 # XXX - may be cleanup
 # Used as temporary HACK while waiting merge of #165
 #[ -z "$SYNCTHING_INOTIFY_VERSION" ] && { SYNCTHING_INOTIFY_VERSION=master; SYNCTHING_INOTIFY_CMID=af6fbf9d63f95a0; }
-[ -z "$DESTDIR" ] && DESTDIR=/usr/local/bin
+[ -z "$DESTDIR" ] && DESTDIR=/opt/AGL/xds/server
 [ -z "$TMPDIR" ] && TMPDIR=/tmp
 [ -z "$GOOS" ] && GOOS=$(go env GOOS)
 [ -z "$GOARCH" ] && GOARCH=$(go env GOARCH)

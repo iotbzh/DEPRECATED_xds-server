@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
@@ -62,6 +63,7 @@ func Init(cliCtx *cli.Context, log *logrus.Logger) (*Config, error) {
 			ShareRootDir: DefaultShareDir,
 			SdkRootDir:   DefaultSdkRootDir,
 			HTTPPort:     DefaultPort,
+			LogsDir:      "",
 		},
 		Log: log,
 	}
@@ -80,11 +82,35 @@ func Init(cliCtx *cli.Context, log *logrus.Logger) (*Config, error) {
 	}
 	c.Log.Infoln("Share root directory: ", c.FileConf.ShareRootDir)
 
+	// Where Logs are redirected:
+	//  default 'stdout' (logfile option default value)
+	//  else use file (or filepath) set by --logfile option
+	//  that may be overwritten by LogsDir field of config file
+	logF := c.Options.LogFile
+	logD := c.FileConf.LogsDir
+	if logF != "stdout" {
+		if logD != "" {
+			lf := filepath.Base(logF)
+			if lf == "" || lf == "." {
+				lf = "xds-server.log"
+			}
+			logF = filepath.Join(logD, lf)
+		} else {
+			logD = filepath.Dir(logF)
+		}
+	}
+	if logD == "" || logD == "." {
+		logD = "/tmp/xds/logs"
+	}
+	c.Options.LogFile = logF
+	c.FileConf.LogsDir = logD
+
 	if c.FileConf.LogsDir != "" && !common.Exists(c.FileConf.LogsDir) {
 		if err := os.MkdirAll(c.FileConf.LogsDir, 0770); err != nil {
 			return nil, fmt.Errorf("Cannot create logs dir: %v", err)
 		}
 	}
+	c.Log.Infoln("Logs file:      ", c.Options.LogFile)
 	c.Log.Infoln("Logs directory: ", c.FileConf.LogsDir)
 
 	return &c, nil

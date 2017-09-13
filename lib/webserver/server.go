@@ -116,7 +116,9 @@ func (s *Server) Serve() error {
 	// Serve in the background
 	serveError := make(chan error, 1)
 	go func() {
-		fmt.Printf("Web Server running on localhost:%s ...\n", s.cfg.FileConf.HTTPPort)
+		msg := fmt.Sprintf("Web Server running on localhost:%s ...\n", s.cfg.FileConf.HTTPPort)
+		s.log.Infof(msg)
+		fmt.Printf(msg)
 		serveError <- http.ListenAndServe(":"+s.cfg.FileConf.HTTPPort, s.router)
 	}()
 

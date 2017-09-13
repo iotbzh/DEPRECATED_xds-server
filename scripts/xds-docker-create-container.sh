@@ -63,14 +63,13 @@ done
 
 [ "$ID" = "" ] && ID=0
 
-docker ps -a |grep "$IMAGE" > /dev/null
-[ "$?" = "0" ] && { echo "Image name already exist ! (use -h option to read help)"; exit 1; }
-
-
 USER=$(id -un)
 echo "Using instance ID #$ID (user $(id -un))"
 
 NAME=agl-xds-$(hostname|cut -f1 -d'.')-$ID-$USER
+
+docker ps -a |grep "$NAME" > /dev/null
+[ "$?" = "0" ] && { echo "Image name already exist ! (use -h option to read help)"; exit 1; }
 
 MIRRORDIR=$HOME/ssd/localmirror_$ID
 XDTDIR=$HOME/ssd/xdt_$ID
@@ -100,11 +99,11 @@ if [ "$?" != "0" ]; then
 fi
 
 if ($FORCE); then
-    echo "Stoping xds-server..."
-    docker exec --user $DOCKER_USER  ${NAME} bash -c "/usr/local/bin/xds-server-stop.sh" || exit 1
+    echo "Stopping xds-server..."
+    docker exec -t ${NAME} bash -c "systemctl stop xds-server" || exit 1
     sleep 1
     echo "Starting xds-server..."
-    docker exec --user $DOCKER_USER  ${NAME} bash -c "nohup /usr/local/bin/xds-server-start.sh" || exit 1
+    docker exec -t ${NAME} bash -c "systemctl start xds-server" || exit 1
 fi
 
 echo "Copying your identity to container $NAME"
@@ -115,7 +114,7 @@ max=30
 count=0
 while [ $res -ne 0 ] && [ $count -le $max ]; do
     sleep 1
-    docker exec ${NAME} bash -c "systemctl status ssh" 2>/dev/null 1>&2 
+    docker exec ${NAME} bash -c "systemctl status ssh" 2>/dev/null 1>&2
     res=$?
     echo -n "."
     count=$(expr $count + 1);

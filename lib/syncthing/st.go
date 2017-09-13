@@ -114,7 +114,7 @@ func NewSyncThing(conf *xdsconfig.Config, log *logrus.Logger) *SyncThing {
 
 	if binDir == "" {
 		if binDir, err = filepath.Abs(filepath.Dir(os.Args[0])); err != nil {
-			binDir = "/usr/local/bin"
+			binDir = "/opt/AGL/bin"
 		}
 	}
 
