@@ -30,6 +30,16 @@ VERSION=4.0
 DOCKER_USER=devel
 
 DEFIMAGE=$REGISTRY/$REPO/$NAME-$FLAVOUR:$VERSION
+docker images |grep $DEFIMAGE 2>&1 > /dev/null
+if [ "$?" = "1" ]; then
+    VERSION=`docker images $REGISTRY/$REPO/$NAME-$FLAVOUR:* --format "{{.Tag}}"`
+    if [ "$VERSION" = "" ]; then
+        echo "ERROR: cannot automatically retrieve image tag for $REGISTRY/$REPO/$NAME-$FLAVOUR"
+        exit 1
+    fi
+    DEFIMAGE=$REGISTRY/$REPO/$NAME-$FLAVOUR:$VERSION
+fi
+
 
 function usage() {
 	echo "Usage: $(basename $0) <instance ID> [image name]"  >&2
