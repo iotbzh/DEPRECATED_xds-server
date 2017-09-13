@@ -189,16 +189,19 @@ export class ConfigService {
 
             }, error => {
                 if (error.indexOf("XDS local Agent not responding") !== -1) {
-                    let msg = "<span><strong>" + error + "<br></strong>";
-                    msg += "You may need to download and execute XDS-Agent.<br>";
-
-                    let os = this.utils.getOSName(true);
-                    let zurl = this.confStore.xdsAgentPackages && this.confStore.xdsAgentPackages.filter(elem => elem.os === os);
-                    if (zurl && zurl.length) {
-                        msg += " Download XDS-Agent tarball for " + zurl[0].os + " host OS ";
-                        msg += "<a class=\"fa fa-download\" href=\"" + zurl[0].url + "\" target=\"_blank\"></a>";
-                    }
-                    msg += "</span>";
+                    let url_OS_Linux = "https://en.opensuse.org/LinuxAutomotive#Installation_AGL_XDS";
+                    let url_OS_Other = "https://github.com/iotbzh/xds-agent#how-to-install-on-other-platform";
+                    let msg = `<span><strong>` + error + `<br></strong>
+                    You may need to install and execute XDS-Agent: <br>
+                        On Linux machine <a href="` + url_OS_Linux + `" target="_blank"><span
+                            class="fa fa-external-link"></span></a>
+                        <br>
+                        On Windows machine <a href="` + url_OS_Other + `" target="_blank"><span
+                            class="fa fa-external-link"></span></a>
+                        <br>
+                        On MacOS machine <a href="` + url_OS_Other + `" target="_blank"><span
+                            class="fa fa-external-link"></span></a>
+                    `;
                     this.alert.error(msg);
                 } else {
                     this.alert.error(error);
