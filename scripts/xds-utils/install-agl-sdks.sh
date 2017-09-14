@@ -8,7 +8,8 @@
 # Support only poky_agl profile for now
 PROFILE="poky-agl"
 
-SDKS=$(curl -s ${SDK_BASEURL} | grep -oP  'href="[^"]*.sh"' | cut -d '"' -f 2)
+# Dynamically retreive SDKs (reduce timeout in case of iot website is not available)
+SDKS=$(curl -s ${SDK_BASEURL} --connect-timeout 10 | grep -oP  'href="[^"]*.sh"' | cut -d '"' -f 2) || echo "WARNING: IoT.bzh download site not available."
 
 usage() {
     echo "Usage: $(basename $0) [-h|--help] [-clean] [-f|--file <agl-sdk-filename>] [-a|--arch <arch name>] [-l|--list]"
