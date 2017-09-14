@@ -30,16 +30,6 @@ VERSION=4.0
 DOCKER_USER=devel
 
 DEFIMAGE=$REGISTRY/$REPO/$NAME-$FLAVOUR:$VERSION
-docker images |grep $DEFIMAGE 2>&1 > /dev/null
-if [ "$?" = "1" ]; then
-    VERSION=`docker images $REGISTRY/$REPO/$NAME-$FLAVOUR:* --format "{{.Tag}}"`
-    if [ "$VERSION" = "" ]; then
-        echo "ERROR: cannot automatically retrieve image tag for $REGISTRY/$REPO/$NAME-$FLAVOUR"
-        exit 1
-    fi
-    DEFIMAGE=$REGISTRY/$REPO/$NAME-$FLAVOUR:$VERSION
-fi
-
 
 function usage() {
 	echo "Usage: $(basename $0) <instance ID> [image name]"  >&2
@@ -50,7 +40,7 @@ function usage() {
 }
 
 ID=""
-IMAGE=$DEFIMAGE
+IMAGE=""
 FORCE_RESTART=false
 UPDATE_UID=true
 while [ $# -ne 0 ]; do
@@ -76,6 +66,28 @@ while [ $# -ne 0 ]; do
 done
 
 [ "$ID" = "" ] && ID=0
+
+# Dynamically retrieve image name
+if [ "$IMAGE" = "" ]; then
+
+    VER_NUM=`docker images $REGISTRY/$REPO/$NAME-$FLAVOUR:* --format {{.Tag}} | wc -l`
+    if [ $VER_NUM -gt 1 ]; then
+        echo "ERROR: more than one xds image found, please set explicitly the image to use !"
+        exit 1
+    elif [ $VER_NUM -lt 1 ]; then
+        echo "ERROR: cannot automatically retrieve image tag for $REGISTRY/$REPO/$NAME-$FLAVOUR"
+        exit 1
+    fi
+
+    VERSION=`docker images $REGISTRY/$REPO/$NAME-$FLAVOUR:* --format {{.Tag}}`
+    if [ "$VERSION" = "" ]; then
+        echo "ERROR: cannot automatically retrieve image tag for $REGISTRY/$REPO/$NAME-$FLAVOUR"
+        usage
+        exit 1
+    fi
+
+    IMAGE=$REGISTRY/$REPO/$NAME-$FLAVOUR:$VERSION
+fi
 
 USER=$(id -un)
 echo "Using instance ID #$ID (user $(id -un))"
