@@ -197,7 +197,7 @@ func (f *Folders) createUpdate(newF folder.FolderConfig, create bool, initial bo
 	// SYNCTHING
 	case folder.TypeCloudSync:
 		if f.SThg == nil {
-			return nil, fmt.Errorf("ClownSync type not supported (syncthing not initialized)")
+			return nil, fmt.Errorf("CloudSync type not supported (syncthing not initialized)")
 		}
 		fld = f.SThg.NewFolderST(f.Conf)
 	// PATH MAP

@@ -37,7 +37,7 @@ type Options struct {
 const (
 	DefaultAPIVersion = "1"
 	DefaultPort       = "8000"
-	DefaultShareDir   = "/mnt/share"
+	DefaultShareDir   = "${HOME}/.xds-server/projects"
 	DefaultSdkRootDir = "/xdt/sdk"
 )
 

@@ -59,11 +59,12 @@ func readGlobalConfig(c *Config, confFile string) error {
 	searchIn = append(searchIn, "/etc/xds-server/config.json")
 
 	exePath := os.Args[0]
-	exeAbsPath, err := filepath.Abs(os.Args[0])
+	ee, _ := os.Executable()
+	exeAbsPath, err := filepath.Abs(ee)
 	if err == nil {
 		exePath, err = filepath.EvalSymlinks(exeAbsPath)
 		if err == nil {
-			exePath = filepath.Dir(exePath)
+			exePath = filepath.Dir(ee)
 		} else {
 			exePath = filepath.Dir(exeAbsPath)
 		}
