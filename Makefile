@@ -64,11 +64,14 @@ VERBOSE_2 := -v -x
 
 # Release or Debug mode
 ifeq ($(filter 1,$(RELEASE) $(REL)),)
-	GORELEASE=
+	GO_LDFLAGS=
+	# disable compiler optimizations and inlining
+	GO_GCFLAGS=-N -l
 	BUILD_MODE="Debug mode"
 else
 	# optimized code without debug info
-	GORELEASE= -s -w
+	GO_LDFLAGS=-s -w
+	GO_GCFLAGS=
 	BUILD_MODE="Release mode"
 endif
 
@@ -86,7 +89,7 @@ build: vendor xds webapp
 
 xds: scripts tools/syncthing/copytobin
 	@echo "### Build XDS server (version $(VERSION), subversion $(SUB_VERSION), $(BUILD_MODE))";
-	@cd $(ROOT_SRCDIR); $(BUILD_ENV_FLAGS) go build $(VERBOSE_$(V)) -i -o $(LOCAL_BINDIR)/xds-server$(EXT) -ldflags "$(GORELEASE) -X main.AppVersion=$(VERSION) -X main.AppSubVersion=$(SUB_VERSION)" .
+	@cd $(ROOT_SRCDIR); $(BUILD_ENV_FLAGS) go build $(VERBOSE_$(V)) -i -o $(LOCAL_BINDIR)/xds-server$(EXT) -ldflags "$(GO_LDFLAGS) -X main.AppVersion=$(VERSION) -X main.AppSubVersion=$(SUB_VERSION)" -gcflags "$(GO_GCFLAGS)" .
 
 test: tools/glide
 	go test --race $(shell $(LOCAL_TOOLSDIR)/glide novendor)
