@@ -38,12 +38,22 @@ const (
 	DefaultAPIVersion = "1"
 	DefaultPort       = "8000"
 	DefaultShareDir   = "${HOME}/.xds-server/projects"
+	DefaultSTHomeDir  = "${HOME}/.xds-server/syncthing-config"
 	DefaultSdkRootDir = "/xdt/sdk"
 )
 
 // Init loads the configuration on start-up
 func Init(cliCtx *cli.Context, log *logrus.Logger) (*Config, error) {
 	var err error
+
+	dfltShareDir := DefaultShareDir
+	dfltSTHomeDir := DefaultSTHomeDir
+	if resDir, err := common.ResolveEnvVar(DefaultShareDir); err == nil {
+		dfltShareDir = resDir
+	}
+	if resDir, err := common.ResolveEnvVar(DefaultSTHomeDir); err == nil {
+		dfltSTHomeDir = resDir
+	}
 
 	// Define default configuration
 	c := Config{
@@ -60,9 +70,10 @@ func Init(cliCtx *cli.Context, log *logrus.Logger) (*Config, error) {
 		},
 		FileConf: FileConfig{
 			WebAppDir:    "webapp/dist",
-			ShareRootDir: DefaultShareDir,
+			ShareRootDir: dfltShareDir,
 			SdkRootDir:   DefaultSdkRootDir,
 			HTTPPort:     DefaultPort,
+			SThgConf:     &SyncThingConf{Home: dfltSTHomeDir},
 			LogsDir:      "",
 		},
 		Log: log,
