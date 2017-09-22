@@ -78,6 +78,8 @@ func (f *Folders) LoadConfig() error {
 			// Don't exit on such error, just log it
 			f.Log.Errorf(err.Error())
 		}
+	} else {
+		f.Log.Infof("Syncthing support is disabled.")
 	}
 
 	// Merge syncthing folders into XDS folders
@@ -101,20 +103,22 @@ func (f *Folders) LoadConfig() error {
 
 	// Detect ghost project
 	// (IOW existing in xds file config and not in syncthing database)
-	for i, xf := range flds {
-		// only for syncthing project
-		if xf.Type != folder.TypeCloudSync {
-			continue
-		}
-		found := false
-		for _, stf := range stFlds {
-			if stf.ID == xf.ID {
-				found = true
-				break
+	if f.SThg != nil {
+		for i, xf := range flds {
+			// only for syncthing project
+			if xf.Type != folder.TypeCloudSync {
+				continue
 			}
-		}
-		if !found {
-			flds[i].Status = folder.StatusErrorConfig
+			found := false
+			for _, stf := range stFlds {
+				if stf.ID == xf.ID {
+					found = true
+					break
+				}
+			}
+			if !found {
+				flds[i].Status = folder.StatusErrorConfig
+			}
 		}
 	}
 
@@ -196,10 +200,13 @@ func (f *Folders) createUpdate(newF folder.FolderConfig, create bool, initial bo
 	switch newF.Type {
 	// SYNCTHING
 	case folder.TypeCloudSync:
-		if f.SThg == nil {
-			return nil, fmt.Errorf("CloudSync type not supported (syncthing not initialized)")
+		if f.SThg != nil {
+			fld = f.SThg.NewFolderST(f.Conf)
+		} else {
+			f.Log.Debugf("Disable project %v (syncthing not initialized)", newF.ID)
+			fld = folder.NewFolderSTDisable(f.Conf)
 		}
-		fld = f.SThg.NewFolderST(f.Conf)
+
 	// PATH MAP
 	case folder.TypePathMap:
 		fld = folder.NewFolderPathMap(f.Conf)
