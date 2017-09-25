@@ -103,7 +103,7 @@ fmt: tools/glide
 run: build/xds tools/syncthing/copytobin
 	$(LOCAL_BINDIR)/xds-server$(EXT) --log info -c config.json.in
 
-debug: build/xds webapp/debug tools/syncthing/copytobin
+debug: build/xds tools/syncthing/copytobin
 	$(LOCAL_BINDIR)/xds-server$(EXT) --log debug -c config.json.in
 
 .PHONY: clean
@@ -112,17 +112,15 @@ clean:
 
 .PHONY: distclean
 distclean: clean
-	rm -rf $(LOCAL_BINDIR) $(ROOT_SRCDIR)/tools glide.lock vendor webapp/node_modules webapp/dist webapp/assets/xds-agent-tarballs/*.zip
+	rm -rf $(LOCAL_BINDIR) $(ROOT_SRCDIR)/tools glide.lock vendor $(ROOT_SRCDIR)/webapp/dist $(ROOT_SRCDIR)/webapp/node_modules
 
 webapp: webapp/install
-	(cd webapp && gulp build)
-
-webapp/debug:
-	(cd webapp && gulp watch &)
+	mkdir -p $(ROOT_SRCDIR)/webapp/dist $(ROOT_SRCDIR)/webapp/dist/fonts
+	(cd $(ROOT_SRCDIR)/webapp && cp -a ./assets ./src/index.html ./node_modules/font-awesome/css/font-awesome.min.css ./dist/)
+	(cd $(ROOT_SRCDIR)/webapp && cp -a ./node_modules/font-awesome/fonts/* ./dist/fonts/)
 
 webapp/install:
 	(cd webapp && npm install)
-	@if [ -d ${DESTDIR}/usr/local/etc ]; then rm -rf ${DESTDIR}/usr; fi
 
 .PHONY: scripts
 scripts:
