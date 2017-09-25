@@ -190,6 +190,7 @@ tools/syncthing:
 .PHONY:
 tools/syncthing/copytobin:
 	@test -e $(LOCAL_TOOLSDIR)/syncthing$(EXT) -a -e $(LOCAL_TOOLSDIR)/syncthing-inotify$(EXT) || { echo "Please execute first: make tools/syncthing\n"; exit 1; }
+	@mkdir -p $(LOCAL_BINDIR)
 	@cp -f $(LOCAL_TOOLSDIR)/syncthing$(EXT) $(LOCAL_TOOLSDIR)/syncthing-inotify$(EXT) $(LOCAL_BINDIR)
 
 .PHONY: help
@@ -197,6 +198,7 @@ help:
 	@echo "Main supported rules:"
 	@echo "  all                (default)"
 	@echo "  build"
+	@echo "  package"
 	@echo "  install"
 	@echo "  clean"
 	@echo "  distclean"

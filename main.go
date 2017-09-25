@@ -209,8 +209,10 @@ func xdsApp(cliCtx *cli.Context) error {
 		return cli.NewExitError(err, -6)
 	}
 
-	// Create and start Web Server
+	// Create Web Server
 	ctx.WWWServer = webserver.New(ctx.Config, ctx.MFolders, ctx.SDKs, ctx.Log)
+
+	// Run Web Server until exit requested (blocking call)
 	if err = ctx.WWWServer.Serve(); err != nil {
 		ctx.Log.Println(err)
 		return cli.NewExitError(err, -7)
