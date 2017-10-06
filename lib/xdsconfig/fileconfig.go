@@ -16,6 +16,8 @@ const (
 	ConfigDir = ".xds-server"
 	// GlobalConfigFilename Global config filename
 	GlobalConfigFilename = "config.json"
+	// ServerDataFilename Server data filename
+	ServerDataFilename = "server-data.xml"
 	// FoldersConfigFilename Folders config filename
 	FoldersConfigFilename = "server-config_folders.xml"
 )
@@ -146,11 +148,20 @@ func readGlobalConfig(c *Config, confFile string) error {
 	return nil
 }
 
-// FoldersConfigFilenameGet
-func FoldersConfigFilenameGet() (string, error) {
+func configFilenameGet(cfgFile string) (string, error) {
 	usr, err := user.Current()
 	if err != nil {
 		return "", err
 	}
-	return path.Join(usr.HomeDir, ConfigDir, FoldersConfigFilename), nil
+	return path.Join(usr.HomeDir, ConfigDir, cfgFile), nil
+}
+
+// FoldersConfigFilenameGet
+func FoldersConfigFilenameGet() (string, error) {
+	return configFilenameGet(FoldersConfigFilename)
+}
+
+// ServerDataFilenameGet
+func ServerDataFilenameGet() (string, error) {
+	return configFilenameGet(ServerDataFilename)
 }

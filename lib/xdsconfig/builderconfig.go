@@ -28,10 +28,7 @@ func NewBuilderConfig(stID string) (BuilderConfig, error) {
 	return b, nil
 }
 
-// Copy makes a real copy of BuilderConfig
-func (c *BuilderConfig) Copy(n BuilderConfig) {
-	// TODO
-}
+/*** Private ***/
 
 func getLocalIP() (string, error) {
 	addrs, err := net.InterfaceAddrs()

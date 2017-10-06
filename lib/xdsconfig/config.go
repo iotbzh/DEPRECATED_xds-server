@@ -13,10 +13,12 @@ import (
 
 // Config parameters (json format) of /config command
 type Config struct {
-	Version       string        `json:"version"`
-	APIVersion    string        `json:"apiVersion"`
-	VersionGitTag string        `json:"gitTag"`
-	Builder       BuilderConfig `json:"builder"`
+	ServerUID        string          `json:"id"`
+	Version          string          `json:"version"`
+	APIVersion       string          `json:"apiVersion"`
+	VersionGitTag    string          `json:"gitTag"`
+	SupportedSharing map[string]bool `json:"supportedSharing"`
+	Builder          BuilderConfig   `json:"builder"`
 
 	// Private (un-exported fields in REST GET /config route)
 	Options       Options        `json:"-"`
@@ -55,12 +57,19 @@ func Init(cliCtx *cli.Context, log *logrus.Logger) (*Config, error) {
 		dfltSTHomeDir = resDir
 	}
 
+	uuid, err := ServerIDGet()
+	if err != nil {
+		return nil, err
+	}
+
 	// Define default configuration
 	c := Config{
-		Version:       cliCtx.App.Metadata["version"].(string),
-		APIVersion:    DefaultAPIVersion,
-		VersionGitTag: cliCtx.App.Metadata["git-tag"].(string),
-		Builder:       BuilderConfig{},
+		ServerUID:        uuid,
+		Version:          cliCtx.App.Metadata["version"].(string),
+		APIVersion:       DefaultAPIVersion,
+		VersionGitTag:    cliCtx.App.Metadata["git-tag"].(string),
+		Builder:          BuilderConfig{},
+		SupportedSharing: map[string]bool{ /*FIXME USE folder.TypePathMap*/ "PathMap": true},
 
 		Options: Options{
 			ConfigFile:     cliCtx.GlobalString("config"),

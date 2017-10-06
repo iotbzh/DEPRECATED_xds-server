@@ -1,12 +1,12 @@
 package folder
 
 // FolderType definition
-type FolderType int
+type FolderType string
 
 const (
-	TypePathMap   = 1
-	TypeCloudSync = 2
-	TypeCifsSmb   = 3
+	TypePathMap   = "PathMap"
+	TypeCloudSync = "CloudSync"
+	TypeCifsSmb   = "CIFS"
 )
 
 // Folder Status definition
@@ -65,6 +65,5 @@ type PathMapConfig struct {
 
 // CloudSyncConfig CloudSync (AKA Syncthing) specific data
 type CloudSyncConfig struct {
-	SyncThingID   string `json:"syncThingID"`
-	BuilderSThgID string `json:"builderSThgID"`
+	SyncThingID string `json:"syncThingID"`
 }

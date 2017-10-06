@@ -168,8 +168,7 @@ func (f *Folders) GetConfigArr() []folder.FolderConfig {
 
 // getConfigArrUnsafe Same as GetConfigArr without mutex protection
 func (f *Folders) getConfigArrUnsafe() []folder.FolderConfig {
-	var conf []folder.FolderConfig
-
+	conf := []folder.FolderConfig{}
 	for _, v := range f.folders {
 		conf = append(conf, (*v).GetConfig())
 	}

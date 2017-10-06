@@ -7,6 +7,7 @@ import (
 )
 
 type version struct {
+	ID            string `json:"id"`
 	Version       string `json:"version"`
 	APIVersion    string `json:"apiVersion"`
 	VersionGitTag string `json:"gitTag"`
@@ -15,6 +16,7 @@ type version struct {
 // getInfo : return various information about server
 func (s *APIService) getVersion(c *gin.Context) {
 	response := version{
+		ID:            s.cfg.ServerUID,
 		Version:       s.cfg.Version,
 		APIVersion:    s.cfg.APIVersion,
 		VersionGitTag: s.cfg.VersionGitTag,

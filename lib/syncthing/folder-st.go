@@ -57,8 +57,6 @@ func (f *STFolder) Add(cfg folder.FolderConfig) (*folder.FolderConfig, error) {
 
 	f.fConfig = cfg
 
-	f.fConfig.DataCloudSync.BuilderSThgID = f.st.MyID // FIXME - should be removed after local ST config rework
-
 	// Update Syncthing folder
 	// (expect if status is ErrorConfig)
 	// TODO: add cache to avoid multiple requests on startup

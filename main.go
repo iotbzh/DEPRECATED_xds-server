@@ -14,6 +14,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
 	"github.com/iotbzh/xds-server/lib/crosssdk"
+	"github.com/iotbzh/xds-server/lib/folder"
 	"github.com/iotbzh/xds-server/lib/model"
 	"github.com/iotbzh/xds-server/lib/syncthing"
 	"github.com/iotbzh/xds-server/lib/webserver"
@@ -193,6 +194,7 @@ func xdsApp(cliCtx *cli.Context) error {
 		if ctx.Config.Builder, err = xdsconfig.NewBuilderConfig(ctx.SThg.MyID); err != nil {
 			return cli.NewExitError(err, -4)
 		}
+		ctx.Config.SupportedSharing[folder.TypeCloudSync] = true
 	}
 
 	// Init model folder

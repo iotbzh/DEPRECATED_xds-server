@@ -34,7 +34,6 @@ func New(r *gin.Engine, sess *session.Sessions, cfg *xdsconfig.Config, mfolders 
 	}
 
 	s.apiRouter.GET("/version", s.getVersion)
-	s.apiRouter.GET("/xdsagent/info", s.getXdsAgentInfo)
 
 	s.apiRouter.GET("/config", s.getConfig)
 	s.apiRouter.POST("/config", s.setConfig)
