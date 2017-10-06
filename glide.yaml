@@ -25,7 +25,7 @@ import:
 - package: github.com/satori/go.uuid
   version: ^1.1.0
 - package: github.com/iotbzh/xds-common
-  version: 4b8e35b6786b
+  version: 1bf428d6b4ba
   subpackages:
   - golib/common
   - golib/eows

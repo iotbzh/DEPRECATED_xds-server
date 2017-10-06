@@ -316,7 +316,12 @@ func (s *SyncThing) Connect() error {
 		common.HTTPClientConfig{
 			URLPrefix:           "/rest",
 			HeaderClientKeyName: "X-Syncthing-ID",
+			LogOut:              s.conf.LogVerboseOut,
+			LogPrefix:           "SYNCTHING: ",
+			LogLevel:            common.HTTPLogLevelWarning,
 		})
+	s.client.SetLogLevel(s.log.Level.String())
+
 	if err != nil {
 		msg := ": " + err.Error()
 		if strings.Contains(err.Error(), "connection refused") {
@@ -327,11 +332,6 @@ func (s *SyncThing) Connect() error {
 	if s.client == nil {
 		return fmt.Errorf("ERROR: cannot connect to Syncthing (null client)")
 	}
-
-	// Redirect HTTP log into a file
-	s.client.SetLogLevel(s.conf.Log.Level.String())
-	s.client.LoggerPrefix = "SYNCTHING: "
-	s.client.LoggerOut = s.conf.LogVerboseOut
 
 	s.MyID, err = s.IDGet()
 	if err != nil {
