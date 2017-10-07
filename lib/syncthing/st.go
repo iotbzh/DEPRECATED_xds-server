@@ -34,16 +34,16 @@ type SyncThing struct {
 	STICmd    *exec.Cmd
 	MyID      string
 	Connected bool
+	Events    *Events
 
 	// Private fields
 	binDir      string
 	logsDir     string
 	exitSTChan  chan ExitChan
 	exitSTIChan chan ExitChan
-	conf        *xdsconfig.Config
 	client      *common.HTTPClient
 	log         *logrus.Logger
-	Events      *Events
+	conf        *xdsconfig.Config
 }
 
 // ExitChan Channel used for process exit
@@ -134,7 +134,8 @@ func (s *SyncThing) startProc(exeName string, args []string, env []string, eChan
 
 	// Kill existing process (useful for debug ;-) )
 	if os.Getenv("DEBUG_MODE") != "" {
-		exec.Command("bash", "-c", "pkill -9 "+exeName).Output()
+		fmt.Printf("\n!!! DEBUG_MODE set: KILL existing %s process(es) !!!\n", exeName)
+		exec.Command("bash", "-c", "ps -ax |grep "+exeName+" |grep "+s.BaseURL+" |cut  -d' ' -f 1|xargs -I{} kill -9 {}").Output()
 	}
 
 	// When not set (or set to '.') set bin to path of xds-agent executable

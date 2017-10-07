@@ -55,6 +55,7 @@
     "mfolders",
     "IFOLDER",
     "flds",
-    "dflt"
+    "dflt",
+    "stconfig"
   ]
 }

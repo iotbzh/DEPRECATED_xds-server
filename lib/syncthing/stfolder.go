@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/iotbzh/xds-server/lib/folder"
-	"github.com/syncthing/syncthing/lib/config"
+	stconfig "github.com/syncthing/syncthing/lib/config"
 	"github.com/syncthing/syncthing/lib/protocol"
 )
 
@@ -69,7 +69,7 @@ func (s *SyncThing) FolderChange(f folder.FolderConfig) (string, error) {
 		return "", err
 	}
 
-	newDevice := config.DeviceConfiguration{
+	newDevice := stconfig.DeviceConfiguration{
 		DeviceID:  devID,
 		Name:      stClientID,
 		Addresses: []string{"dynamic"},
@@ -95,7 +95,7 @@ func (s *SyncThing) FolderChange(f folder.FolderConfig) (string, error) {
 		id = stClientID[0:15] + "_" + label
 	}
 
-	folder := config.FolderConfiguration{
+	folder := stconfig.FolderConfiguration{
 		ID:    id,
 		Label: label,
 		Path:  filepath.Join(s.conf.FileConf.ShareRootDir, f.ClientPath),
@@ -105,12 +105,12 @@ func (s *SyncThing) FolderChange(f folder.FolderConfig) (string, error) {
 		folder.RescanIntervalS = s.conf.FileConf.SThgConf.RescanIntervalS
 	}
 
-	folder.Devices = append(folder.Devices, config.FolderDeviceConfiguration{
+	folder.Devices = append(folder.Devices, stconfig.FolderDeviceConfiguration{
 		DeviceID: newDevice.DeviceID,
 	})
 
 	found = false
-	var fld config.FolderConfiguration
+	var fld stconfig.FolderConfiguration
 	for _, fld = range stCfg.Folders {
 		if folder.ID == fld.ID {
 			fld = folder
@@ -155,8 +155,8 @@ func (s *SyncThing) FolderDelete(id string) error {
 }
 
 // FolderConfigGet Returns the configuration of a specific folder
-func (s *SyncThing) FolderConfigGet(folderID string) (config.FolderConfiguration, error) {
-	fc := config.FolderConfiguration{}
+func (s *SyncThing) FolderConfigGet(folderID string) (stconfig.FolderConfiguration, error) {
+	fc := stconfig.FolderConfiguration{}
 	if folderID == "" {
 		return fc, fmt.Errorf("folderID not set")
 	}
