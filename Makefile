@@ -4,8 +4,8 @@
 VERSION := 0.3.2
 
 # Syncthing version to install
-SYNCTHING_VERSION = 0.14.28
-SYNCTHING_INOTIFY_VERSION = 0.8.6
+SYNCTHING_VERSION = 0.14.38
+SYNCTHING_INOTIFY_VERSION = 0.8.7
 
 
 # Retrieve git tag/commit to set sub-version string

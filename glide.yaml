@@ -9,7 +9,7 @@ import:
 - package: github.com/gin-contrib/static
   version: master
 - package: github.com/syncthing/syncthing
-  version: =0.14.28
+  version: =0.14.38
   subpackages:
   - lib/sync
   - lib/config
@@ -25,7 +25,7 @@ import:
 - package: github.com/satori/go.uuid
   version: ^1.1.0
 - package: github.com/iotbzh/xds-common
-  version: 1bf428d6b4ba
+  version: ^0.1.0
   subpackages:
   - golib/common
   - golib/eows

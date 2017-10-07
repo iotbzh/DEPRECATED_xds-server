@@ -32,9 +32,9 @@ func (s *SyncThing) FolderLoadFromStConfig(f *[]folder.FolderConfig) error {
 	}
 
 	for _, stFld := range stCfg.Folders {
-		cliPath := strings.TrimPrefix(stFld.RawPath, s.conf.FileConf.ShareRootDir)
+		cliPath := strings.TrimPrefix(stFld.Path, s.conf.FileConf.ShareRootDir)
 		if cliPath == "" {
-			cliPath = stFld.RawPath
+			cliPath = stFld.Path
 		}
 		*f = append(*f, folder.FolderConfig{
 			ID:            stFld.ID,
@@ -96,9 +96,9 @@ func (s *SyncThing) FolderChange(f folder.FolderConfig) (string, error) {
 	}
 
 	folder := config.FolderConfiguration{
-		ID:      id,
-		Label:   label,
-		RawPath: filepath.Join(s.conf.FileConf.ShareRootDir, f.ClientPath),
+		ID:    id,
+		Label: label,
+		Path:  filepath.Join(s.conf.FileConf.ShareRootDir, f.ClientPath),
 	}
 
 	if s.conf.FileConf.SThgConf.RescanIntervalS > 0 {
