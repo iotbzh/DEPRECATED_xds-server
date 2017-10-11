@@ -112,6 +112,9 @@ func (s *APIService) eventsRegister(c *gin.Context) {
 			Folder: *cfg,
 		}
 
+		s.log.Debugf("Event emit %s - ID=%s, Status=%s IsInSync=%v", EventEventType+evType, cfg.ID,
+			cfg.Status, cfg.IsInSync)
+
 		if err := (*so).Emit(EventEventType+evType, msg); err != nil {
 			s.log.Errorf("WS Emit Folder StateChanged event : %v", err)
 		}

@@ -58,7 +58,7 @@ func (f *STFolder) Add(cfg folder.FolderConfig) (*folder.FolderConfig, error) {
 	f.fConfig = cfg
 
 	// Update Syncthing folder
-	// (expect if status is ErrorConfig)
+	// (except if status is ErrorConfig)
 	// TODO: add cache to avoid multiple requests on startup
 	if f.fConfig.Status != folder.StatusErrorConfig {
 		id, err := f.st.FolderChange(f.fConfig)

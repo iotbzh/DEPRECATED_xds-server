@@ -15,7 +15,8 @@ import (
 // MakeArgs is the parameters (json format) of /make command
 type MakeArgs struct {
 	ID            string   `json:"id"`
-	SdkID         string   `json:"sdkid"` // sdk ID to use for setting env
+	SdkID         string   `json:"sdkID"` // sdk ID to use for setting env
+	CmdID         string   `json:"cmdID"` // command unique ID
 	Args          []string `json:"args"`  // args to pass to make command
 	Env           []string `json:"env"`
 	RPath         string   `json:"rpath"`         // relative path into project
@@ -171,8 +172,11 @@ func (s *APIService) buildMake(c *gin.Context) {
 		}
 	}
 
-	cmdID := strconv.Itoa(makeCommandID)
-	makeCommandID++
+	// Unique ID for each commands
+	if args.CmdID == "" {
+		args.CmdID = s.cfg.ServerUID[:18] + "_" + strconv.Itoa(makeCommandID)
+		makeCommandID++
+	}
 	cmd := []string{}
 
 	// Retrieve env command regarding Sdk ID
@@ -186,14 +190,14 @@ func (s *APIService) buildMake(c *gin.Context) {
 		cmd = append(cmd, args.Args...)
 	}
 
-	s.log.Debugf("Execute [Cmd ID %d]: %v", cmdID, cmd)
+	s.log.Debugf("Execute [Cmd ID %d]: %v", args.CmdID, cmd)
 
 	data := make(map[string]interface{})
 	data["ID"] = prj.ID
 	data["RootPath"] = prj.RootPath
 	data["ExitImmediate"] = args.ExitImmediate
 
-	err := common.ExecPipeWs(cmd, args.Env, sop, sess.ID, cmdID, execTmo, s.log, oCB, eCB, &data)
+	err := common.ExecPipeWs(cmd, args.Env, sop, sess.ID, args.CmdID, execTmo, s.log, oCB, eCB, &data)
 	if err != nil {
 		common.APIError(c, err.Error())
 		return
@@ -202,6 +206,6 @@ func (s *APIService) buildMake(c *gin.Context) {
 	c.JSON(http.StatusOK,
 		gin.H{
 			"status": "OK",
-			"cmdID":  cmdID,
+			"cmdID":  args.CmdID,
 		})
 }

@@ -148,7 +148,7 @@ func xdsApp(cliCtx *cli.Context) error {
 		}
 		ctx.Config.LogVerboseOut = fdLH
 
-		logPrint(ctx, "Logging file for HTTP requests: %s\n", logFileHTTPReq)
+		logPrint(ctx, "Logging file for HTTP requests:  %s\n", logFileHTTPReq)
 	}
 
 	// Create syncthing instance when section "syncthing" is present in config.json

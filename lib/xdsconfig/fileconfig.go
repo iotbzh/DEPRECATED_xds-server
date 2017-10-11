@@ -84,7 +84,7 @@ func readGlobalConfig(c *Config, confFile string) error {
 		// No config file found
 		return nil
 	}
-	c.Log.Infof("Use config file: %s", *cFile)
+	c.Log.Infof("Use config file:       %s", *cFile)
 
 	// TODO move on viper package to support comments in JSON and also
 	// bind with flags (command line options)

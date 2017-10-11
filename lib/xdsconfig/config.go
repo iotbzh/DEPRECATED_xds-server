@@ -88,6 +88,8 @@ func Init(cliCtx *cli.Context, log *logrus.Logger) (*Config, error) {
 		Log: log,
 	}
 
+	c.Log.Infoln("Server UUID:          ", uuid)
+
 	// config file settings overwrite default config
 	err = readGlobalConfig(&c, c.Options.ConfigFile)
 	if err != nil {
@@ -130,8 +132,9 @@ func Init(cliCtx *cli.Context, log *logrus.Logger) (*Config, error) {
 			return nil, fmt.Errorf("Cannot create logs dir: %v", err)
 		}
 	}
-	c.Log.Infoln("Logs file:      ", c.Options.LogFile)
-	c.Log.Infoln("Logs directory: ", c.FileConf.LogsDir)
+
+	c.Log.Infoln("Logs file:            ", c.Options.LogFile)
+	c.Log.Infoln("Logs directory:       ", c.FileConf.LogsDir)
 
 	return &c, nil
 }

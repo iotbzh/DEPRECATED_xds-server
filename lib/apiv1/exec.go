@@ -19,7 +19,8 @@ type (
 	// ExecArgs JSON parameters of /exec command
 	ExecArgs struct {
 		ID              string   `json:"id" binding:"required"`
-		SdkID           string   `json:"sdkid"` // sdk ID to use for setting env
+		SdkID           string   `json:"sdkID"` // sdk ID to use for setting env
+		CmdID           string   `json:"cmdID"` // command unique ID
 		Cmd             string   `json:"cmd" binding:"required"`
 		Args            []string `json:"args"`
 		Env             []string `json:"env"`
@@ -168,11 +169,13 @@ func (s *APIService) execCmd(c *gin.Context) {
 	}
 
 	// Unique ID for each commands
-	cmdID := strconv.Itoa(execCommandID)
-	execCommandID++
+	if args.CmdID == "" {
+		args.CmdID = s.cfg.ServerUID[:18] + "_" + strconv.Itoa(execCommandID)
+		execCommandID++
+	}
 
 	// Create new execution over WS context
-	execWS := eows.New(strings.Join(cmd, " "), cmdArgs, sop, sess.ID, cmdID)
+	execWS := eows.New(strings.Join(cmd, " "), cmdArgs, sop, sess.ID, args.CmdID)
 	execWS.Log = s.log
 
 	// Append client project dir to environment
