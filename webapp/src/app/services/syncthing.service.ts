@@ -104,7 +104,7 @@ interface ISTConfiguration {
 }
 
 // Default settings
-const DEFAULT_GUI_PORT = 8384;
+const DEFAULT_GUI_PORT = 8386;
 const DEFAULT_GUI_API_KEY = "1234abcezam";
 const DEFAULT_RESCAN_INTERV = 0;    // 0: use syncthing-inotify to detect changes
 

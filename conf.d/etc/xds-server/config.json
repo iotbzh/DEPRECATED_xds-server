@@ -6,6 +6,6 @@
     "syncthing": {
         "binDir": "",
         "home": "${HOME}/.xds-server/syncthing-config",
-        "gui-address": "http://localhost:8384"
+        "gui-address": "http://localhost:8385"
     }
 }

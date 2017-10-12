@@ -101,7 +101,7 @@ func NewSyncThing(conf *xdsconfig.Config, log *logrus.Logger) *SyncThing {
 	}
 
 	if url == "" {
-		url = "http://localhost:8384"
+		url = "http://localhost:8385"
 	}
 	if url[0:7] != "http://" {
 		url = "http://" + url
