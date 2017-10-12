@@ -32,10 +32,15 @@ DOCKER_USER=devel
 DEFIMAGE=$REGISTRY/$REPO/$NAME-$FLAVOUR:$VERSION
 
 function usage() {
-	echo "Usage: $(basename $0) <instance ID> [image name]"  >&2
+	echo "Usage: $(basename $0) [-h] [-fr] [-v] <instance ID> [image name]"  >&2
 	echo "Instance ID must be 0 or a positive integer (1,2,...)" >&2
 	echo "Image name is optional: 'make show-image' is used by default to get image" >&2
 	echo "Default image: $DEFIMAGE" >&2
+    echo ""
+    echo "Options:"
+    echo " -fr | --force-restart   Force restart of xds-server service"
+    echo " -nuu | --no-uid-update  Don't update user/group id within docker"
+    echo " -v | --volume           Additional docker volume to bind, syntax is -v /InDockerPath:/HostPath "
 	exit 1
 }
 
@@ -43,16 +48,26 @@ ID=""
 IMAGE=""
 FORCE_RESTART=false
 UPDATE_UID=true
+USER_VOLUME_OPTION=""
 while [ $# -ne 0 ]; do
     case $1 in
         -h|--help|"")
             usage
             ;;
-        -fr|-force-restart)
+        -fr|--force-restart)
             FORCE_RESTART=true
             ;;
-        -no-uid-update)
+        -nuu|--no-uid-update)
             UPDATE_UID=false
+            ;;
+        -v|--volume)
+            shift
+            if [[ "$1" =~ .*:.* ]]; then
+                USER_VOLUME_OPTION="-v $1"
+            else
+                echo "Invalid volume option, format must be /InDockerPath:/hostPath"
+                exit 1
+            fi
             ;;
         *)
             if [[ "$1" =~ ^[0-9]+$ ]]; then
@@ -97,10 +112,8 @@ NAME=agl-xds-$(hostname|cut -f1 -d'.')-$ID-$USER
 docker ps -a |grep "$NAME" > /dev/null
 [ "$?" = "0" ] && { echo "Image name already exist ! (use -h option to read help)"; exit 1; }
 
-MIRRORDIR=$HOME/ssd/localmirror_$ID
-XDTDIR=$HOME/ssd/xdt_$ID
-SHAREDDIR=$HOME/$DOCKER_USER/docker/share
 XDS_WKS=$HOME/xds-workspace
+XDTDIR=$XDS_WKS/.xdt_$ID
 
 SSH_PORT=$((2222 + ID))
 WWW_PORT=$((8000 + ID))
@@ -108,7 +121,7 @@ BOOT_PORT=$((69 + ID))
 NBD_PORT=$((10809 + ID))
 
 ### Create the new container
-mkdir -p $MIRRORDIR $XDTDIR $SHAREDDIR $XDS_WKS || exit 1
+mkdir -p $XDS_WKS $XDTDIR  || exit 1
 docker run \
 	--publish=${SSH_PORT}:22 \
 	--publish=${WWW_PORT}:8000 \
@@ -117,10 +130,9 @@ docker run \
 	--detach=true \
 	--hostname=$NAME --name=$NAME \
 	--privileged -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
-	-v $MIRRORDIR:/home/$DOCKER_USER/mirror \
-	-v $SHAREDDIR:/home/$DOCKER_USER/share \
 	-v $XDS_WKS:/home/$DOCKER_USER/xds-workspace \
 	-v $XDTDIR:/xdt \
+    $USER_VOLUME_OPTION \
 	-it $IMAGE
 if [ "$?" != "0" ]; then
     echo "An error was encountered while creating docker container."
@@ -169,3 +181,5 @@ if ($FORCE_RESTART); then
     echo "Starting xds-server..."
     docker exec -t ${NAME} bash -c "systemctl start xds-server" || exit 1
 fi
+
+echo "Done, docker container $NAME is ready to be used."
