@@ -142,14 +142,14 @@ while [ $res -ne 0 ] && [ $count -le $max ]; do
 done
 echo
 
-ssh-keygen -R [$(hostname)]:$SSH_PORT -f ~/.ssh/known_hosts
+ssh-keygen -R [localhost]:$SSH_PORT -f ~/.ssh/known_hosts
 docker exec ${NAME} bash -c "mkdir -p /home/$DOCKER_USER/.ssh"
 docker cp ~/.ssh/id_rsa.pub ${NAME}:/home/$DOCKER_USER/.ssh/authorized_keys
 docker exec ${NAME} bash -c "chown $DOCKER_USER:$DOCKER_USER -R /home/$DOCKER_USER/.ssh ;chmod 0700 /home/$DOCKER_USER/.ssh; chmod 0600 /home/$DOCKER_USER/.ssh/*"
-ssh -o StrictHostKeyChecking=no -p $SSH_PORT $DOCKER_USER@$(hostname) exit
+ssh -o StrictHostKeyChecking=no -p $SSH_PORT $DOCKER_USER@localhost exit
 
 echo "You can now login using:"
-echo "   ssh -p $SSH_PORT $DOCKER_USER@$(hostname)"
+echo "   ssh -p $SSH_PORT $DOCKER_USER@localhost"
 
 ### User / Group id
 if ($UPDATE_UID); then
