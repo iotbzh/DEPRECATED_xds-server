@@ -166,20 +166,19 @@ echo "   ssh -p $SSH_PORT $DOCKER_USER@localhost"
 ### User / Group id
 if ($UPDATE_UID); then
     echo "Setup docker user and group id to match yours"
-    docker exec -t ${NAME} bash -c "systemctl stop xds-server" || exit 1
+    docker exec -t ${NAME} bash -c "systemctl --user stop xds-server" || exit 1
     docker exec -t ${NAME} bash -c "usermod -u $(id -u) $DOCKER_USER && groupmod -g $(id -g) $DOCKER_USER" || exit 1
     docker exec -t ${NAME} bash -c "chown -R $DOCKER_USER:$DOCKER_USER /home/$DOCKER_USER /tmp/xds*" || exit 1
-    docker exec -t ${NAME} bash -c "systemctl start xds-server" || exit 1
-    docker exec -t ${NAME} bash -c "systemctl start xds-server" || exit 1
+    docker exec -t ${NAME} bash -c "systemctl --user start xds-server" || exit 1
 fi
 
 ### Force xds-server restart
 if ($FORCE_RESTART); then
     echo "Stopping xds-server..."
-    docker exec -t ${NAME} bash -c "systemctl stop xds-server" || exit 1
+    docker exec -t ${NAME} bash -c "systemctl --user stop xds-server" || exit 1
     sleep 1
     echo "Starting xds-server..."
-    docker exec -t ${NAME} bash -c "systemctl start xds-server" || exit 1
+    docker exec -t ${NAME} bash -c "systemctl --user start xds-server" || exit 1
 fi
 
 echo "Done, docker container $NAME is ready to be used."
