@@ -165,20 +165,39 @@ echo "   ssh -p $SSH_PORT $DOCKER_USER@localhost"
 
 ### User / Group id
 if ($UPDATE_UID); then
-    echo "Setup docker user and group id to match yours"
-    docker exec -t ${NAME} bash -c "systemctl --user stop xds-server" || exit 1
+    echo -n "Setup docker user and group id to match yours"
+
+    docker exec -t ${NAME} bash -c "/bin/loginctl kill-user devel"
+    res=3
+    max=30
+    count=0
+    while [ $res -ne 1 ] && [ $count -le $max ]; do
+        sleep 1
+        docker exec ${NAME} bash -c "loginctl user-status devel |grep sd-pam" 2>/dev/null 1>&2
+        res=$?
+        echo -n "."
+        count=$(expr $count + 1);
+    done
+
+    echo -n " ."
     docker exec -t ${NAME} bash -c "usermod -u $(id -u) $DOCKER_USER && groupmod -g $(id -g) $DOCKER_USER" || exit 1
-    docker exec -t ${NAME} bash -c "chown -R $DOCKER_USER:$DOCKER_USER /home/$DOCKER_USER /tmp/xds*" || exit 1
-    docker exec -t ${NAME} bash -c "systemctl --user start xds-server" || exit 1
+    echo -n "."
+    docker exec -t ${NAME} bash -c "chown -R $DOCKER_USER:$DOCKER_USER /home/$DOCKER_USER" || exit 1
+    echo -n "."
+    docker exec -t ${NAME} bash -c "chown -R $DOCKER_USER:$DOCKER_USER /tmp/xds*"
+    echo -n "."
+    docker exec -t ${NAME} bash -c "systemctl start autologin"
+    echo -n "."
+    ssh -p $SSH_PORT $DOCKER_USER@localhost -- "systemctl --user start xds-server" || exit 1
+    echo -n "."
+    docker restart ${NAME}
+    echo
 fi
 
 ### Force xds-server restart
 if ($FORCE_RESTART); then
-    echo "Stopping xds-server..."
-    docker exec -t ${NAME} bash -c "systemctl --user stop xds-server" || exit 1
-    sleep 1
-    echo "Starting xds-server..."
-    docker exec -t ${NAME} bash -c "systemctl --user start xds-server" || exit 1
+    echo "Restart xds-server..."
+    ssh -p $SSH_PORT $DOCKER_USER@localhost -- "systemctl --user restart xds-server" || exit 1
 fi
 
 echo "Done, docker container $NAME is ready to be used."

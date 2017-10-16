@@ -8,4 +8,4 @@ ExecStart=/opt/AGL/xds/server/xds-server-start.sh
 ExecStop=/opt/AGL/xds/server/xds-server-stop.sh
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=default.target
