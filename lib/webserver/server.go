@@ -30,6 +30,7 @@ type Server struct {
 	mfolders  *model.Folders
 	sdks      *crosssdk.SDKs
 	log       *logrus.Logger
+	sillyLog  bool
 	stop      chan struct{} // signals intentional stop
 }
 
@@ -37,7 +38,7 @@ const indexFilename = "index.html"
 const cookieMaxAge = "3600"
 
 // New creates an instance of Server
-func New(cfg *xdsconfig.Config, mfolders *model.Folders, sdks *crosssdk.SDKs, logr *logrus.Logger) *Server {
+func New(cfg *xdsconfig.Config, mfolders *model.Folders, sdks *crosssdk.SDKs, logr *logrus.Logger, sillyLog bool) *Server {
 
 	// Setup logging for gin router
 	if logr.Level == logrus.DebugLevel {
@@ -66,6 +67,7 @@ func New(cfg *xdsconfig.Config, mfolders *model.Folders, sdks *crosssdk.SDKs, lo
 		mfolders:  mfolders,
 		sdks:      sdks,
 		log:       logr,
+		sillyLog:  sillyLog,
 		stop:      make(chan struct{}),
 	}
 
@@ -83,7 +85,7 @@ func (s *Server) Serve() error {
 	s.router.Use(s.middlewareCORS())
 
 	// Sessions manager
-	s.sessions = session.NewClientSessions(s.router, s.log, cookieMaxAge)
+	s.sessions = session.NewClientSessions(s.router, s.log, cookieMaxAge, s.sillyLog)
 
 	// Create REST API
 	s.api = apiv1.New(s.router, s.sessions, s.cfg, s.mfolders, s.sdks)

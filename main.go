@@ -41,17 +41,18 @@ var AppSubVersion = "unknown-dev"
 
 // Context holds the XDS server context
 type Context struct {
-	ProgName    string
-	Cli         *cli.Context
-	Config      *xdsconfig.Config
-	Log         *logrus.Logger
-	SThg        *st.SyncThing
-	SThgCmd     *exec.Cmd
-	SThgInotCmd *exec.Cmd
-	MFolders    *model.Folders
-	SDKs        *crosssdk.SDKs
-	WWWServer   *webserver.Server
-	Exit        chan os.Signal
+	ProgName      string
+	Cli           *cli.Context
+	Config        *xdsconfig.Config
+	Log           *logrus.Logger
+	LogLevelSilly bool
+	SThg          *st.SyncThing
+	SThgCmd       *exec.Cmd
+	SThgInotCmd   *exec.Cmd
+	MFolders      *model.Folders
+	SDKs          *crosssdk.SDKs
+	WWWServer     *webserver.Server
+	Exit          chan os.Signal
 }
 
 // NewContext Create a new instance of XDS server
@@ -71,12 +72,15 @@ func NewContext(cliCtx *cli.Context) *Context {
 	}
 	log.Formatter = &logrus.TextFormatter{}
 
+	sillyVal, sillyLog := os.LookupEnv("XDS_LOG_SILLY")
+
 	// Define default configuration
 	ctx := Context{
-		ProgName: cliCtx.App.Name,
-		Cli:      cliCtx,
-		Log:      log,
-		Exit:     make(chan os.Signal, 1),
+		ProgName:      cliCtx.App.Name,
+		Cli:           cliCtx,
+		Log:           log,
+		LogLevelSilly: (sillyLog && sillyVal == "1"),
+		Exit:          make(chan os.Signal, 1),
 	}
 
 	// register handler on SIGTERM / exit
@@ -212,7 +216,7 @@ func xdsApp(cliCtx *cli.Context) error {
 	}
 
 	// Create Web Server
-	ctx.WWWServer = webserver.New(ctx.Config, ctx.MFolders, ctx.SDKs, ctx.Log)
+	ctx.WWWServer = webserver.New(ctx.Config, ctx.MFolders, ctx.SDKs, ctx.Log, ctx.LogLevelSilly)
 
 	// Run Web Server until exit requested (blocking call)
 	if err = ctx.WWWServer.Serve(); err != nil {

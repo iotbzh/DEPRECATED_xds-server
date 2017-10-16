@@ -36,27 +36,29 @@ type ClientSession struct {
 
 // Sessions holds client sessions
 type Sessions struct {
-	router       *gin.Engine
-	cookieMaxAge int64
-	sessMap      map[string]ClientSession
-	mutex        sync.Mutex
-	log          *logrus.Logger
-	stop         chan struct{} // signals intentional stop
+	router        *gin.Engine
+	cookieMaxAge  int64
+	sessMap       map[string]ClientSession
+	mutex         sync.Mutex
+	log           *logrus.Logger
+	LogLevelSilly bool
+	stop          chan struct{} // signals intentional stop
 }
 
 // NewClientSessions .
-func NewClientSessions(router *gin.Engine, log *logrus.Logger, cookieMaxAge string) *Sessions {
+func NewClientSessions(router *gin.Engine, log *logrus.Logger, cookieMaxAge string, sillyLog bool) *Sessions {
 	ckMaxAge, err := strconv.ParseInt(cookieMaxAge, 10, 0)
 	if err != nil {
 		ckMaxAge = 0
 	}
 	s := Sessions{
-		router:       router,
-		cookieMaxAge: ckMaxAge,
-		sessMap:      make(map[string]ClientSession),
-		mutex:        sync.NewMutex(),
-		log:          log,
-		stop:         make(chan struct{}),
+		router:        router,
+		cookieMaxAge:  ckMaxAge,
+		sessMap:       make(map[string]ClientSession),
+		mutex:         sync.NewMutex(),
+		log:           log,
+		LogLevelSilly: sillyLog,
+		stop:          make(chan struct{}),
 	}
 	s.router.Use(s.Middleware())
 
@@ -197,15 +199,13 @@ func (s *Sessions) refresh(sid string) {
 }
 
 func (s *Sessions) monitorSessMap() {
-	const dbgFullTrace = false // for debugging
-
 	for {
 		select {
 		case <-s.stop:
 			s.log.Debugln("Stop monitorSessMap")
 			return
 		case <-time.After(sessionMonitorTime * time.Second):
-			if dbgFullTrace {
+			if s.LogLevelSilly {
 				s.log.Debugf("Sessions Map size: %d", len(s.sessMap))
 				s.log.Debugf("Sessions Map : %v", s.sessMap)
 			}
