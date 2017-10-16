@@ -24,6 +24,9 @@ type PathMap struct {
 func NewFolderPathMap(gc *xdsconfig.Config) *PathMap {
 	f := PathMap{
 		globalConfig: gc,
+		config: FolderConfig{
+			Status: StatusDisable,
+		},
 	}
 	return &f
 }
@@ -55,22 +58,43 @@ func (f *PathMap) Add(cfg FolderConfig) (*FolderConfig, error) {
 	if !common.Exists(dir) {
 		return nil, fmt.Errorf("ServerPath directory is not accessible: %s", dir)
 	}
-	file, err := ioutil.TempFile(dir, "xds_pathmap_check")
-	if err != nil {
-		return nil, fmt.Errorf("ServerPath sanity check error: %s", err.Error())
-	}
-	defer os.Remove(file.Name())
-
-	msg := "sanity check PathMap Add folder"
-	n, err := file.Write([]byte(msg))
-	if err != nil || n != len(msg) {
-		return nil, fmt.Errorf("ServerPath sanity check error: %s", err.Error())
-	}
 
 	f.config = cfg
 	f.config.RootPath = dir
 	f.config.DataPathMap.ServerPath = dir
 	f.config.IsInSync = true
+
+	// Verify file created by XDS agent when needed
+	if cfg.DataPathMap.CheckFile != "" {
+		errMsg := "ServerPath sanity check error (%d): %v"
+		ckFile := f.ConvPathCli2Svr(cfg.DataPathMap.CheckFile)
+		if !common.Exists(ckFile) {
+			return nil, fmt.Errorf(errMsg, 1, "file not present")
+		}
+		if cfg.DataPathMap.CheckContent != "" {
+			fd, err := os.OpenFile(ckFile, os.O_APPEND|os.O_RDWR, 0600)
+			if err != nil {
+				return nil, fmt.Errorf(errMsg, 2, err)
+			}
+			defer fd.Close()
+
+			// Check specific message written by agent
+			content, err := ioutil.ReadAll(fd)
+			if err != nil {
+				return nil, fmt.Errorf(errMsg, 3, err)
+			}
+			if string(content) != cfg.DataPathMap.CheckContent {
+				return nil, fmt.Errorf(errMsg, 4, "file content differ")
+			}
+
+			// Write a specific message that will be check back on agent side
+			msg := "Pathmap checked message written by xds-server ID: " + f.globalConfig.ServerUID + "\n"
+			if n, err := fd.WriteString(msg); n != len(msg) || err != nil {
+				return nil, fmt.Errorf(errMsg, 5, err)
+			}
+		}
+	}
+
 	f.config.Status = StatusEnable
 
 	return &f.config, nil

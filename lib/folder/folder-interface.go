@@ -60,7 +60,9 @@ type FolderConfig struct {
 
 // PathMapConfig Path mapping specific data
 type PathMapConfig struct {
-	ServerPath string `json:"serverPath"`
+	ServerPath   string `json:"serverPath"`
+	CheckFile    string `json:"checkFile"`
+	CheckContent string `json:"checkContent"`
 }
 
 // CloudSyncConfig CloudSync (AKA Syncthing) specific data
