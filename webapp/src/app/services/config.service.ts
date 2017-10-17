@@ -125,7 +125,7 @@ export class ConfigService {
                 projects: [],
                 localSThg: {
                     ID: null,
-                    URL: "http://localhost:8385",
+                    URL: "http://localhost:8386",
                     retry: 10,    // 10 seconds
                     tilde: "",
                 }
