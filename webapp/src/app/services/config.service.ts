@@ -189,8 +189,9 @@ export class ConfigService {
 
             }, error => {
                 if (error.indexOf("XDS local Agent not responding") !== -1) {
-                    let url_OS_Linux = "https://en.opensuse.org/LinuxAutomotive#Installation_AGL_XDS";
-                    let url_OS_Other = "https://github.com/iotbzh/xds-agent#how-to-install-on-other-platform";
+                    let rootUrl = "http://docs.automotivelinux.org/docs/devguides/en/dev/reference/";
+                    let url_OS_Linux = rootUrl + "xds/part-1/1_install-client.html#install-packages-for-debian-distro-type";
+                    let url_OS_Other = rootUrl + "xds/part-1/1_install-client.html#install-for-other-platforms-windows--macos";
                     let msg = `<span><strong>` + error + `<br></strong>
                     You may need to install and execute XDS-Agent: <br>
                         On Linux machine <a href="` + url_OS_Linux + `" target="_blank"><span
