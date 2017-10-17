@@ -16,8 +16,6 @@
 #
 ##########################################
 
-CURDIR=$(cd $(dirname $0) && pwd -P)
-
 REGISTRY=docker.automotivelinux.org
 REPO=agl
 NAME=worker
@@ -32,13 +30,15 @@ DOCKER_USER=devel
 DEFIMAGE=$REGISTRY/$REPO/$NAME-$FLAVOUR:$VERSION
 
 function usage() {
-	echo "Usage: $(basename $0) [-h] [-fr] [-v] <instance ID> [image name]"  >&2
-	echo "Instance ID must be 0 or a positive integer (1,2,...)" >&2
-	echo "Image name is optional: 'make show-image' is used by default to get image" >&2
-	echo "Default image: $DEFIMAGE" >&2
+	echo "Usage: $(basename $0) [-h|--help] [-fr] [-id <instance container ID>] "
+    echo "          [-nc] [-nuu] [-v|--volume <inpath:outpath>] [image name]"
+	echo "Image name is optional; 'docker images' is used by default to get image"
+	echo "Default image:"
+    echo " $DEFIMAGE"
     echo ""
     echo "Options:"
     echo " -fr | --force-restart   Force restart of xds-server service"
+    echo " -id                     Instance ID used to build container name, a positive integer (0,1,2,...)"
     echo " -nuu | --no-uid-update  Don't update user/group id within docker"
     echo " -v | --volume           Additional docker volume to bind, syntax is -v /InDockerPath:/HostPath "
 	exit 1
@@ -49,6 +49,7 @@ IMAGE=""
 FORCE_RESTART=false
 UPDATE_UID=true
 USER_VOLUME_OPTION=""
+NO_CLEANUP=false
 while [ $# -ne 0 ]; do
     case $1 in
         -h|--help|"")
@@ -56,6 +57,9 @@ while [ $# -ne 0 ]; do
             ;;
         -fr|--force-restart)
             FORCE_RESTART=true
+            ;;
+        -nc|--no-cleanup)
+            NO_CLEANUP=true
             ;;
         -nuu|--no-uid-update)
             UPDATE_UID=false
@@ -69,9 +73,13 @@ while [ $# -ne 0 ]; do
                 exit 1
             fi
             ;;
+        -id)
+            shift
+            ID=$1
+            ;;
         *)
-            if [[ "$1" =~ ^[0-9]+$ ]]; then
-                ID=$1
+            if [[ "$1" =~ ^[\.0-9]+$ ]]; then
+                IMAGE=$REGISTRY/$REPO/$NAME-$FLAVOUR:$1
             else
                 IMAGE=$1
             fi
@@ -85,17 +93,17 @@ done
 # Dynamically retrieve image name
 if [ "$IMAGE" = "" ]; then
 
-    VER_NUM=`docker images $REGISTRY/$REPO/$NAME-$FLAVOUR:* --format {{.Tag}} | wc -l`
+    IMAGES_LIST=$(docker images $REGISTRY/$REPO/$NAME-$FLAVOUR:* --format '{{.Tag}}')
+    VER_NUM=$(echo "$IMAGES_LIST" | wc -l)
     if [ $VER_NUM -gt 1 ]; then
-        echo "ERROR: more than one xds image found, please set explicitly the image to use !"
+        echo "ERROR: more than one xds image found, please set explicitly the image to use ! List of found images:"
+        echo "$IMAGES_LIST"
         exit 1
     elif [ $VER_NUM -lt 1 ]; then
         echo "ERROR: cannot automatically retrieve image tag for $REGISTRY/$REPO/$NAME-$FLAVOUR"
         exit 1
     fi
-
-    VERSION=`docker images $REGISTRY/$REPO/$NAME-$FLAVOUR:* --format {{.Tag}}`
-    if [ "$VERSION" = "" ]; then
+    if [ "$IMAGES_LIST" = "" ]; then
         echo "ERROR: cannot automatically retrieve image tag for $REGISTRY/$REPO/$NAME-$FLAVOUR"
         usage
         exit 1
@@ -120,6 +128,16 @@ WWW_PORT=$((8000 + ID))
 BOOT_PORT=$((69 + ID))
 NBD_PORT=$((10809 + ID))
 
+# Delete container on error
+creation_done=false
+trap "cleanExit" 0 1 2 15
+cleanExit ()
+{
+    if [ "$creation_done" != "true" -a "$NO_CLEANUP" != "true" ]; then
+        docker rm -f "${NAME}" > /dev/null 2>&1
+    fi
+}
+
 ### Create the new container
 mkdir -p $XDS_WKS $XDTDIR  || exit 1
 docker run \
@@ -128,7 +146,7 @@ docker run \
 	--publish=${BOOT_PORT}:69/udp \
 	--publish=${NBD_PORT}:10809 \
 	--detach=true \
-	--hostname=$NAME --name=$NAME \
+	--hostname="$NAME" --name="$NAME" \
 	--privileged -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
 	-v $XDS_WKS:/home/$DOCKER_USER/xds-workspace \
 	-v $XDTDIR:/xdt \
@@ -163,9 +181,10 @@ ssh -o StrictHostKeyChecking=no -p $SSH_PORT $DOCKER_USER@localhost exit
 echo "You can now login using:"
 echo "   ssh -p $SSH_PORT $DOCKER_USER@localhost"
 
+
 ### User / Group id
 if ($UPDATE_UID); then
-    echo -n "Setup docker user and group id to match yours"
+    echo -n "Setup docker user and group id to match yours "
 
     docker exec -t ${NAME} bash -c "/bin/loginctl kill-user devel"
     res=3
@@ -180,8 +199,25 @@ if ($UPDATE_UID); then
     done
 
     echo -n " ."
-    docker exec -t ${NAME} bash -c "usermod -u $(id -u) $DOCKER_USER && groupmod -g $(id -g) $DOCKER_USER" || exit 1
+
+     # Set uid
+    docker exec -t ${NAME} bash -c "id $(id -u)" > /dev/null 2>&1
+    if [ "$?" = "0" -a  "$(id -u)" != "1664" ]; then
+        echo "Cannot set docker devel user id to your id: conflict id $(id -u) !"
+        exit 1
+    fi
+    docker exec -t ${NAME} bash -c "usermod -u $(id -u) $DOCKER_USER" || exit 1
     echo -n "."
+
+    # Set gid
+    docker exec -t ${NAME} bash -c "grep $(id -g) /etc/group" > /dev/null 2>&1
+    if [ "$?" = "0" ]; then
+        docker exec -t ${NAME} bash -c "usermod -g $(id -g) $DOCKER_USER" || exit 1
+    else
+        docker exec -t ${NAME} bash -c "groupmod -g $(id -g) $DOCKER_USER" || exit 1
+    fi
+    echo -n "."
+
     docker exec -t ${NAME} bash -c "chown -R $DOCKER_USER:$DOCKER_USER /home/$DOCKER_USER" || exit 1
     echo -n "."
     docker exec -t ${NAME} bash -c "chown -R $DOCKER_USER:$DOCKER_USER /tmp/xds*"
@@ -189,10 +225,11 @@ if ($UPDATE_UID); then
     docker exec -t ${NAME} bash -c "systemctl start autologin"
     echo -n "."
     ssh -p $SSH_PORT $DOCKER_USER@localhost -- "systemctl --user start xds-server" || exit 1
-    echo -n "."
+    echo "."
     docker restart ${NAME}
-    echo
 fi
+
+creation_done=true
 
 ### Force xds-server restart
 if ($FORCE_RESTART); then
