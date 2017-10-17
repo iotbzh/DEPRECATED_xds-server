@@ -2,6 +2,7 @@ package st
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -129,7 +130,15 @@ func (f *STFolder) ConvPathSvr2Cli(s string) string {
 
 // Remove a folder
 func (f *STFolder) Remove() error {
-	return f.st.FolderDelete(f.stfConfig.ID)
+	err := f.st.FolderDelete(f.stfConfig.ID)
+
+	// Delete folder on server side
+	err2 := os.RemoveAll(f.GetFullPath(""))
+
+	if err != nil {
+		return err
+	}
+	return err2
 }
 
 // RegisterEventChange requests registration for folder event change
