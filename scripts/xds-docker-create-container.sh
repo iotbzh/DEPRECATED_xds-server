@@ -225,7 +225,7 @@ if ($UPDATE_UID); then
     echo -n "."
     docker exec -t ${NAME} bash -c "systemctl start autologin"
     echo -n "."
-    ssh -p $SSH_PORT $DOCKER_USER@localhost -- "systemctl --user start xds-server" || exit 1
+    ssh -p $SSH_PORT $DOCKER_USER@localhost "systemctl --user start xds-server" || exit 1
     echo "."
     docker restart ${NAME}
 fi
