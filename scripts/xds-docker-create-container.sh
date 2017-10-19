@@ -93,10 +93,11 @@ done
 # Dynamically retrieve image name
 if [ "$IMAGE" = "" ]; then
 
-    IMAGES_LIST=$(docker images $REGISTRY/$REPO/$NAME-$FLAVOUR:* --format '{{.Tag}}')
+    IMAGES_LIST=$(docker images $REGISTRY/$REPO/$NAME-$FLAVOUR --format '{{.Tag}}')
     VER_NUM=$(echo "$IMAGES_LIST" | wc -l)
     if [ $VER_NUM -gt 1 ]; then
-        echo "ERROR: more than one xds image found, please set explicitly the image to use ! List of found images:"
+        echo "ERROR: more than one xds image found, please set explicitly the image to use !"
+        echo "List of found images:"
         echo "$IMAGES_LIST"
         exit 1
     elif [ $VER_NUM -lt 1 ]; then
