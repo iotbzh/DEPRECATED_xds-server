@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC2086
 
 ##########################################
 # WARNING WARNING WARNING WARNING
@@ -7,12 +8,6 @@
 #
 # You should customize it to fit your environment and in particular
 # adjust the paths and permissions where needed.
-#
-# Note that sharing volumes with host system is not mandatory: it
-# was just added for performances reasons: building from a SSD is
-# just faster than using the container filesystem: that's why /xdt is
-# mounted from there. Same applies to ~/mirror and ~/share, which are
-# just 2 convenient folders to store reference build caches (used in prepare_meta script)
 #
 ##########################################
 
@@ -95,12 +90,12 @@ if [ "$IMAGE" = "" ]; then
 
     VERSION_LIST=$(docker images $REGISTRY/$REPO/$NAME-$FLAVOUR --format '{{.Tag}}')
     VER_NUM=$(echo "$VERSION_LIST" | wc -l)
-    if [ $VER_NUM -gt 1 ]; then
+    if [ "$VER_NUM" -gt 1 ]; then
         echo "ERROR: more than one xds image found, please set explicitly the image to use !"
         echo "List of found images:"
         echo "$VERSION_LIST"
         exit 1
-    elif [ $VER_NUM -lt 1 ]; then
+    elif [ "$VER_NUM" -lt 1 ]; then
         echo "ERROR: cannot automatically retrieve image tag for $REGISTRY/$REPO/$NAME-$FLAVOUR"
         exit 1
     fi
@@ -118,8 +113,10 @@ echo "Using instance ID #$ID (user $(id -un))"
 
 NAME=agl-xds-$(hostname|cut -f1 -d'.')-$ID-$USER
 
-docker ps -a |grep "$NAME" > /dev/null
-[ "$?" = "0" ] && { echo "Image name already exist ! (use -h option to read help)"; exit 1; }
+if docker ps -a |grep "$NAME" > /dev/null; then
+    echo "Image name already exist ! (use -h option to read help)"
+    exit 1
+fi
 
 XDS_WKS=$HOME/xds-workspace
 XDTDIR=$XDS_WKS/.xdt_$ID
@@ -134,14 +131,15 @@ creation_done=false
 trap "cleanExit" 0 1 2 15
 cleanExit ()
 {
-    if [ "$creation_done" != "true" -a "$NO_CLEANUP" != "true" ]; then
+    if [ "$creation_done" != "true" ] && [ "$NO_CLEANUP" != "true" ]; then
+        echo "Error detected, remove unusable docker image ${NAME}"
         docker rm -f "${NAME}" > /dev/null 2>&1
     fi
 }
 
 ### Create the new container
 mkdir -p $XDS_WKS $XDTDIR  || exit 1
-docker run \
+if ! docker run \
 	--publish=${SSH_PORT}:22 \
 	--publish=${WWW_PORT}:8000 \
 	--publish=${BOOT_PORT}:69/udp \
@@ -152,8 +150,8 @@ docker run \
 	-v $XDS_WKS:/home/$DOCKER_USER/xds-workspace \
 	-v $XDTDIR:/xdt \
     $USER_VOLUME_OPTION \
-	-it $IMAGE
-if [ "$?" != "0" ]; then
+	-it $IMAGE;
+then
     echo "An error was encountered while creating docker container."
     exit 1
 fi
@@ -169,11 +167,11 @@ while [ $res -ne 0 ] && [ $count -le $max ]; do
     docker exec ${NAME} bash -c "systemctl status ssh" 2>/dev/null 1>&2
     res=$?
     echo -n "."
-    count=$(expr $count + 1);
+    count=$((count + 1));
 done
 echo
 
-ssh-keygen -R [localhost]:$SSH_PORT -f ~/.ssh/known_hosts
+ssh-keygen -R "[localhost]:$SSH_PORT" -f ~/.ssh/known_hosts
 docker exec ${NAME} bash -c "mkdir -p /home/$DOCKER_USER/.ssh"
 docker cp ~/.ssh/id_rsa.pub ${NAME}:/home/$DOCKER_USER/.ssh/authorized_keys
 docker exec ${NAME} bash -c "chown $DOCKER_USER:$DOCKER_USER -R /home/$DOCKER_USER/.ssh ;chmod 0700 /home/$DOCKER_USER/.ssh; chmod 0600 /home/$DOCKER_USER/.ssh/*"
@@ -196,14 +194,13 @@ if ($UPDATE_UID); then
         docker exec ${NAME} bash -c "loginctl user-status devel |grep sd-pam" 2>/dev/null 1>&2
         res=$?
         echo -n "."
-        count=$(expr $count + 1);
+        count=$((count + 1));
     done
 
     echo -n " ."
 
      # Set uid
-    docker exec -t ${NAME} bash -c "id $(id -u)" > /dev/null 2>&1
-    if [ "$?" = "0" -a  "$(id -u)" != "1664" ]; then
+    if docker exec -t ${NAME} bash -c "id $(id -u)" > /dev/null 2>&1 && [ "$(id -u)" != "1664" ]; then
         echo "Cannot set docker devel user id to your id: conflict id $(id -u) !"
         exit 1
     fi
@@ -211,8 +208,7 @@ if ($UPDATE_UID); then
     echo -n "."
 
     # Set gid
-    docker exec -t ${NAME} bash -c "grep $(id -g) /etc/group" > /dev/null 2>&1
-    if [ "$?" = "0" ]; then
+    if docker exec -t ${NAME} bash -c "grep $(id -g) /etc/group" > /dev/null 2>&1; then
         docker exec -t ${NAME} bash -c "usermod -g $(id -g) $DOCKER_USER" || exit 1
     else
         docker exec -t ${NAME} bash -c "groupmod -g $(id -g) $DOCKER_USER" || exit 1
@@ -235,7 +231,7 @@ creation_done=true
 ### Force xds-server restart
 if ($FORCE_RESTART); then
     echo "Restart xds-server..."
-    ssh -p $SSH_PORT $DOCKER_USER@localhost -- "systemctl --user restart xds-server" || exit 1
+    ssh -p $SSH_PORT $DOCKER_USER@localhost "systemctl --user restart xds-server" || exit 1
 fi
 
 echo "Done, docker container $NAME is ready to be used."
