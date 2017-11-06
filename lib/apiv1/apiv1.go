@@ -39,13 +39,13 @@ func New(r *gin.Engine, sess *session.Sessions, cfg *xdsconfig.Config, mfolders 
 	s.apiRouter.POST("/config", s.setConfig)
 
 	s.apiRouter.GET("/folders", s.getFolders)
-	s.apiRouter.GET("/folder/:id", s.getFolder)
-	s.apiRouter.POST("/folder", s.addFolder)
-	s.apiRouter.POST("/folder/sync/:id", s.syncFolder)
-	s.apiRouter.DELETE("/folder/:id", s.delFolder)
+	s.apiRouter.GET("/folders/:id", s.getFolder)
+	s.apiRouter.POST("/folders", s.addFolder)
+	s.apiRouter.POST("/folders/sync/:id", s.syncFolder)
+	s.apiRouter.DELETE("/folders/:id", s.delFolder)
 
 	s.apiRouter.GET("/sdks", s.getSdks)
-	s.apiRouter.GET("/sdk/:id", s.getSdk)
+	s.apiRouter.GET("/sdks/:id", s.getSdk)
 
 	s.apiRouter.POST("/make", s.buildMake)
 	s.apiRouter.POST("/make/:id", s.buildMake)
