@@ -146,6 +146,27 @@ func (f *Folders) SaveConfig() error {
 	return foldersConfigWrite(f.fileOnDisk, f.getConfigArrUnsafe())
 }
 
+// ResolveID Complete a Folder ID (helper for user that can use partial ID value)
+func (f *Folders) ResolveID(id string) (string, error) {
+	if id == "" {
+		return "", nil
+	}
+
+	match := []string{}
+	for iid := range f.folders {
+		if strings.HasPrefix(iid, id) {
+			match = append(match, iid)
+		}
+	}
+
+	if len(match) == 1 {
+		return match[0], nil
+	} else if len(match) == 0 {
+		return id, fmt.Errorf("Unknown id")
+	}
+	return id, fmt.Errorf("Multiple IDs found with provided prefix: " + id)
+}
+
 // Get returns the folder config or nil if not existing
 func (f *Folders) Get(id string) *folder.IFOLDER {
 	if id == "" {

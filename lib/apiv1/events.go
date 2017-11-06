@@ -122,8 +122,12 @@ func (s *APIService) eventsRegister(c *gin.Context) {
 	data := make(folder.EventCBData)
 	data["sid"] = sess.ID
 
-	err := s.mfolders.RegisterEventChange(args.ProjectID, &cbFunc, &data)
+	prjID, err := s.mfolders.ResolveID(args.ProjectID)
 	if err != nil {
+		common.APIError(c, err.Error())
+		return
+	}
+	if err = s.mfolders.RegisterEventChange(prjID, &cbFunc, &data); err != nil {
 		common.APIError(c, err.Error())
 		return
 	}

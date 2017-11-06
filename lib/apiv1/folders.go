@@ -16,7 +16,12 @@ func (s *APIService) getFolders(c *gin.Context) {
 
 // getFolder returns a specific folder configuration
 func (s *APIService) getFolder(c *gin.Context) {
-	f := s.mfolders.Get(c.Param("id"))
+	id, err := s.mfolders.ResolveID(c.Param("id"))
+	if err != nil {
+		common.APIError(c, err.Error())
+		return
+	}
+	f := s.mfolders.Get(id)
 	if f == nil {
 		common.APIError(c, "Invalid id")
 		return
@@ -67,11 +72,14 @@ func (s *APIService) addFolder(c *gin.Context) {
 
 // syncFolder force synchronization of folder files
 func (s *APIService) syncFolder(c *gin.Context) {
-	id := c.Param("id")
-
+	id, err := s.mfolders.ResolveID(c.Param("id"))
+	if err != nil {
+		common.APIError(c, err.Error())
+		return
+	}
 	s.log.Debugln("Sync folder id: ", id)
 
-	err := s.mfolders.ForceSync(id)
+	err = s.mfolders.ForceSync(id)
 	if err != nil {
 		common.APIError(c, err.Error())
 		return
@@ -82,7 +90,11 @@ func (s *APIService) syncFolder(c *gin.Context) {
 
 // delFolder deletes folder from server config
 func (s *APIService) delFolder(c *gin.Context) {
-	id := c.Param("id")
+	id, err := s.mfolders.ResolveID(c.Param("id"))
+	if err != nil {
+		common.APIError(c, err.Error())
+		return
+	}
 
 	s.log.Debugln("Delete folder id ", id)
 

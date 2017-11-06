@@ -105,15 +105,19 @@ func (s *APIService) execCmd(c *gin.Context) {
 	}
 
 	// Allow to pass id in url (/exec/:id) or as JSON argument
-	id := c.Param("id")
-	if id == "" {
-		id = args.ID
+	idArg := c.Param("id")
+	if idArg == "" {
+		idArg = args.ID
 	}
-	if id == "" {
+	if idArg == "" {
 		common.APIError(c, "Invalid id")
 		return
 	}
-
+	id, err := s.mfolders.ResolveID(idArg)
+	if err != nil {
+		common.APIError(c, err.Error())
+		return
+	}
 	f := s.mfolders.Get(id)
 	if f == nil {
 		common.APIError(c, "Unknown id")

@@ -68,15 +68,19 @@ func (s *APIService) buildMake(c *gin.Context) {
 	}
 
 	// Allow to pass id in url (/make/:id) or as JSON argument
-	id := c.Param("id")
-	if id == "" {
-		id = args.ID
+	idArg := c.Param("id")
+	if idArg == "" {
+		idArg = args.ID
 	}
-	if id == "" {
+	if idArg == "" {
 		common.APIError(c, "Invalid id")
 		return
 	}
-
+	id, err := s.mfolders.ResolveID(idArg)
+	if err != nil {
+		common.APIError(c, err.Error())
+		return
+	}
 	pf := s.mfolders.Get(id)
 	if pf == nil {
 		common.APIError(c, "Unknown id")
@@ -197,7 +201,7 @@ func (s *APIService) buildMake(c *gin.Context) {
 	data["RootPath"] = prj.RootPath
 	data["ExitImmediate"] = args.ExitImmediate
 
-	err := common.ExecPipeWs(cmd, args.Env, sop, sess.ID, args.CmdID, execTmo, s.log, oCB, eCB, &data)
+	err = common.ExecPipeWs(cmd, args.Env, sop, sess.ID, args.CmdID, execTmo, s.log, oCB, eCB, &data)
 	if err != nil {
 		common.APIError(c, err.Error())
 		return
