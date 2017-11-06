@@ -213,24 +213,23 @@ func (f *Folders) createUpdate(newF folder.FolderConfig, create bool, initial bo
 		return nil, fmt.Errorf("Unsupported folder type")
 	}
 
+	// Allocate a new UUID
+	if create {
+		newF.ID = fld.NewUID("")
+	}
+	if !create && newF.ID == "" {
+		return nil, fmt.Errorf("Cannot update folder with null ID")
+	}
+
 	// Set default value if needed
 	if newF.Status == "" {
 		newF.Status = folder.StatusDisable
 	}
 	if newF.Label == "" {
-		newF.Label = filepath.Base(newF.ClientPath) + "_" + newF.ID[0:8]
-	}
-
-	// Allocate a new UUID
-	if create {
-		i := len(newF.Label)
-		if i > 20 {
-			i = 20
+		newF.Label = filepath.Base(newF.ClientPath)
+		if len(newF.ID) > 8 {
+			newF.Label += "_" + newF.ID[0:8]
 		}
-		newF.ID = fld.NewUID(newF.Label[:i])
-	}
-	if !create && newF.ID == "" {
-		return nil, fmt.Errorf("Cannot update folder with null ID")
 	}
 
 	// Normalize path (needed for Windows path including bashlashes)

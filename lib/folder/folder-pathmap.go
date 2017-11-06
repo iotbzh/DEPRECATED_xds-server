@@ -33,7 +33,11 @@ func NewFolderPathMap(gc *xdsconfig.Config) *PathMap {
 
 // NewUID Get a UUID
 func (f *PathMap) NewUID(suffix string) string {
-	return uuid.NewV1().String() + "_" + suffix
+	uuid := uuid.NewV1().String()
+	if len(suffix) > 0 {
+		uuid += "_" + suffix
+	}
+	return uuid
 }
 
 // Add a new folder

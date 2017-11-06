@@ -39,7 +39,11 @@ func (f *STFolder) NewUID(suffix string) string {
 	if i > 15 {
 		i = 15
 	}
-	return uuid.NewV1().String()[:14] + f.st.MyID[:i] + "_" + suffix
+	uuid := uuid.NewV1().String()[:14] + f.st.MyID[:i]
+	if len(suffix) > 0 {
+		uuid += "_" + suffix
+	}
+	return uuid
 }
 
 // Add a new folder
