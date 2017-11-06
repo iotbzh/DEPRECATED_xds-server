@@ -1,8 +1,10 @@
 package crosssdk
 
 import (
+	"fmt"
 	"path"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/Sirupsen/logrus"
@@ -12,14 +14,16 @@ import (
 
 // SDKs List of installed SDK
 type SDKs struct {
-	Sdks []SDK
+	Sdks map[string]*SDK
 
 	mutex sync.Mutex
 }
 
 // Init creates a new instance of Syncthing
 func Init(cfg *xdsconfig.Config, log *logrus.Logger) (*SDKs, error) {
-	s := SDKs{}
+	s := SDKs{
+		Sdks: make(map[string]*SDK),
+	}
 
 	// Retrieve installed sdks
 	sdkRD := cfg.FileConf.SdkRootDir
@@ -44,7 +48,7 @@ func Init(cfg *xdsconfig.Config, log *logrus.Logger) (*SDKs, error) {
 				log.Debugf("Error while processing SDK dir=%s, err=%s", d, err.Error())
 				continue
 			}
-			s.Sdks = append(s.Sdks, *sdk)
+			s.Sdks[sdk.ID] = sdk
 		}
 	}
 
@@ -53,23 +57,50 @@ func Init(cfg *xdsconfig.Config, log *logrus.Logger) (*SDKs, error) {
 	return &s, nil
 }
 
+// ResolveID Complete an SDK ID (helper for user that can use partial ID value)
+func (s *SDKs) ResolveID(id string) (string, error) {
+	if id == "" {
+		return "", nil
+	}
+
+	match := []string{}
+	for iid := range s.Sdks {
+		fmt.Printf("SEB prefix iid=%v id=%v\n", iid, id)
+		if strings.HasPrefix(iid, id) {
+			match = append(match, iid)
+			fmt.Printf("  SEB match (%d): %v\n", len(match), match)
+		}
+	}
+	fmt.Printf("SEB match (%d): %v\n", len(match), match)
+
+	if len(match) == 1 {
+		return match[0], nil
+	} else if len(match) == 0 {
+		return id, fmt.Errorf("Unknown id")
+	}
+	return id, fmt.Errorf("Multiple IDs found with provided prefix: " + id)
+}
+
+// Get returns an SDK from id
+func (s *SDKs) Get(id string) *SDK {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	sc, exist := s.Sdks[id]
+	if !exist {
+		return nil
+	}
+	return sc
+}
+
 // GetAll returns all existing SDKs
 func (s *SDKs) GetAll() []SDK {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	res := s.Sdks
-	return res
-}
-
-// Get returns an SDK from id
-func (s *SDKs) Get(id int) SDK {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
-	if id < 0 || id > len(s.Sdks) {
-		return SDK{}
+	res := []SDK{}
+	for _, v := range s.Sdks {
+		res = append(res, *v)
 	}
-	res := s.Sdks[id]
 	return res
 }
 
@@ -82,15 +113,15 @@ func (s *SDKs) GetEnvCmd(id string, defaultID string) []string {
 
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	defaultEnv := []string{}
-	for _, sdk := range s.Sdks {
-		if sdk.ID == id {
-			return sdk.GetEnvCmd()
-		}
-		if sdk.ID == defaultID {
-			defaultEnv = sdk.GetEnvCmd()
-		}
+
+	if sdk, exist := s.Sdks[id]; exist {
+		return sdk.GetEnvCmd()
 	}
+
+	if sdk, exist := s.Sdks[defaultID]; defaultID != "" && exist {
+		return sdk.GetEnvCmd()
+	}
+
 	// Return default env that may be empty
-	return defaultEnv
+	return []string{}
 }

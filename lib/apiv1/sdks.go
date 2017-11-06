@@ -2,7 +2,6 @@ package apiv1
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	common "github.com/iotbzh/xds-common/golib"
@@ -15,12 +14,11 @@ func (s *APIService) getSdks(c *gin.Context) {
 
 // getSdk returns a specific Sdk configuration
 func (s *APIService) getSdk(c *gin.Context) {
-	id, err := strconv.Atoi(c.Param("id"))
+	id, err := s.sdks.ResolveID(c.Param("id"))
 	if err != nil {
-		common.APIError(c, "Invalid id")
+		common.APIError(c, err.Error())
 		return
 	}
-
 	sdk := s.sdks.Get(id)
 	if sdk.Profile == "" {
 		common.APIError(c, "Invalid id")

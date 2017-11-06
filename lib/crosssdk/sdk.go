@@ -3,6 +3,8 @@ package crosssdk
 import (
 	"fmt"
 	"path/filepath"
+
+	uuid "github.com/satori/go.uuid"
 )
 
 // SDK Define a cross tool chain used to build application
@@ -31,8 +33,9 @@ func NewCrossSDK(path string) (*SDK, error) {
 	d = filepath.Dir(d)
 	s.Profile = filepath.Base(d)
 
-	s.ID = s.Profile + "_" + s.Arch + "_" + s.Version
-	s.Name = s.Arch + "   (" + s.Version + ")"
+	// Use V3 to ensure that we get same uuid on restart
+	s.ID = uuid.NewV3(uuid.FromStringOrNil("sdks"), s.Profile+"_"+s.Arch+"_"+s.Version).String()
+	s.Name = s.Arch + "  (" + s.Version + ")"
 
 	envFile := filepath.Join(path, "environment-setup*")
 	ef, err := filepath.Glob(envFile)
