@@ -135,7 +135,7 @@ func (s *APIService) execCmd(c *gin.Context) {
 		}
 	}
 
-	cmd = append(cmd, "cd", fld.GetFullPath(args.RPath))
+	cmd = append(cmd, "cd", "\""+fld.GetFullPath(args.RPath)+"\"")
 	// FIXME - add 'exec' prevents to use syntax:
 	//       xds-exec -l debug -c xds-config.env -- "cd build && cmake .."
 	//  but exec is mandatory to allow to pass correctly signals
