@@ -299,6 +299,16 @@ func (s *APIService) execCmd(c *gin.Context) {
 	execWS.ExitCB = func(e *eows.ExecOverWS, code int, err error) {
 		s.log.Debugf("Command [Cmd ID %s] exited: code %d, error: %v", e.CmdID, code, err)
 
+		// Close client tty
+		defer func() {
+			if gdbPty != nil {
+				gdbPty.Close()
+			}
+			if gdbTty != nil {
+				gdbTty.Close()
+			}
+		}()
+
 		// IO socket can be nil when disconnected
 		so := s.sessions.IOSocketGet(e.Sid)
 		if so == nil {
@@ -329,14 +339,6 @@ func (s *APIService) execCmd(c *gin.Context) {
 				}
 				time.Sleep(time.Second)
 			}
-		}
-
-		// Close client tty
-		if gdbPty != nil {
-			gdbPty.Close()
-		}
-		if gdbTty != nil {
-			gdbTty.Close()
 		}
 
 		// FIXME replace by .BroadcastTo a room
