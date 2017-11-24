@@ -30,6 +30,7 @@ type IFOLDER interface {
 	ConvPathCli2Svr(s string) string                          // Convert path from Client to Server
 	ConvPathSvr2Cli(s string) string                          // Convert path from Server to Client
 	Remove() error                                            // Remove a folder
+	Update(cfg FolderConfig) (*FolderConfig, error)           // Update a new folder
 	RegisterEventChange(cb *EventCB, data *EventCBData) error // Request events registration (sent through WS)
 	UnRegisterEventChange() error                             // Un-register events
 	Sync() error                                              // Force folder files synchronization
@@ -45,6 +46,7 @@ type FolderConfig struct {
 	Status     string     `json:"status"`
 	IsInSync   bool       `json:"isInSync"`
 	DefaultSdk string     `json:"defaultSdk"`
+	ClientData string     `json:"clientData"` // free form field that can used by client
 
 	// Not exported fields from REST API point of view
 	RootPath string `json:"-"`
@@ -56,6 +58,11 @@ type FolderConfig struct {
 	// Specific data depending on which Type is used
 	DataPathMap   PathMapConfig   `json:"dataPathMap,omitempty"`
 	DataCloudSync CloudSyncConfig `json:"dataCloudSync,omitempty"`
+}
+
+// FolderConfigUpdatableFields List fields that can be updated using Update function
+var FolderConfigUpdatableFields = []string{
+	"Label", "DefaultSdk", "ClientData",
 }
 
 // PathMapConfig Path mapping specific data

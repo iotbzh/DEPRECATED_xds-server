@@ -145,6 +145,15 @@ func (f *PathMap) Remove() error {
 	return nil
 }
 
+// Update update some fields of a folder
+func (f *PathMap) Update(cfg FolderConfig) (*FolderConfig, error) {
+	if f.config.ID != cfg.ID {
+		return nil, fmt.Errorf("Invalid id")
+	}
+	f.config = cfg
+	return &f.config, nil
+}
+
 // RegisterEventChange requests registration for folder change event
 func (f *PathMap) RegisterEventChange(cb *EventCB, data *EventCBData) error {
 	return nil

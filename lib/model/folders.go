@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/franciscocpg/reflectme"
 	common "github.com/iotbzh/xds-common/golib"
 	"github.com/iotbzh/xds-server/lib/folder"
 	"github.com/iotbzh/xds-server/lib/syncthing"
@@ -314,6 +315,54 @@ func (f *Folders) Delete(id string) (folder.FolderConfig, error) {
 
 	// Save config on disk
 	err = f.SaveConfig()
+
+	return fld, err
+}
+
+// Update Update a specific folder
+func (f *Folders) Update(id string, cfg folder.FolderConfig) (*folder.FolderConfig, error) {
+	fcMutex.Lock()
+	defer fcMutex.Unlock()
+
+	fc, exist := f.folders[id]
+	if !exist {
+		return nil, fmt.Errorf("unknown id")
+	}
+
+	// Copy current in a new object to change nothing in case of an error rises
+	newCfg := folder.FolderConfig{}
+	reflectme.Copy((*fc).GetConfig(), &newCfg)
+
+	// Only update some fields
+	dirty := false
+	for _, fieldName := range folder.FolderConfigUpdatableFields {
+		valNew, err := reflectme.GetField(cfg, fieldName)
+		if err == nil {
+			valCur, err := reflectme.GetField(newCfg, fieldName)
+			if err == nil && valNew != valCur {
+				err = reflectme.SetField(&newCfg, fieldName, valNew)
+				if err != nil {
+					return nil, err
+				}
+				dirty = true
+			}
+		}
+	}
+
+	if !dirty {
+		return &newCfg, nil
+	}
+
+	fld, err := (*fc).Update(newCfg)
+	if err != nil {
+		return fld, err
+	}
+
+	// Save config on disk
+	err = f.SaveConfig()
+
+	// Send event to notified changes
+	// TODO emit folder change event
 
 	return fld, err
 }

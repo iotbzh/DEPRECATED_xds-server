@@ -65,6 +65,11 @@ func (f *STFolderDisable) Remove() error {
 	return nil
 }
 
+// Update update some fields of a folder
+func (f *STFolderDisable) Update(cfg FolderConfig) (*FolderConfig, error) {
+	return nil, nil
+}
+
 // RegisterEventChange requests registration for folder change event
 func (f *STFolderDisable) RegisterEventChange(cb *EventCB, data *EventCBData) error {
 	return nil

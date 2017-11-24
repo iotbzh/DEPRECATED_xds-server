@@ -31,3 +31,5 @@ import:
   - golib/eows
 - package: github.com/kr/pty
   version: ^1.0.0
+- package: github.com/franciscocpg/reflectme
+  version: ^0.1.9

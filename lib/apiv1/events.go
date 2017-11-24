@@ -2,6 +2,7 @@ package apiv1
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/iotbzh/xds-server/lib/folder"
@@ -29,8 +30,15 @@ type EventMsg struct {
 }
 
 // EventEvent Event send in WS when an internal event (eg. Syncthing event is received)
-const EventEventAll = "event:all"
-const EventEventType = "event:" // following by event type
+const (
+	// EventTypePrefix Used as event prefix
+	EventTypePrefix = "event:" // following by event type
+
+	// Supported Events type
+	EVTAll               = EventTypePrefix + "all"
+	EVTFolderChange      = EventTypePrefix + "folder-change"       // type EventMsg with Data type apiv1.???
+	EVTFolderStateChange = EventTypePrefix + "folder-state-change" // type EventMsg with Data type apiv1.???
+)
 
 // eventsList Registering for events that will be send over a WS
 func (s *APIService) eventsList(c *gin.Context) {
@@ -52,7 +60,7 @@ func (s *APIService) eventsRegister(c *gin.Context) {
 		return
 	}
 
-	evType := "FolderStateChanged"
+	evType := strings.TrimPrefix(EVTFolderStateChange, EventTypePrefix)
 	if args.Name != evType {
 		common.APIError(c, "Unsupported event name")
 		return
@@ -79,11 +87,11 @@ func (s *APIService) eventsRegister(c *gin.Context) {
 			Data: ev.Data,
 		}
 
-		if err := (*so).Emit(EventEventAll, msg); err != nil {
+		if err := (*so).Emit(EVTAll, msg); err != nil {
 			s.log.Errorf("WS Emit Event : %v", err)
 		}
 
-		if err := (*so).Emit(EventEventType+ev.Type, msg); err != nil {
+		if err := (*so).Emit(EventTypePrefix+ev.Type, msg); err != nil {
 			s.log.Errorf("WS Emit Event : %v", err)
 		}
 	}
@@ -113,9 +121,9 @@ func (s *APIService) eventsRegister(c *gin.Context) {
 		}
 
 		s.log.Debugf("WS Emit %s - Status=%10s, IsInSync=%6v, ID=%s",
-			EventEventType+evType, cfg.Status, cfg.IsInSync, cfg.ID)
+			EventTypePrefix+evType, cfg.Status, cfg.IsInSync, cfg.ID)
 
-		if err := (*so).Emit(EventEventType+evType, msg); err != nil {
+		if err := (*so).Emit(EventTypePrefix+evType, msg); err != nil {
 			s.log.Errorf("WS Emit Folder StateChanged event : %v", err)
 		}
 	}

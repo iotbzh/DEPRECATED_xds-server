@@ -143,6 +143,15 @@ func (f *STFolder) Remove() error {
 	return err2
 }
 
+// Update update some fields of a folder
+func (f *STFolder) Update(cfg folder.FolderConfig) (*folder.FolderConfig, error) {
+	if f.fConfig.ID != cfg.ID {
+		return nil, fmt.Errorf("Invalid id")
+	}
+	f.fConfig = cfg
+	return &f.fConfig, nil
+}
+
 // RegisterEventChange requests registration for folder event change
 func (f *STFolder) RegisterEventChange(cb *folder.EventCB, data *folder.EventCBData) error {
 	f.eventChangeCB = cb

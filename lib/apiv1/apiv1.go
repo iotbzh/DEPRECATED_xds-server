@@ -40,6 +40,7 @@ func New(r *gin.Engine, sess *session.Sessions, cfg *xdsconfig.Config, mfolders 
 
 	s.apiRouter.GET("/folders", s.getFolders)
 	s.apiRouter.GET("/folders/:id", s.getFolder)
+	s.apiRouter.PUT("/folders/:id", s.updateFolder)
 	s.apiRouter.POST("/folders", s.addFolder)
 	s.apiRouter.POST("/folders/sync/:id", s.syncFolder)
 	s.apiRouter.DELETE("/folders/:id", s.delFolder)

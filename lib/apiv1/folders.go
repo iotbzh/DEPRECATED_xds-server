@@ -105,3 +105,27 @@ func (s *APIService) delFolder(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, delEntry)
 }
+
+// updateFolder update some field of a folder
+func (s *APIService) updateFolder(c *gin.Context) {
+	id, err := s.mfolders.ResolveID(c.Param("id"))
+	if err != nil {
+		common.APIError(c, err.Error())
+		return
+	}
+
+	s.log.Debugln("Update folder id ", id)
+
+	var cfgArg folder.FolderConfig
+	if c.BindJSON(&cfgArg) != nil {
+		common.APIError(c, "Invalid arguments")
+		return
+	}
+
+	upFld, err := s.mfolders.Update(id, cfgArg)
+	if err != nil {
+		common.APIError(c, err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, upFld)
+}
