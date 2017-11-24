@@ -339,6 +339,7 @@ func (s *APIService) execCmd(c *gin.Context) {
 				}
 				time.Sleep(time.Second)
 			}
+			s.log.Debugf("OK file are synchronized.")
 		}
 
 		// FIXME replace by .BroadcastTo a room

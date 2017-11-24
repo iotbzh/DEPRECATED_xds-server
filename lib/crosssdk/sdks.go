@@ -65,20 +65,17 @@ func (s *SDKs) ResolveID(id string) (string, error) {
 
 	match := []string{}
 	for iid := range s.Sdks {
-		fmt.Printf("SEB prefix iid=%v id=%v\n", iid, id)
 		if strings.HasPrefix(iid, id) {
 			match = append(match, iid)
-			fmt.Printf("  SEB match (%d): %v\n", len(match), match)
 		}
 	}
-	fmt.Printf("SEB match (%d): %v\n", len(match), match)
 
 	if len(match) == 1 {
 		return match[0], nil
 	} else if len(match) == 0 {
-		return id, fmt.Errorf("Unknown id")
+		return id, fmt.Errorf("Unknown sdk id")
 	}
-	return id, fmt.Errorf("Multiple IDs found with provided prefix: " + id)
+	return id, fmt.Errorf("Multiple sdk IDs found with provided prefix: " + id)
 }
 
 // Get returns an SDK from id
@@ -114,8 +111,10 @@ func (s *SDKs) GetEnvCmd(id string, defaultID string) []string {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	if sdk, exist := s.Sdks[id]; exist {
-		return sdk.GetEnvCmd()
+	if iid, err := s.ResolveID(id); err == nil {
+		if sdk, exist := s.Sdks[iid]; exist {
+			return sdk.GetEnvCmd()
+		}
 	}
 
 	if sdk, exist := s.Sdks[defaultID]; defaultID != "" && exist {
