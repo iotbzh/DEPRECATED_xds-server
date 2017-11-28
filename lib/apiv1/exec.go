@@ -31,6 +31,18 @@ type (
 		CmdTimeout      int      `json:"timeout"`         // command completion timeout in Second
 	}
 
+	// ExecRes JSON result of /exec command
+	ExecRes struct {
+		Status string `json:"status"` // status OK
+		CmdID  string `json:"cmdID"`  // command unique ID
+	}
+
+	// ExecSigRes JSON result of /signal command
+	ExecSigRes struct {
+		Status string `json:"status"` // status OK
+		CmdID  string `json:"cmdID"`  // command unique ID
+	}
+
 	// ExecInMsg Message used to received input characters (stdin)
 	ExecInMsg struct {
 		CmdID     string `json:"cmdID"`
@@ -374,11 +386,7 @@ func (s *APIService) execCmd(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK,
-		gin.H{
-			"status": "OK",
-			"cmdID":  execWS.CmdID,
-		})
+	c.JSON(http.StatusOK, ExecRes{Status: "OK", CmdID: execWS.CmdID})
 }
 
 // ExecCmd executes remotely a command
@@ -404,8 +412,5 @@ func (s *APIService) execSignalCmd(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK,
-		gin.H{
-			"status": "OK",
-		})
+	c.JSON(http.StatusOK, ExecSigRes{Status: "OK", CmdID: args.CmdID})
 }
