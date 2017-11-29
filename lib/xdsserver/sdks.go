@@ -1,4 +1,4 @@
-package crosssdk
+package xdsserver
 
 import (
 	"fmt"
@@ -7,33 +7,34 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/Sirupsen/logrus"
 	common "github.com/iotbzh/xds-common/golib"
-	"github.com/iotbzh/xds-server/lib/xdsconfig"
+	"github.com/iotbzh/xds-server/lib/xsapiv1"
 )
 
 // SDKs List of installed SDK
 type SDKs struct {
-	Sdks map[string]*SDK
+	*Context
+	Sdks map[string]*CrossSDK
 
 	mutex sync.Mutex
 }
 
-// Init creates a new instance of Syncthing
-func Init(cfg *xdsconfig.Config, log *logrus.Logger) (*SDKs, error) {
+// NewSDKs creates a new instance of SDKs
+func NewSDKs(ctx *Context) (*SDKs, error) {
 	s := SDKs{
-		Sdks: make(map[string]*SDK),
+		Context: ctx,
+		Sdks:    make(map[string]*CrossSDK),
 	}
 
 	// Retrieve installed sdks
-	sdkRD := cfg.FileConf.SdkRootDir
+	sdkRD := ctx.Config.FileConf.SdkRootDir
 
 	if common.Exists(sdkRD) {
 
 		// Assume that SDK install tree is <rootdir>/<profile>/<version>/<arch>
 		dirs, err := filepath.Glob(path.Join(sdkRD, "*", "*", "*"))
 		if err != nil {
-			log.Debugf("Error while retrieving SDKs: dir=%s, error=%s", sdkRD, err.Error())
+			ctx.Log.Debugf("Error while retrieving SDKs: dir=%s, error=%s", sdkRD, err.Error())
 			return &s, err
 		}
 		s.mutex.Lock()
@@ -43,16 +44,16 @@ func Init(cfg *xdsconfig.Config, log *logrus.Logger) (*SDKs, error) {
 			if !common.IsDir(d) {
 				continue
 			}
-			sdk, err := NewCrossSDK(d)
+			cSdk, err := NewCrossSDK(d)
 			if err != nil {
-				log.Debugf("Error while processing SDK dir=%s, err=%s", d, err.Error())
+				ctx.Log.Debugf("Error while processing SDK dir=%s, err=%s", d, err.Error())
 				continue
 			}
-			s.Sdks[sdk.ID] = sdk
+			s.Sdks[cSdk.sdk.ID] = cSdk
 		}
 	}
 
-	log.Debugf("SDKs: %d cross sdks found", len(s.Sdks))
+	ctx.Log.Debugf("SDKs: %d cross sdks found", len(s.Sdks))
 
 	return &s, nil
 }
@@ -79,7 +80,7 @@ func (s *SDKs) ResolveID(id string) (string, error) {
 }
 
 // Get returns an SDK from id
-func (s *SDKs) Get(id string) *SDK {
+func (s *SDKs) Get(id string) *xsapiv1.SDK {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
@@ -87,16 +88,16 @@ func (s *SDKs) Get(id string) *SDK {
 	if !exist {
 		return nil
 	}
-	return sc
+	return (*sc).Get()
 }
 
 // GetAll returns all existing SDKs
-func (s *SDKs) GetAll() []SDK {
+func (s *SDKs) GetAll() []xsapiv1.SDK {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	res := []SDK{}
+	res := []xsapiv1.SDK{}
 	for _, v := range s.Sdks {
-		res = append(res, *v)
+		res = append(res, *(*v).Get())
 	}
 	return res
 }

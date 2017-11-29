@@ -1,4 +1,4 @@
-package st
+package xdsserver
 
 import (
 	"fmt"
@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/iotbzh/xds-server/lib/folder"
-	"github.com/iotbzh/xds-server/lib/xdsconfig"
+	"github.com/iotbzh/xds-server/lib/xsapiv1"
+	st "github.com/iotbzh/xds-server/lib/syncthing"
 	uuid "github.com/satori/go.uuid"
 	"github.com/syncthing/syncthing/lib/config"
 )
@@ -16,20 +16,20 @@ import (
 
 // STFolder .
 type STFolder struct {
-	globalConfig      *xdsconfig.Config
-	st                *SyncThing
-	fConfig           folder.FolderConfig
+	*Context
+	st                *st.SyncThing
+	fConfig           xsapiv1.FolderConfig
 	stfConfig         config.FolderConfiguration
 	eventIDs          []int
-	eventChangeCB     *folder.EventCB
-	eventChangeCBData *folder.EventCBData
+	eventChangeCB     *FolderEventCB
+	eventChangeCBData *FolderEventCBData
 }
 
 // NewFolderST Create a new instance of STFolder
-func (s *SyncThing) NewFolderST(gc *xdsconfig.Config) *STFolder {
+func NewFolderST(ctx *Context, sthg *st.SyncThing) *STFolder {
 	return &STFolder{
-		globalConfig: gc,
-		st:           s,
+		Context: ctx,
+		st:      sthg,
 	}
 }
 
@@ -47,7 +47,7 @@ func (f *STFolder) NewUID(suffix string) string {
 }
 
 // Add a new folder
-func (f *STFolder) Add(cfg folder.FolderConfig) (*folder.FolderConfig, error) {
+func (f *STFolder) Add(cfg xsapiv1.FolderConfig) (*xsapiv1.FolderConfig, error) {
 
 	// Sanity check
 	if cfg.DataCloudSync.SyncThingID == "" {
@@ -56,7 +56,7 @@ func (f *STFolder) Add(cfg folder.FolderConfig) (*folder.FolderConfig, error) {
 
 	// rootPath should not be empty
 	if cfg.RootPath == "" {
-		cfg.RootPath = f.globalConfig.FileConf.ShareRootDir
+		cfg.RootPath = f.Config.FileConf.ShareRootDir
 	}
 
 	f.fConfig = cfg
@@ -64,7 +64,7 @@ func (f *STFolder) Add(cfg folder.FolderConfig) (*folder.FolderConfig, error) {
 	// Update Syncthing folder
 	// (except if status is ErrorConfig)
 	// TODO: add cache to avoid multiple requests on startup
-	if f.fConfig.Status != folder.StatusErrorConfig {
+	if f.fConfig.Status != xsapiv1.StatusErrorConfig {
 		id, err := f.st.FolderChange(f.fConfig)
 		if err != nil {
 			return nil, err
@@ -72,12 +72,12 @@ func (f *STFolder) Add(cfg folder.FolderConfig) (*folder.FolderConfig, error) {
 
 		f.stfConfig, err = f.st.FolderConfigGet(id)
 		if err != nil {
-			f.fConfig.Status = folder.StatusErrorConfig
+			f.fConfig.Status = xsapiv1.StatusErrorConfig
 			return nil, err
 		}
 
 		// Register to events to update folder status
-		for _, evName := range []string{EventStateChanged, EventFolderPaused} {
+		for _, evName := range []string{st.EventStateChanged, st.EventFolderPaused} {
 			evID, err := f.st.Events.Register(evName, f.cbEventState, id, nil)
 			if err != nil {
 				return nil, err
@@ -86,14 +86,14 @@ func (f *STFolder) Add(cfg folder.FolderConfig) (*folder.FolderConfig, error) {
 		}
 
 		f.fConfig.IsInSync = false // will be updated later by events
-		f.fConfig.Status = folder.StatusEnable
+		f.fConfig.Status = xsapiv1.StatusEnable
 	}
 
 	return &f.fConfig, nil
 }
 
 // GetConfig Get public part of folder config
-func (f *STFolder) GetConfig() folder.FolderConfig {
+func (f *STFolder) GetConfig() xsapiv1.FolderConfig {
 	return f.fConfig
 }
 
@@ -144,7 +144,7 @@ func (f *STFolder) Remove() error {
 }
 
 // Update update some fields of a folder
-func (f *STFolder) Update(cfg folder.FolderConfig) (*folder.FolderConfig, error) {
+func (f *STFolder) Update(cfg xsapiv1.FolderConfig) (*xsapiv1.FolderConfig, error) {
 	if f.fConfig.ID != cfg.ID {
 		return nil, fmt.Errorf("Invalid id")
 	}
@@ -153,7 +153,7 @@ func (f *STFolder) Update(cfg folder.FolderConfig) (*folder.FolderConfig, error)
 }
 
 // RegisterEventChange requests registration for folder event change
-func (f *STFolder) RegisterEventChange(cb *folder.EventCB, data *folder.EventCBData) error {
+func (f *STFolder) RegisterEventChange(cb *FolderEventCB, data *FolderEventCBData) error {
 	f.eventChangeCB = cb
 	f.eventChangeCBData = data
 	return nil
@@ -182,25 +182,25 @@ func (f *STFolder) IsInSync() (bool, error) {
 }
 
 // callback use to update IsInSync status
-func (f *STFolder) cbEventState(ev Event, data *EventsCBData) {
+func (f *STFolder) cbEventState(ev st.Event, data *st.EventsCBData) {
 	prevSync := f.fConfig.IsInSync
 	prevStatus := f.fConfig.Status
 
 	switch ev.Type {
 
-	case EventStateChanged:
+	case st.EventStateChanged:
 		to := ev.Data["to"]
 		switch to {
 		case "scanning", "syncing":
-			f.fConfig.Status = folder.StatusSyncing
+			f.fConfig.Status = xsapiv1.StatusSyncing
 		case "idle":
-			f.fConfig.Status = folder.StatusEnable
+			f.fConfig.Status = xsapiv1.StatusEnable
 		}
 		f.fConfig.IsInSync = (to == "idle")
 
-	case EventFolderPaused:
-		if f.fConfig.Status == folder.StatusEnable {
-			f.fConfig.Status = folder.StatusPause
+	case st.EventFolderPaused:
+		if f.fConfig.Status == xsapiv1.StatusEnable {
+			f.fConfig.Status = xsapiv1.StatusPause
 		}
 		f.fConfig.IsInSync = false
 	}

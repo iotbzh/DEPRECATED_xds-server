@@ -1,4 +1,4 @@
-package model
+package xdsserver
 
 import (
 	"encoding/xml"
@@ -9,28 +9,25 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/franciscocpg/reflectme"
 	common "github.com/iotbzh/xds-common/golib"
-	"github.com/iotbzh/xds-server/lib/folder"
-	"github.com/iotbzh/xds-server/lib/syncthing"
+	"github.com/iotbzh/xds-server/lib/xsapiv1"
 	"github.com/iotbzh/xds-server/lib/xdsconfig"
 	"github.com/syncthing/syncthing/lib/sync"
 )
 
 // Folders Represent a an XDS folders
 type Folders struct {
+	*Context
 	fileOnDisk string
-	Conf       *xdsconfig.Config
-	Log        *logrus.Logger
-	SThg       *st.SyncThing
-	folders    map[string]*folder.IFOLDER
+	folders    map[string]*IFOLDER
 	registerCB []RegisteredCB
 }
 
+// RegisteredCB Hold registered callbacks
 type RegisteredCB struct {
-	cb   *folder.EventCB
-	data *folder.EventCBData
+	cb   *FolderEventCB
+	data *FolderEventCBData
 }
 
 // Mutex to make add/delete atomic
@@ -38,25 +35,23 @@ var fcMutex = sync.NewMutex()
 var ffMutex = sync.NewMutex()
 
 // FoldersNew Create a new instance of Model Folders
-func FoldersNew(cfg *xdsconfig.Config, st *st.SyncThing) *Folders {
+func FoldersNew(ctx *Context) *Folders {
 	file, _ := xdsconfig.FoldersConfigFilenameGet()
 	return &Folders{
+		Context:    ctx,
 		fileOnDisk: file,
-		Conf:       cfg,
-		Log:        cfg.Log,
-		SThg:       st,
-		folders:    make(map[string]*folder.IFOLDER),
+		folders:    make(map[string]*IFOLDER),
 		registerCB: []RegisteredCB{},
 	}
 }
 
 // LoadConfig Load folders configuration from disk
 func (f *Folders) LoadConfig() error {
-	var flds []folder.FolderConfig
-	var stFlds []folder.FolderConfig
+	var flds []xsapiv1.FolderConfig
+	var stFlds []xsapiv1.FolderConfig
 
 	// load from disk
-	if f.Conf.Options.NoFolderConfig {
+	if f.Config.Options.NoFolderConfig {
 		f.Log.Infof("Don't read folder config file (-no-folderconfig option is set)")
 	} else if f.fileOnDisk != "" {
 		f.Log.Infof("Use folder config file: %s", f.fileOnDisk)
@@ -90,8 +85,8 @@ func (f *Folders) LoadConfig() error {
 			if xf.ID == stf.ID {
 				found = true
 				// sanity check
-				if xf.Type != folder.TypeCloudSync {
-					flds[i].Status = folder.StatusErrorConfig
+				if xf.Type != xsapiv1.TypeCloudSync {
+					flds[i].Status = xsapiv1.StatusErrorConfig
 				}
 				break
 			}
@@ -107,7 +102,7 @@ func (f *Folders) LoadConfig() error {
 	if f.SThg != nil {
 		for i, xf := range flds {
 			// only for syncthing project
-			if xf.Type != folder.TypeCloudSync {
+			if xf.Type != xsapiv1.TypeCloudSync {
 				continue
 			}
 			found := false
@@ -118,7 +113,7 @@ func (f *Folders) LoadConfig() error {
 				}
 			}
 			if !found {
-				flds[i].Status = folder.StatusErrorConfig
+				flds[i].Status = xsapiv1.StatusErrorConfig
 			}
 		}
 	}
@@ -169,7 +164,7 @@ func (f *Folders) ResolveID(id string) (string, error) {
 }
 
 // Get returns the folder config or nil if not existing
-func (f *Folders) Get(id string) *folder.IFOLDER {
+func (f *Folders) Get(id string) *IFOLDER {
 	if id == "" {
 		return nil
 	}
@@ -181,7 +176,7 @@ func (f *Folders) Get(id string) *folder.IFOLDER {
 }
 
 // GetConfigArr returns the config of all folders as an array
-func (f *Folders) GetConfigArr() []folder.FolderConfig {
+func (f *Folders) GetConfigArr() []xsapiv1.FolderConfig {
 	fcMutex.Lock()
 	defer fcMutex.Unlock()
 
@@ -189,8 +184,8 @@ func (f *Folders) GetConfigArr() []folder.FolderConfig {
 }
 
 // getConfigArrUnsafe Same as GetConfigArr without mutex protection
-func (f *Folders) getConfigArrUnsafe() []folder.FolderConfig {
-	conf := []folder.FolderConfig{}
+func (f *Folders) getConfigArrUnsafe() []xsapiv1.FolderConfig {
+	conf := []xsapiv1.FolderConfig{}
 	for _, v := range f.folders {
 		conf = append(conf, (*v).GetConfig())
 	}
@@ -198,12 +193,12 @@ func (f *Folders) getConfigArrUnsafe() []folder.FolderConfig {
 }
 
 // Add adds a new folder
-func (f *Folders) Add(newF folder.FolderConfig) (*folder.FolderConfig, error) {
+func (f *Folders) Add(newF xsapiv1.FolderConfig) (*xsapiv1.FolderConfig, error) {
 	return f.createUpdate(newF, true, false)
 }
 
 // CreateUpdate creates or update a folder
-func (f *Folders) createUpdate(newF folder.FolderConfig, create bool, initial bool) (*folder.FolderConfig, error) {
+func (f *Folders) createUpdate(newF xsapiv1.FolderConfig, create bool, initial bool) (*xsapiv1.FolderConfig, error) {
 
 	fcMutex.Lock()
 	defer fcMutex.Unlock()
@@ -217,20 +212,20 @@ func (f *Folders) createUpdate(newF folder.FolderConfig, create bool, initial bo
 	}
 
 	// Create a new folder object
-	var fld folder.IFOLDER
+	var fld IFOLDER
 	switch newF.Type {
 	// SYNCTHING
-	case folder.TypeCloudSync:
+	case xsapiv1.TypeCloudSync:
 		if f.SThg != nil {
-			fld = f.SThg.NewFolderST(f.Conf)
+			fld = NewFolderST(f.Context, f.SThg)
 		} else {
 			f.Log.Debugf("Disable project %v (syncthing not initialized)", newF.ID)
-			fld = folder.NewFolderSTDisable(f.Conf)
+			fld = NewFolderSTDisable(f.Context)
 		}
 
 	// PATH MAP
-	case folder.TypePathMap:
-		fld = folder.NewFolderPathMap(f.Conf)
+	case xsapiv1.TypePathMap:
+		fld = NewFolderPathMap(f.Context)
 	default:
 		return nil, fmt.Errorf("Unsupported folder type")
 	}
@@ -245,7 +240,7 @@ func (f *Folders) createUpdate(newF folder.FolderConfig, create bool, initial bo
 
 	// Set default value if needed
 	if newF.Status == "" {
-		newF.Status = folder.StatusDisable
+		newF.Status = xsapiv1.StatusDisable
 	}
 	if newF.Label == "" {
 		newF.Label = filepath.Base(newF.ClientPath)
@@ -260,7 +255,7 @@ func (f *Folders) createUpdate(newF folder.FolderConfig, create bool, initial bo
 	// Add new folder
 	newFolder, err := fld.Add(newF)
 	if err != nil {
-		newF.Status = folder.StatusErrorConfig
+		newF.Status = xsapiv1.StatusErrorConfig
 		log.Printf("ERROR Adding folder: %v\n", err)
 		return newFolder, err
 	}
@@ -293,13 +288,13 @@ func (f *Folders) createUpdate(newF folder.FolderConfig, create bool, initial bo
 }
 
 // Delete deletes a specific folder
-func (f *Folders) Delete(id string) (folder.FolderConfig, error) {
+func (f *Folders) Delete(id string) (xsapiv1.FolderConfig, error) {
 	var err error
 
 	fcMutex.Lock()
 	defer fcMutex.Unlock()
 
-	fld := folder.FolderConfig{}
+	fld := xsapiv1.FolderConfig{}
 	fc, exist := f.folders[id]
 	if !exist {
 		return fld, fmt.Errorf("unknown id")
@@ -320,7 +315,7 @@ func (f *Folders) Delete(id string) (folder.FolderConfig, error) {
 }
 
 // Update Update a specific folder
-func (f *Folders) Update(id string, cfg folder.FolderConfig) (*folder.FolderConfig, error) {
+func (f *Folders) Update(id string, cfg xsapiv1.FolderConfig) (*xsapiv1.FolderConfig, error) {
 	fcMutex.Lock()
 	defer fcMutex.Unlock()
 
@@ -330,12 +325,12 @@ func (f *Folders) Update(id string, cfg folder.FolderConfig) (*folder.FolderConf
 	}
 
 	// Copy current in a new object to change nothing in case of an error rises
-	newCfg := folder.FolderConfig{}
+	newCfg := xsapiv1.FolderConfig{}
 	reflectme.Copy((*fc).GetConfig(), &newCfg)
 
 	// Only update some fields
 	dirty := false
-	for _, fieldName := range folder.FolderConfigUpdatableFields {
+	for _, fieldName := range xsapiv1.FolderConfigUpdatableFields {
 		valNew, err := reflectme.GetField(cfg, fieldName)
 		if err == nil {
 			valCur, err := reflectme.GetField(newCfg, fieldName)
@@ -368,9 +363,9 @@ func (f *Folders) Update(id string, cfg folder.FolderConfig) (*folder.FolderConf
 }
 
 // RegisterEventChange requests registration for folder event change
-func (f *Folders) RegisterEventChange(id string, cb *folder.EventCB, data *folder.EventCBData) error {
+func (f *Folders) RegisterEventChange(id string, cb *FolderEventCB, data *FolderEventCBData) error {
 
-	flds := make(map[string]*folder.IFOLDER)
+	flds := make(map[string]*IFOLDER)
 	if id != "" {
 		// Register to a specific folder
 		flds[id] = f.Get(id)
@@ -413,13 +408,13 @@ func (f *Folders) IsFolderInSync(id string) (bool, error) {
 // Use XML format and not json to be able to save/load all fields including
 // ones that are masked in json (IOW defined with `json:"-"`)
 type xmlFolders struct {
-	XMLName xml.Name              `xml:"folders"`
-	Version string                `xml:"version,attr"`
-	Folders []folder.FolderConfig `xml:"folders"`
+	XMLName xml.Name             `xml:"folders"`
+	Version string               `xml:"version,attr"`
+	Folders []xsapiv1.FolderConfig `xml:"folders"`
 }
 
 // foldersConfigRead reads folders config from disk
-func foldersConfigRead(file string, folders *[]folder.FolderConfig) error {
+func foldersConfigRead(file string, folders *[]xsapiv1.FolderConfig) error {
 	if !common.Exists(file) {
 		return fmt.Errorf("No folder config file found (%s)", file)
 	}
@@ -442,7 +437,7 @@ func foldersConfigRead(file string, folders *[]folder.FolderConfig) error {
 }
 
 // foldersConfigWrite writes folders config on disk
-func foldersConfigWrite(file string, folders []folder.FolderConfig) error {
+func foldersConfigWrite(file string, folders []xsapiv1.FolderConfig) error {
 	ffMutex.Lock()
 	defer ffMutex.Unlock()
 

@@ -1,7 +1,7 @@
-package folder
+package xdsserver
 
 import (
-	"github.com/iotbzh/xds-server/lib/xdsconfig"
+	"github.com/iotbzh/xds-server/lib/xsapiv1"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -11,14 +11,14 @@ import (
 
 // STFolderDisable .
 type STFolderDisable struct {
-	globalConfig *xdsconfig.Config
-	config       FolderConfig
+	*Context
+	config xsapiv1.FolderConfig
 }
 
 // NewFolderSTDisable Create a new instance of STFolderDisable
-func NewFolderSTDisable(gc *xdsconfig.Config) *STFolderDisable {
+func NewFolderSTDisable(ctx *Context) *STFolderDisable {
 	f := STFolderDisable{
-		globalConfig: gc,
+		Context: ctx,
 	}
 	return &f
 }
@@ -33,15 +33,15 @@ func (f *STFolderDisable) NewUID(suffix string) string {
 }
 
 // Add a new folder
-func (f *STFolderDisable) Add(cfg FolderConfig) (*FolderConfig, error) {
+func (f *STFolderDisable) Add(cfg xsapiv1.FolderConfig) (*xsapiv1.FolderConfig, error) {
 	f.config = cfg
-	f.config.Status = StatusDisable
+	f.config.Status = xsapiv1.StatusDisable
 	f.config.IsInSync = false
 	return &f.config, nil
 }
 
 // GetConfig Get public part of folder config
-func (f *STFolderDisable) GetConfig() FolderConfig {
+func (f *STFolderDisable) GetConfig() xsapiv1.FolderConfig {
 	return f.config
 }
 
@@ -66,12 +66,12 @@ func (f *STFolderDisable) Remove() error {
 }
 
 // Update update some fields of a folder
-func (f *STFolderDisable) Update(cfg FolderConfig) (*FolderConfig, error) {
+func (f *STFolderDisable) Update(cfg xsapiv1.FolderConfig) (*xsapiv1.FolderConfig, error) {
 	return nil, nil
 }
 
 // RegisterEventChange requests registration for folder change event
-func (f *STFolderDisable) RegisterEventChange(cb *EventCB, data *EventCBData) error {
+func (f *STFolderDisable) RegisterEventChange(cb *FolderEventCB, data *FolderEventCBData) error {
 	return nil
 }
 

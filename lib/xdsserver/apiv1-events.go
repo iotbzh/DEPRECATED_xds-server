@@ -1,43 +1,13 @@
-package apiv1
+package xdsserver
 
 import (
 	"net/http"
 	"strings"
 	"time"
 
-	"github.com/iotbzh/xds-server/lib/folder"
-
 	"github.com/gin-gonic/gin"
 	common "github.com/iotbzh/xds-common/golib"
-)
-
-// EventArgs is the parameters (json format) of /events/register command
-type EventRegisterArgs struct {
-	Name      string `json:"name"`
-	ProjectID string `json:"filterProjectID"`
-}
-
-type EventUnRegisterArgs struct {
-	Name string `json:"name"`
-	ID   int    `json:"id"`
-}
-
-// EventMsg Message send
-type EventMsg struct {
-	Time   string              `json:"time"`
-	Type   string              `json:"type"`
-	Folder folder.FolderConfig `json:"folder"`
-}
-
-// EventEvent Event send in WS when an internal event (eg. Syncthing event is received)
-const (
-	// EventTypePrefix Used as event prefix
-	EventTypePrefix = "event:" // following by event type
-
-	// Supported Events type
-	EVTAll               = EventTypePrefix + "all"
-	EVTFolderChange      = EventTypePrefix + "folder-change"       // type EventMsg with Data type apiv1.???
-	EVTFolderStateChange = EventTypePrefix + "folder-state-change" // type EventMsg with Data type apiv1.???
+	"github.com/iotbzh/xds-server/lib/xsapiv1"
 )
 
 // eventsList Registering for events that will be send over a WS
@@ -47,7 +17,7 @@ func (s *APIService) eventsList(c *gin.Context) {
 
 // eventsRegister Registering for events that will be send over a WS
 func (s *APIService) eventsRegister(c *gin.Context) {
-	var args EventRegisterArgs
+	var args xsapiv1.EventRegisterArgs
 
 	if c.BindJSON(&args) != nil {
 		common.APIError(c, "Invalid arguments")
@@ -60,7 +30,7 @@ func (s *APIService) eventsRegister(c *gin.Context) {
 		return
 	}
 
-	evType := strings.TrimPrefix(EVTFolderStateChange, EventTypePrefix)
+	evType := strings.TrimPrefix(xsapiv1.EVTFolderStateChange, xsapiv1.EventTypePrefix)
 	if args.Name != evType {
 		common.APIError(c, "Unsupported event name")
 		return
@@ -102,8 +72,8 @@ func (s *APIService) eventsRegister(c *gin.Context) {
 	id, err := s.mfolders.SThg.Events.Register(args.Name, cbFunc, args.ProjectID, &data)
 	*/
 
-	var cbFunc folder.EventCB
-	cbFunc = func(cfg *folder.FolderConfig, data *folder.EventCBData) {
+	var cbFunc FolderEventCB
+	cbFunc = func(cfg *xsapiv1.FolderConfig, data *FolderEventCBData) {
 		ssid := (*data)["sid"].(string)
 		so := s.sessions.IOSocketGet(ssid)
 		if so == nil {
@@ -114,20 +84,20 @@ func (s *APIService) eventsRegister(c *gin.Context) {
 			return
 		}
 
-		msg := EventMsg{
+		msg := xsapiv1.EventMsg{
 			Time:   time.Now().String(),
 			Type:   evType,
 			Folder: *cfg,
 		}
 
-		s.log.Debugf("WS Emit %s - Status=%10s, IsInSync=%6v, ID=%s",
-			EventTypePrefix+evType, cfg.Status, cfg.IsInSync, cfg.ID)
+		s.Log.Debugf("WS Emit %s - Status=%10s, IsInSync=%6v, ID=%s",
+			xsapiv1.EventTypePrefix+evType, cfg.Status, cfg.IsInSync, cfg.ID)
 
-		if err := (*so).Emit(EventTypePrefix+evType, msg); err != nil {
-			s.log.Errorf("WS Emit Folder StateChanged event : %v", err)
+		if err := (*so).Emit(xsapiv1.EventTypePrefix+evType, msg); err != nil {
+			s.Log.Errorf("WS Emit Folder StateChanged event : %v", err)
 		}
 	}
-	data := make(folder.EventCBData)
+	data := make(FolderEventCBData)
 	data["sid"] = sess.ID
 
 	prjID, err := s.mfolders.ResolveID(args.ProjectID)
@@ -145,7 +115,7 @@ func (s *APIService) eventsRegister(c *gin.Context) {
 
 // eventsRegister Registering for events that will be send over a WS
 func (s *APIService) eventsUnRegister(c *gin.Context) {
-	var args EventUnRegisterArgs
+	var args xsapiv1.EventUnRegisterArgs
 
 	if c.BindJSON(&args) != nil || args.Name == "" || args.ID < 0 {
 		common.APIError(c, "Invalid arguments")

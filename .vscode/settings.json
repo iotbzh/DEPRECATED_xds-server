@@ -28,6 +28,7 @@
         "rpath", "WSID", "sess", "IXDS", "xdsconfig", "xdsserver", "mfolder",
         "inotify", "Inot", "pname", "pkill", "sdkid", "CLOUDSYNC", "xdsagent",
         "gdbserver", "golib", "eows", "mfolders", "IFOLDER", "flds", "dflt",
-        "stconfig", "reflectme", "franciscocpg"
+        "stconfig", "reflectme", "franciscocpg", "crosssdk", "urfave", "EXEPATH",
+        "conv"
     ]
 }

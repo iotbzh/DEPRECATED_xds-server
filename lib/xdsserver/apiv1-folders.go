@@ -1,4 +1,4 @@
-package apiv1
+package xdsserver
 
 import (
 	"net/http"
@@ -6,7 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	common "github.com/iotbzh/xds-common/golib"
-	"github.com/iotbzh/xds-server/lib/folder"
+	"github.com/iotbzh/xds-server/lib/xsapiv1"
 )
 
 // getFolders returns all folders configuration
@@ -32,13 +32,13 @@ func (s *APIService) getFolder(c *gin.Context) {
 
 // addFolder adds a new folder to server config
 func (s *APIService) addFolder(c *gin.Context) {
-	var cfgArg folder.FolderConfig
+	var cfgArg xsapiv1.FolderConfig
 	if c.BindJSON(&cfgArg) != nil {
 		common.APIError(c, "Invalid arguments")
 		return
 	}
 
-	s.log.Debugln("Add folder config: ", cfgArg)
+	s.Log.Debugln("Add folder config: ", cfgArg)
 
 	newFld, err := s.mfolders.Add(cfgArg)
 	if err != nil {
@@ -77,7 +77,7 @@ func (s *APIService) syncFolder(c *gin.Context) {
 		common.APIError(c, err.Error())
 		return
 	}
-	s.log.Debugln("Sync folder id: ", id)
+	s.Log.Debugln("Sync folder id: ", id)
 
 	err = s.mfolders.ForceSync(id)
 	if err != nil {
@@ -96,7 +96,7 @@ func (s *APIService) delFolder(c *gin.Context) {
 		return
 	}
 
-	s.log.Debugln("Delete folder id ", id)
+	s.Log.Debugln("Delete folder id ", id)
 
 	delEntry, err := s.mfolders.Delete(id)
 	if err != nil {
@@ -114,9 +114,9 @@ func (s *APIService) updateFolder(c *gin.Context) {
 		return
 	}
 
-	s.log.Debugln("Update folder id ", id)
+	s.Log.Debugln("Update folder id ", id)
 
-	var cfgArg folder.FolderConfig
+	var cfgArg xsapiv1.FolderConfig
 	if c.BindJSON(&cfgArg) != nil {
 		common.APIError(c, "Invalid arguments")
 		return

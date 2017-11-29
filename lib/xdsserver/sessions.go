@@ -1,4 +1,4 @@
-package session
+package xdsserver
 
 import (
 	"encoding/base64"
@@ -36,7 +36,7 @@ type ClientSession struct {
 
 // Sessions holds client sessions
 type Sessions struct {
-	router        *gin.Engine
+	*Context
 	cookieMaxAge  int64
 	sessMap       map[string]ClientSession
 	mutex         sync.Mutex
@@ -46,21 +46,19 @@ type Sessions struct {
 }
 
 // NewClientSessions .
-func NewClientSessions(router *gin.Engine, log *logrus.Logger, cookieMaxAge string, sillyLog bool) *Sessions {
+func NewClientSessions(ctx *Context, cookieMaxAge string) *Sessions {
 	ckMaxAge, err := strconv.ParseInt(cookieMaxAge, 10, 0)
 	if err != nil {
 		ckMaxAge = 0
 	}
 	s := Sessions{
-		router:        router,
-		cookieMaxAge:  ckMaxAge,
-		sessMap:       make(map[string]ClientSession),
-		mutex:         sync.NewMutex(),
-		log:           log,
-		LogLevelSilly: sillyLog,
-		stop:          make(chan struct{}),
+		Context:      ctx,
+		cookieMaxAge: ckMaxAge,
+		sessMap:      make(map[string]ClientSession),
+		mutex:        sync.NewMutex(),
+		stop:         make(chan struct{}),
 	}
-	s.router.Use(s.Middleware())
+	s.WWWServer.router.Use(s.Middleware())
 
 	// Start monitoring of sessions Map (use to manage expiration and cleanup)
 	go s.monitorSessMap()

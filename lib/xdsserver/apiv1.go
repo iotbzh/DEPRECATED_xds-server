@@ -1,36 +1,20 @@
-package apiv1
+package xdsserver
 
 import (
-	"github.com/Sirupsen/logrus"
 	"github.com/gin-gonic/gin"
-
-	"github.com/iotbzh/xds-server/lib/crosssdk"
-	"github.com/iotbzh/xds-server/lib/model"
-	"github.com/iotbzh/xds-server/lib/session"
-	"github.com/iotbzh/xds-server/lib/xdsconfig"
 )
 
 // APIService .
 type APIService struct {
-	router    *gin.Engine
+	*Context
 	apiRouter *gin.RouterGroup
-	sessions  *session.Sessions
-	cfg       *xdsconfig.Config
-	mfolders  *model.Folders
-	sdks      *crosssdk.SDKs
-	log       *logrus.Logger
 }
 
-// New creates a new instance of API service
-func New(r *gin.Engine, sess *session.Sessions, cfg *xdsconfig.Config, mfolders *model.Folders, sdks *crosssdk.SDKs) *APIService {
+// NewAPIV1 creates a new instance of API service
+func NewAPIV1(ctx *Context) *APIService {
 	s := &APIService{
-		router:    r,
-		sessions:  sess,
-		apiRouter: r.Group("/api/v1"),
-		cfg:       cfg,
-		mfolders:  mfolders,
-		sdks:      sdks,
-		log:       cfg.Log,
+		Context:   ctx,
+		apiRouter: ctx.WWWServer.router.Group("/api/v1"),
 	}
 
 	s.apiRouter.GET("/version", s.getVersion)

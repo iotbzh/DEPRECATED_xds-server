@@ -1,4 +1,4 @@
-package apiv1
+package xdsserver
 
 import (
 	"net/http"
@@ -6,7 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	common "github.com/iotbzh/xds-common/golib"
-	"github.com/iotbzh/xds-server/lib/xdsconfig"
+	"github.com/iotbzh/xds-server/lib/xsapiv1"
 )
 
 var confMut sync.Mutex
@@ -16,7 +16,7 @@ func (s *APIService) getConfig(c *gin.Context) {
 	confMut.Lock()
 	defer confMut.Unlock()
 
-	c.JSON(http.StatusOK, s.cfg)
+	c.JSON(http.StatusOK, s.Config)
 }
 
 // SetConfig sets server configuration
@@ -24,7 +24,7 @@ func (s *APIService) setConfig(c *gin.Context) {
 	// FIXME - must be tested
 	c.JSON(http.StatusNotImplemented, "Not implemented")
 
-	var cfgArg xdsconfig.Config
+	var cfgArg xsapiv1.APIConfig
 
 	if c.BindJSON(&cfgArg) != nil {
 		common.APIError(c, "Invalid arguments")
@@ -34,7 +34,7 @@ func (s *APIService) setConfig(c *gin.Context) {
 	confMut.Lock()
 	defer confMut.Unlock()
 
-	s.log.Debugln("SET config: ", cfgArg)
+	s.Log.Debugln("SET config: ", cfgArg)
 
 	common.APIError(c, "Not Supported")
 }

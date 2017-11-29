@@ -1,4 +1,4 @@
-package folder
+package xdsserver
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	common "github.com/iotbzh/xds-common/golib"
-	"github.com/iotbzh/xds-server/lib/xdsconfig"
+	"github.com/iotbzh/xds-server/lib/xsapiv1"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -16,16 +16,16 @@ import (
 
 // PathMap .
 type PathMap struct {
-	globalConfig *xdsconfig.Config
-	config       FolderConfig
+	*Context
+	config xsapiv1.FolderConfig
 }
 
 // NewFolderPathMap Create a new instance of PathMap
-func NewFolderPathMap(gc *xdsconfig.Config) *PathMap {
+func NewFolderPathMap(ctx *Context) *PathMap {
 	f := PathMap{
-		globalConfig: gc,
-		config: FolderConfig{
-			Status: StatusDisable,
+		Context: ctx,
+		config: xsapiv1.FolderConfig{
+			Status: xsapiv1.StatusDisable,
 		},
 	}
 	return &f
@@ -41,7 +41,7 @@ func (f *PathMap) NewUID(suffix string) string {
 }
 
 // Add a new folder
-func (f *PathMap) Add(cfg FolderConfig) (*FolderConfig, error) {
+func (f *PathMap) Add(cfg xsapiv1.FolderConfig) (*xsapiv1.FolderConfig, error) {
 	if cfg.DataPathMap.ServerPath == "" {
 		return nil, fmt.Errorf("ServerPath must be set")
 	}
@@ -49,7 +49,7 @@ func (f *PathMap) Add(cfg FolderConfig) (*FolderConfig, error) {
 	// Use shareRootDir if ServerPath is a relative path
 	dir := cfg.DataPathMap.ServerPath
 	if !filepath.IsAbs(dir) {
-		dir = filepath.Join(f.globalConfig.FileConf.ShareRootDir, dir)
+		dir = filepath.Join(f.Config.FileConf.ShareRootDir, dir)
 	}
 
 	// Sanity check
@@ -92,20 +92,20 @@ func (f *PathMap) Add(cfg FolderConfig) (*FolderConfig, error) {
 			}
 
 			// Write a specific message that will be check back on agent side
-			msg := "Pathmap checked message written by xds-server ID: " + f.globalConfig.ServerUID + "\n"
+			msg := "Pathmap checked message written by xds-server ID: " + f.Config.ServerUID + "\n"
 			if n, err := fd.WriteString(msg); n != len(msg) || err != nil {
 				return nil, fmt.Errorf(errMsg, 5, err)
 			}
 		}
 	}
 
-	f.config.Status = StatusEnable
+	f.config.Status = xsapiv1.StatusEnable
 
 	return &f.config, nil
 }
 
 // GetConfig Get public part of folder config
-func (f *PathMap) GetConfig() FolderConfig {
+func (f *PathMap) GetConfig() xsapiv1.FolderConfig {
 	return f.config
 }
 
@@ -146,7 +146,7 @@ func (f *PathMap) Remove() error {
 }
 
 // Update update some fields of a folder
-func (f *PathMap) Update(cfg FolderConfig) (*FolderConfig, error) {
+func (f *PathMap) Update(cfg xsapiv1.FolderConfig) (*xsapiv1.FolderConfig, error) {
 	if f.config.ID != cfg.ID {
 		return nil, fmt.Errorf("Invalid id")
 	}
@@ -155,7 +155,7 @@ func (f *PathMap) Update(cfg FolderConfig) (*FolderConfig, error) {
 }
 
 // RegisterEventChange requests registration for folder change event
-func (f *PathMap) RegisterEventChange(cb *EventCB, data *EventCBData) error {
+func (f *PathMap) RegisterEventChange(cb *FolderEventCB, data *FolderEventCBData) error {
 	return nil
 }
 

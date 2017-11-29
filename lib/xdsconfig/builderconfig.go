@@ -3,24 +3,19 @@ package xdsconfig
 import (
 	"errors"
 	"net"
+
+	"github.com/iotbzh/xds-server/lib/xsapiv1"
 )
 
-// BuilderConfig represents the builder container configuration
-type BuilderConfig struct {
-	IP          string `json:"ip"`
-	Port        string `json:"port"`
-	SyncThingID string `json:"syncThingID"`
-}
-
 // NewBuilderConfig creates a new BuilderConfig instance
-func NewBuilderConfig(stID string) (BuilderConfig, error) {
+func NewBuilderConfig(stID string) (xsapiv1.BuilderConfig, error) {
 	// Do we really need it ? may be not accessible from client side
 	ip, err := getLocalIP()
 	if err != nil {
-		return BuilderConfig{}, err
+		return xsapiv1.BuilderConfig{}, err
 	}
 
-	b := BuilderConfig{
+	b := xsapiv1.BuilderConfig{
 		IP:          ip, // TODO currently not used
 		Port:        "", // TODO currently not used
 		SyncThingID: stID,

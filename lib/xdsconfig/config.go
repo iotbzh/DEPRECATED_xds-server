@@ -9,16 +9,13 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
 	common "github.com/iotbzh/xds-common/golib"
+	"github.com/iotbzh/xds-server/lib/xsapiv1"
 )
 
 // Config parameters (json format) of /config command
 type Config struct {
-	ServerUID        string          `json:"id"`
-	Version          string          `json:"version"`
-	APIVersion       string          `json:"apiVersion"`
-	VersionGitTag    string          `json:"gitTag"`
-	SupportedSharing map[string]bool `json:"supportedSharing"`
-	Builder          BuilderConfig   `json:"builder"`
+	// Public APIConfig fields
+	xsapiv1.APIConfig
 
 	// Private (un-exported fields in REST GET /config route)
 	Options       Options        `json:"-"`
@@ -64,12 +61,14 @@ func Init(cliCtx *cli.Context, log *logrus.Logger) (*Config, error) {
 
 	// Define default configuration
 	c := Config{
-		ServerUID:        uuid,
-		Version:          cliCtx.App.Metadata["version"].(string),
-		APIVersion:       DefaultAPIVersion,
-		VersionGitTag:    cliCtx.App.Metadata["git-tag"].(string),
-		Builder:          BuilderConfig{},
-		SupportedSharing: map[string]bool{ /*FIXME USE folder.TypePathMap*/ "PathMap": true},
+		APIConfig: xsapiv1.APIConfig{
+			ServerUID:        uuid,
+			Version:          cliCtx.App.Metadata["version"].(string),
+			APIVersion:       DefaultAPIVersion,
+			VersionGitTag:    cliCtx.App.Metadata["git-tag"].(string),
+			Builder:          xsapiv1.BuilderConfig{},
+			SupportedSharing: map[string]bool{ /*FIXME USE folder.TypePathMap*/ "PathMap": true},
+		},
 
 		Options: Options{
 			ConfigFile:     cliCtx.GlobalString("config"),

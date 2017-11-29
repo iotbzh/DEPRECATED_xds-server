@@ -6,13 +6,13 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/iotbzh/xds-server/lib/folder"
+	"github.com/iotbzh/xds-server/lib/xsapiv1"
 	stconfig "github.com/syncthing/syncthing/lib/config"
 	"github.com/syncthing/syncthing/lib/protocol"
 )
 
 // FolderLoadFromStConfig Load/Retrieve folder config from syncthing database
-func (s *SyncThing) FolderLoadFromStConfig(f *[]folder.FolderConfig) error {
+func (s *SyncThing) FolderLoadFromStConfig(f *[]xsapiv1.FolderConfig) error {
 
 	defaultSdk := "" // cannot know which was the default sdk
 
@@ -36,15 +36,15 @@ func (s *SyncThing) FolderLoadFromStConfig(f *[]folder.FolderConfig) error {
 		if cliPath == "" {
 			cliPath = stFld.Path
 		}
-		*f = append(*f, folder.FolderConfig{
+		*f = append(*f, xsapiv1.FolderConfig{
 			ID:            stFld.ID,
 			Label:         stFld.Label,
 			ClientPath:    strings.TrimRight(cliPath, "/"),
-			Type:          folder.TypeCloudSync,
-			Status:        folder.StatusDisable,
+			Type:          xsapiv1.TypeCloudSync,
+			Status:        xsapiv1.StatusDisable,
 			DefaultSdk:    defaultSdk,
 			RootPath:      s.conf.FileConf.ShareRootDir,
-			DataCloudSync: folder.CloudSyncConfig{SyncThingID: devID},
+			DataCloudSync: xsapiv1.CloudSyncConfig{SyncThingID: devID},
 		})
 	}
 
@@ -52,7 +52,7 @@ func (s *SyncThing) FolderLoadFromStConfig(f *[]folder.FolderConfig) error {
 }
 
 // FolderChange is called when configuration has changed
-func (s *SyncThing) FolderChange(f folder.FolderConfig) (string, error) {
+func (s *SyncThing) FolderChange(f xsapiv1.FolderConfig) (string, error) {
 
 	// Get current config
 	stCfg, err := s.ConfigGet()

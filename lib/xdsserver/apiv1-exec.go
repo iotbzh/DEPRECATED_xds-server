@@ -1,4 +1,4 @@
-package apiv1
+package xdsserver
 
 import (
 	"fmt"
@@ -12,82 +12,8 @@ import (
 	"github.com/gin-gonic/gin"
 	common "github.com/iotbzh/xds-common/golib"
 	"github.com/iotbzh/xds-common/golib/eows"
+	"github.com/iotbzh/xds-server/lib/xsapiv1"
 	"github.com/kr/pty"
-)
-
-type (
-	// ExecArgs JSON parameters of /exec command
-	ExecArgs struct {
-		ID              string   `json:"id" binding:"required"`
-		SdkID           string   `json:"sdkID"` // sdk ID to use for setting env
-		CmdID           string   `json:"cmdID"` // command unique ID
-		Cmd             string   `json:"cmd" binding:"required"`
-		Args            []string `json:"args"`
-		Env             []string `json:"env"`
-		RPath           string   `json:"rpath"`           // relative path into project
-		TTY             bool     `json:"tty"`             // Use a tty, specific to gdb --tty option
-		TTYGdbserverFix bool     `json:"ttyGdbserverFix"` // Set to true to activate gdbserver workaround about inferior output
-		ExitImmediate   bool     `json:"exitImmediate"`   // when true, exit event sent immediately when command exited (IOW, don't wait file synchronization)
-		CmdTimeout      int      `json:"timeout"`         // command completion timeout in Second
-	}
-
-	// ExecRes JSON result of /exec command
-	ExecRes struct {
-		Status string `json:"status"` // status OK
-		CmdID  string `json:"cmdID"`  // command unique ID
-	}
-
-	// ExecSigRes JSON result of /signal command
-	ExecSigRes struct {
-		Status string `json:"status"` // status OK
-		CmdID  string `json:"cmdID"`  // command unique ID
-	}
-
-	// ExecInMsg Message used to received input characters (stdin)
-	ExecInMsg struct {
-		CmdID     string `json:"cmdID"`
-		Timestamp string `json:"timestamp"`
-		Stdin     string `json:"stdin"`
-	}
-
-	// ExecOutMsg Message used to send output characters (stdout+stderr)
-	ExecOutMsg struct {
-		CmdID     string `json:"cmdID"`
-		Timestamp string `json:"timestamp"`
-		Stdout    string `json:"stdout"`
-		Stderr    string `json:"stderr"`
-	}
-
-	// ExecExitMsg Message sent when executed command exited
-	ExecExitMsg struct {
-		CmdID     string `json:"cmdID"`
-		Timestamp string `json:"timestamp"`
-		Code      int    `json:"code"`
-		Error     error  `json:"error"`
-	}
-
-	// ExecSignalArgs JSON parameters of /exec/signal command
-	ExecSignalArgs struct {
-		CmdID  string `json:"cmdID" binding:"required"`  // command id
-		Signal string `json:"signal" binding:"required"` // signal number
-	}
-)
-
-const (
-	// ExecInEvent Event send in WS when characters are sent (stdin)
-	ExecInEvent = "exec:input"
-
-	// ExecOutEvent Event send in WS when characters are received (stdout or stderr)
-	ExecOutEvent = "exec:output"
-
-	// ExecExitEvent Event send in WS when program exited
-	ExecExitEvent = "exec:exit"
-
-	// ExecInferiorInEvent Event send in WS when characters are sent to an inferior (used by gdb inferior/tty)
-	ExecInferiorInEvent = "exec:inferior-input"
-
-	// ExecInferiorOutEvent Event send in WS when characters are received by an inferior
-	ExecInferiorOutEvent = "exec:inferior-output"
 )
 
 var execCommandID = 1
@@ -96,7 +22,7 @@ var execCommandID = 1
 func (s *APIService) execCmd(c *gin.Context) {
 	var gdbPty, gdbTty *os.File
 	var err error
-	var args ExecArgs
+	var args xsapiv1.ExecArgs
 	if c.BindJSON(&args) != nil {
 		common.APIError(c, "Invalid arguments")
 		return
@@ -180,19 +106,19 @@ func (s *APIService) execCmd(c *gin.Context) {
 			return
 		}
 
-		s.log.Debugf("Client command tty: %v %v\n", gdbTty.Name(), gdbTty.Name())
+		s.Log.Debugf("Client command tty: %v %v\n", gdbTty.Name(), gdbTty.Name())
 		cmdArgs = append(cmdArgs, "--tty="+gdbTty.Name())
 	}
 
 	// Unique ID for each commands
 	if args.CmdID == "" {
-		args.CmdID = s.cfg.ServerUID[:18] + "_" + strconv.Itoa(execCommandID)
+		args.CmdID = s.Config.ServerUID[:18] + "_" + strconv.Itoa(execCommandID)
 		execCommandID++
 	}
 
 	// Create new execution over WS context
 	execWS := eows.New(strings.Join(cmd, " "), cmdArgs, sop, sess.ID, args.CmdID)
-	execWS.Log = s.log
+	execWS.Log = s.Log
 
 	// Append client project dir to environment
 	execWS.Env = append(args.Env, "CLIENT_PROJECT_DIR="+prj.ClientPath)
@@ -207,9 +133,9 @@ func (s *APIService) execCmd(c *gin.Context) {
 	}
 
 	// Define callback for input (stdin)
-	execWS.InputEvent = ExecInEvent
+	execWS.InputEvent = xsapiv1.ExecInEvent
 	execWS.InputCB = func(e *eows.ExecOverWS, stdin string) (string, error) {
-		s.log.Debugf("STDIN <<%v>>", strings.Replace(stdin, "\n", "\\n", -1))
+		s.Log.Debugf("STDIN <<%v>>", strings.Replace(stdin, "\n", "\\n", -1))
 
 		// Handle Ctrl-D
 		if len(stdin) == 1 && stdin == "\x04" {
@@ -223,7 +149,7 @@ func (s *APIService) execCmd(c *gin.Context) {
 		prjID := (*data)["ID"].(string)
 		f := s.mfolders.Get(prjID)
 		if f == nil {
-			s.log.Errorf("InputCB: Cannot get folder ID %s", prjID)
+			s.Log.Errorf("InputCB: Cannot get folder ID %s", prjID)
 		} else {
 			// Translate paths from client to server
 			stdin = (*f).ConvPathCli2Svr(stdin)
@@ -237,7 +163,7 @@ func (s *APIService) execCmd(c *gin.Context) {
 		// IO socket can be nil when disconnected
 		so := s.sessions.IOSocketGet(e.Sid)
 		if so == nil {
-			s.log.Infof("%s not emitted: WS closed (sid:%s, msgid:%s)", ExecOutEvent, e.Sid, e.CmdID)
+			s.Log.Infof("%s not emitted: WS closed (sid:%s, msgid:%s)", xsapiv1.ExecOutEvent, e.Sid, e.CmdID)
 			return
 		}
 
@@ -248,30 +174,30 @@ func (s *APIService) execCmd(c *gin.Context) {
 
 		f := s.mfolders.Get(prjID)
 		if f == nil {
-			s.log.Errorf("OutputCB: Cannot get folder ID %s", prjID)
+			s.Log.Errorf("OutputCB: Cannot get folder ID %s", prjID)
 		} else {
 			// Translate paths from server to client
 			stdout = (*f).ConvPathSvr2Cli(stdout)
 			stderr = (*f).ConvPathSvr2Cli(stderr)
 		}
 
-		s.log.Debugf("%s emitted - WS sid[4:] %s - id:%s - prjID:%s", ExecOutEvent, e.Sid[4:], e.CmdID, prjID)
+		s.Log.Debugf("%s emitted - WS sid[4:] %s - id:%s - prjID:%s", xsapiv1.ExecOutEvent, e.Sid[4:], e.CmdID, prjID)
 		if stdout != "" {
-			s.log.Debugf("STDOUT <<%v>>", strings.Replace(stdout, "\n", "\\n", -1))
+			s.Log.Debugf("STDOUT <<%v>>", strings.Replace(stdout, "\n", "\\n", -1))
 		}
 		if stderr != "" {
-			s.log.Debugf("STDERR <<%v>>", strings.Replace(stderr, "\n", "\\n", -1))
+			s.Log.Debugf("STDERR <<%v>>", strings.Replace(stderr, "\n", "\\n", -1))
 		}
 
 		// FIXME replace by .BroadcastTo a room
-		err := (*so).Emit(ExecOutEvent, ExecOutMsg{
+		err := (*so).Emit(xsapiv1.ExecOutEvent, xsapiv1.ExecOutMsg{
 			CmdID:     e.CmdID,
 			Timestamp: time.Now().String(),
 			Stdout:    stdout,
 			Stderr:    stderr,
 		})
 		if err != nil {
-			s.log.Errorf("WS Emit : %v", err)
+			s.Log.Errorf("WS Emit : %v", err)
 		}
 
 		// XXX - Workaround due to gdbserver bug that doesn't redirect
@@ -289,27 +215,27 @@ func (s *APIService) execCmd(c *gin.Context) {
 						out = strings.Replace(out, "\\r", "\r", -1)
 						out = strings.Replace(out, "\\t", "\t", -1)
 
-						s.log.Debugf("STDOUT INFERIOR: <<%v>>", out)
-						err := (*so).Emit(ExecInferiorOutEvent, ExecOutMsg{
+						s.Log.Debugf("STDOUT INFERIOR: <<%v>>", out)
+						err := (*so).Emit(xsapiv1.ExecInferiorOutEvent, xsapiv1.ExecOutMsg{
 							CmdID:     e.CmdID,
 							Timestamp: time.Now().String(),
 							Stdout:    out,
 							Stderr:    "",
 						})
 						if err != nil {
-							s.log.Errorf("WS Emit : %v", err)
+							s.Log.Errorf("WS Emit : %v", err)
 						}
 					}
 				}
 			} else {
-				s.log.Errorf("INFERIOR out parsing error: stdout=<%v>", stdout)
+				s.Log.Errorf("INFERIOR out parsing error: stdout=<%v>", stdout)
 			}
 		}
 	}
 
 	// Define callback for output
 	execWS.ExitCB = func(e *eows.ExecOverWS, code int, err error) {
-		s.log.Debugf("Command [Cmd ID %s] exited: code %d, error: %v", e.CmdID, code, err)
+		s.Log.Debugf("Command [Cmd ID %s] exited: code %d, error: %v", e.CmdID, code, err)
 
 		// Close client tty
 		defer func() {
@@ -324,7 +250,7 @@ func (s *APIService) execCmd(c *gin.Context) {
 		// IO socket can be nil when disconnected
 		so := s.sessions.IOSocketGet(e.Sid)
 		if so == nil {
-			s.log.Infof("%s not emitted - WS closed (id:%s)", ExecExitEvent, e.CmdID)
+			s.Log.Infof("%s not emitted - WS closed (id:%s)", xsapiv1.ExecExitEvent, e.CmdID)
 			return
 		}
 
@@ -335,34 +261,34 @@ func (s *APIService) execCmd(c *gin.Context) {
 
 		// XXX - workaround to be sure that Syncthing detected all changes
 		if err := s.mfolders.ForceSync(prjID); err != nil {
-			s.log.Errorf("Error while syncing folder %s: %v", prjID, err)
+			s.Log.Errorf("Error while syncing folder %s: %v", prjID, err)
 		}
 		if !exitImm {
 			// Wait end of file sync
 			// FIXME pass as argument
 			tmo := 60
 			for t := tmo; t > 0; t-- {
-				s.log.Debugf("Wait file in-sync for %s (%d/%d)", prjID, t, tmo)
+				s.Log.Debugf("Wait file in-sync for %s (%d/%d)", prjID, t, tmo)
 				if sync, err := s.mfolders.IsFolderInSync(prjID); sync || err != nil {
 					if err != nil {
-						s.log.Errorf("ERROR IsFolderInSync (%s): %v", prjID, err)
+						s.Log.Errorf("ERROR IsFolderInSync (%s): %v", prjID, err)
 					}
 					break
 				}
 				time.Sleep(time.Second)
 			}
-			s.log.Debugf("OK file are synchronized.")
+			s.Log.Debugf("OK file are synchronized.")
 		}
 
 		// FIXME replace by .BroadcastTo a room
-		errSoEmit := (*so).Emit(ExecExitEvent, ExecExitMsg{
+		errSoEmit := (*so).Emit(xsapiv1.ExecExitEvent, xsapiv1.ExecExitMsg{
 			CmdID:     e.CmdID,
 			Timestamp: time.Now().String(),
 			Code:      code,
 			Error:     err,
 		})
 		if errSoEmit != nil {
-			s.log.Errorf("WS Emit : %v", errSoEmit)
+			s.Log.Errorf("WS Emit : %v", errSoEmit)
 		}
 	}
 
@@ -378,7 +304,7 @@ func (s *APIService) execCmd(c *gin.Context) {
 	execWS.UserData = &data
 
 	// Start command execution
-	s.log.Infof("Execute [Cmd ID %s]: %v %v", execWS.CmdID, execWS.Cmd, execWS.Args)
+	s.Log.Infof("Execute [Cmd ID %s]: %v %v", execWS.CmdID, execWS.Cmd, execWS.Args)
 
 	err = execWS.Start()
 	if err != nil {
@@ -386,19 +312,19 @@ func (s *APIService) execCmd(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, ExecRes{Status: "OK", CmdID: execWS.CmdID})
+	c.JSON(http.StatusOK, xsapiv1.ExecResult{Status: "OK", CmdID: execWS.CmdID})
 }
 
 // ExecCmd executes remotely a command
 func (s *APIService) execSignalCmd(c *gin.Context) {
-	var args ExecSignalArgs
+	var args xsapiv1.ExecSignalArgs
 
 	if c.BindJSON(&args) != nil {
 		common.APIError(c, "Invalid arguments")
 		return
 	}
 
-	s.log.Debugf("Signal %s for command ID %s", args.Signal, args.CmdID)
+	s.Log.Debugf("Signal %s for command ID %s", args.Signal, args.CmdID)
 
 	e := eows.GetEows(args.CmdID)
 	if e == nil {
@@ -412,5 +338,5 @@ func (s *APIService) execSignalCmd(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, ExecSigRes{Status: "OK", CmdID: args.CmdID})
+	c.JSON(http.StatusOK, xsapiv1.ExecSigResult{Status: "OK", CmdID: args.CmdID})
 }

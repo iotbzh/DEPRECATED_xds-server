@@ -1,4 +1,4 @@
-package folder
+package xsapiv1
 
 // FolderType definition
 type FolderType string
@@ -17,25 +17,6 @@ const (
 	StatusPause       = "Pause"
 	StatusSyncing     = "Syncing"
 )
-
-type EventCBData map[string]interface{}
-type EventCB func(cfg *FolderConfig, data *EventCBData)
-
-// IFOLDER Folder interface
-type IFOLDER interface {
-	NewUID(suffix string) string                              // Get a new folder UUID
-	Add(cfg FolderConfig) (*FolderConfig, error)              // Add a new folder
-	GetConfig() FolderConfig                                  // Get folder public configuration
-	GetFullPath(dir string) string                            // Get folder full path
-	ConvPathCli2Svr(s string) string                          // Convert path from Client to Server
-	ConvPathSvr2Cli(s string) string                          // Convert path from Server to Client
-	Remove() error                                            // Remove a folder
-	Update(cfg FolderConfig) (*FolderConfig, error)           // Update a new folder
-	RegisterEventChange(cb *EventCB, data *EventCBData) error // Request events registration (sent through WS)
-	UnRegisterEventChange() error                             // Un-register events
-	Sync() error                                              // Force folder files synchronization
-	IsInSync() (bool, error)                                  // Check if folder files are in-sync
-}
 
 // FolderConfig is the config for one folder
 type FolderConfig struct {
