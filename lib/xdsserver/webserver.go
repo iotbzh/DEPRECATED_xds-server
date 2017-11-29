@@ -47,6 +47,7 @@ func NewWebServer(ctx *Context) *WebServer {
 	r := gin.New()
 
 	svr := &WebServer{
+		Context:   ctx,
 		router:    r,
 		api:       nil,
 		sIOServer: nil,

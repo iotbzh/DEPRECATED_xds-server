@@ -58,4 +58,10 @@ type PathMapConfig struct {
 // CloudSyncConfig CloudSync (AKA Syncthing) specific data
 type CloudSyncConfig struct {
 	SyncThingID string `json:"syncThingID"`
+
+	// Not exported fields (only used internally)
+	STSvrStatus   string `json:"-"`
+	STSvrIsInSync bool   `json:"-"`
+	STLocStatus   string `json:"-"`
+	STLocIsInSync bool   `json:"-"`
 }
