@@ -52,6 +52,14 @@ PACKAGE_DIR := $(ROOT_SRCDIR)/package
 export GOPATH := $(shell go env GOPATH):$(ROOT_GOPRJ)
 export PATH := $(PATH):$(LOCAL_TOOLSDIR)
 
+# Check Go version
+GOVERSION := $(shell go version |grep -o '[0-9\.]*'|head -n 1)
+GOVERMAJ := $(shell echo $(GOVERSION) |cut -f1 -d.)
+GOVERMIN := $(shell echo $(GOVERSION) |cut -f2 -d.)
+CHECKGOVER := $(shell [ $(GOVERMAJ) -gt 1 -o \( $(GOVERMAJ) -eq 1 -a $(GOVERMIN) -ge 8 \) ] && echo true)
+CHECKERRMSG := "ERROR: Go version 1.8.1 or higher is requested (current detected version: $(GOVERSION))."
+
+
 VERBOSE_1 := -v
 VERBOSE_2 := -v -x
 
@@ -78,7 +86,7 @@ endif
 all: tools/syncthing build
 
 .PHONY: build
-build: vendor xds webapp
+build: checkgover vendor xds webapp
 
 xds: scripts tools/syncthing/copytobin
 	@echo "### Build XDS server (version $(VERSION), subversion $(SUB_VERSION), $(BUILD_MODE))";
@@ -183,6 +191,11 @@ tools/syncthing/copytobin:
 	@test -e $(LOCAL_TOOLSDIR)/syncthing$(EXT) -a -e $(LOCAL_TOOLSDIR)/syncthing-inotify$(EXT) || { echo "Please execute first: make tools/syncthing\n"; exit 1; }
 	@mkdir -p $(LOCAL_BINDIR)
 	@cp -f $(LOCAL_TOOLSDIR)/syncthing$(EXT) $(LOCAL_TOOLSDIR)/syncthing-inotify$(EXT) $(LOCAL_BINDIR)
+
+.PHONY:
+checkgover:
+	@test "$(CHECKGOVER)" = "true" || { echo $(CHECKERRMSG); exit 1; }
+
 
 .PHONY: help
 help:
