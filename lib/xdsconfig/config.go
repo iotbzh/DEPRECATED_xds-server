@@ -54,6 +54,7 @@ func Init(cliCtx *cli.Context, log *logrus.Logger) (*Config, error) {
 		dfltSTHomeDir = resDir
 	}
 
+	// Retrieve Server ID (or create one the first time)
 	uuid, err := ServerIDGet()
 	if err != nil {
 		return nil, err

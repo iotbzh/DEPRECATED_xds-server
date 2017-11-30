@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	common "github.com/iotbzh/xds-common/golib"
 	uuid "github.com/satori/go.uuid"
@@ -69,6 +70,13 @@ func serverDataRead(file string, data *ServerData) error {
 func serverDataWrite(file string, data ServerData) error {
 	sdMutex.Lock()
 	defer sdMutex.Unlock()
+
+	dir := filepath.Dir(file)
+	if !common.Exists(dir) {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return fmt.Errorf("Cannot create server data directory: %s", dir)
+		}
+	}
 
 	fd, err := os.OpenFile(file, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0666)
 	defer fd.Close()
