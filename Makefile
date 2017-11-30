@@ -8,7 +8,9 @@ SYNCTHING_INOTIFY_VERSION = 0.8.7
 # Retrieve git tag/commit to set version & sub-version strings
 GIT_DESC := $(shell git describe --always --tags)
 VERSION := $(firstword $(subst -, ,$(GIT_DESC)))
+ifeq (-,$(findstring -,$(GIT_DESC)))
 SUB_VERSION := $(subst $(VERSION)-,,$(GIT_DESC))
+endif
 ifeq ($(VERSION), )
 	VERSION := unknown-dev
 endif
@@ -69,17 +71,19 @@ ifeq ($(filter 1,$(RELEASE) $(REL)),)
 	# disable compiler optimizations and inlining
 	GO_GCFLAGS=-N -l
 	BUILD_MODE="Debug mode"
+	WEBAPP_BUILD_RULE=build
 else
 	# optimized code without debug info
 	GO_LDFLAGS=-s -w
 	GO_GCFLAGS=
 	BUILD_MODE="Release mode"
+	WEBAPP_BUILD_RULE=build:prod
 endif
 
 ifeq ($(SUB_VERSION), )
-	PACKAGE_ZIPFILE := xds-server_$(ARCH)-$(VERSION).zip
+	PACKAGE_ZIPFILE := $(TARGET)_$(ARCH)-$(VERSION).zip
 else
-	PACKAGE_ZIPFILE := xds-server_$(ARCH)-$(VERSION)_$(SUB_VERSION).zip
+	PACKAGE_ZIPFILE := $(TARGET)_$(ARCH)-$(VERSION)_$(SUB_VERSION).zip
 endif
 
 
@@ -89,8 +93,8 @@ all: tools/syncthing build
 build: checkgover vendor xds webapp
 
 xds: scripts tools/syncthing/copytobin
-	@echo "### Build XDS server (version $(VERSION), subversion $(SUB_VERSION), $(BUILD_MODE))";
-	@cd $(ROOT_SRCDIR); $(BUILD_ENV_FLAGS) go build $(VERBOSE_$(V)) -i -o $(LOCAL_BINDIR)/xds-server$(EXT) -ldflags "$(GO_LDFLAGS) -X main.AppVersion=$(VERSION) -X main.AppSubVersion=$(SUB_VERSION)" -gcflags "$(GO_GCFLAGS)" .
+	@echo "### Build XDS server (version $(VERSION), subversion $(SUB_VERSION)) - $(BUILD_MODE)";
+	@cd $(ROOT_SRCDIR); $(BUILD_ENV_FLAGS) go build $(VERBOSE_$(V)) -i -o $(LOCAL_BINDIR)/$(TARGET)$(EXT) -ldflags "$(GO_LDFLAGS) -X main.AppVersion=$(VERSION) -X main.AppSubVersion=$(SUB_VERSION)" -gcflags "$(GO_GCFLAGS)" .
 
 test: tools/glide
 	go test --race $(shell $(LOCAL_TOOLSDIR)/glide novendor)
@@ -102,10 +106,10 @@ fmt: tools/glide
 	go fmt $(shell $(LOCAL_TOOLSDIR)/glide novendor)
 
 run: build/xds tools/syncthing/copytobin
-	$(LOCAL_BINDIR)/xds-server$(EXT) --log info -c config.json.in
+	$(LOCAL_BINDIR)/$(TARGET)$(EXT) --log info -c config.json.in
 
 debug: build/xds tools/syncthing/copytobin
-	$(LOCAL_BINDIR)/xds-server$(EXT) --log debug -c config.json.in
+	$(LOCAL_BINDIR)/$(TARGET)$(EXT) --log debug -c config.json.in
 
 .PHONY: clean
 clean:

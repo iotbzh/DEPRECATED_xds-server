@@ -5,6 +5,7 @@ tools
 package
 debug
 cmd/*/debug
+*.zip
 
 webapp/dist
 webapp/node_modules
