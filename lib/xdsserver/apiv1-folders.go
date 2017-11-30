@@ -78,7 +78,9 @@ func (s *APIService) addFolder(c *gin.Context) {
 		fd.WriteString("export XDS_PROJECT_ID=" + newFld.ID + "\n")
 		if newFld.DefaultSdk == "" {
 			sdks := s.sdks.GetAll()
-			newFld.DefaultSdk = sdks[0].ID
+			if len(sdks) > 0 {
+				newFld.DefaultSdk = sdks[0].ID
+			}
 		}
 		fd.WriteString("export XDS_SDK_ID=" + newFld.DefaultSdk + "\n")
 		fd.Close()
