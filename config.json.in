@@ -1,6 +1,6 @@
 {
     "webAppDir": "www",
-    "httpPort": "8010",
+    "httpPort": "8000",
     "shareRootDir": "${HOME}/.xds-server/projects",
     "logsDir": "/tmp/xds-server/logs",
     "sdkRootDir": "/xdt/sdk",

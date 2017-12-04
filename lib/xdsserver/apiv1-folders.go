@@ -74,7 +74,7 @@ func (s *APIService) addFolder(c *gin.Context) {
 			return
 		}
 		fd.WriteString("# XDS project settings\n")
-		fd.WriteString("export XDS_SERVER_URL=" + c.Request.Host + "\n")
+		fd.WriteString("export XDS_AGENT_URL=" + c.Request.Host + "\n")
 		fd.WriteString("export XDS_PROJECT_ID=" + newFld.ID + "\n")
 		if newFld.DefaultSdk == "" {
 			sdks := s.sdks.GetAll()
