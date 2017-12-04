@@ -19,7 +19,6 @@ package xdsserver
 
 import (
 	"net/http"
-	"os"
 
 	"github.com/gin-gonic/gin"
 	common "github.com/iotbzh/xds-common/golib"
@@ -61,29 +60,6 @@ func (s *APIService) addFolder(c *gin.Context) {
 	if err != nil {
 		common.APIError(c, err.Error())
 		return
-	}
-
-	// Create xds-project.conf file
-	// FIXME: move to folders.createUpdate func (but gin context needed)
-	fld := s.mfolders.Get(newFld.ID)
-	prjConfFile := (*fld).GetFullPath("xds-project.conf")
-	if !common.Exists(prjConfFile) {
-		fd, err := os.OpenFile(prjConfFile, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0666)
-		if err != nil {
-			common.APIError(c, err.Error())
-			return
-		}
-		fd.WriteString("# XDS project settings\n")
-		fd.WriteString("export XDS_AGENT_URL=" + c.Request.Host + "\n")
-		fd.WriteString("export XDS_PROJECT_ID=" + newFld.ID + "\n")
-		if newFld.DefaultSdk == "" {
-			sdks := s.sdks.GetAll()
-			if len(sdks) > 0 {
-				newFld.DefaultSdk = sdks[0].ID
-			}
-		}
-		fd.WriteString("export XDS_SDK_ID=" + newFld.DefaultSdk + "\n")
-		fd.Close()
 	}
 
 	c.JSON(http.StatusOK, newFld)
