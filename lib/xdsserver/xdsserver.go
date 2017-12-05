@@ -43,6 +43,7 @@ type Context struct {
 	Config        *xdsconfig.Config
 	Log           *logrus.Logger
 	LogLevelSilly bool
+	LogSillyf     func(format string, args ...interface{})
 	SThg          *st.SyncThing
 	SThgCmd       *exec.Cmd
 	SThgInotCmd   *exec.Cmd
@@ -70,14 +71,22 @@ func NewXdsServer(cliCtx *cli.Context) *Context {
 	}
 	log.Formatter = &logrus.TextFormatter{}
 
+	// Support silly logging (printed on log.debug)
 	sillyVal, sillyLog := os.LookupEnv("XDS_LOG_SILLY")
+	logSilly := sillyLog && sillyVal == "1"
+	sillyFunc := func(format string, args ...interface{}) {
+		if logSilly {
+			log.Debugf("SILLY: "+format, args...)
+		}
+	}
 
 	// Define default configuration
 	ctx := Context{
 		ProgName:      cliCtx.App.Name,
 		Cli:           cliCtx,
 		Log:           log,
-		LogLevelSilly: (sillyLog && sillyVal == "1"),
+		LogLevelSilly: logSilly,
+		LogSillyf:     sillyFunc,
 		Exit:          make(chan os.Signal, 1),
 	}
 

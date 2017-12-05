@@ -217,10 +217,8 @@ func (s *Sessions) monitorSessMap() {
 			s.Log.Debugln("Stop monitorSessMap")
 			return
 		case <-time.After(sessionMonitorTime * time.Second):
-			if s.LogLevelSilly {
-				s.Log.Debugf("Sessions Map size: %d", len(s.sessMap))
-				s.Log.Debugf("Sessions Map : %v", s.sessMap)
-			}
+				s.LogSillyf("Sessions Map size: %d", len(s.sessMap))
+				s.LogSillyf("Sessions Map : %v", s.sessMap)
 
 			if len(s.sessMap) > maxSessions {
 				s.Log.Errorln("TOO MUCH sessions, cleanup old ones !")
