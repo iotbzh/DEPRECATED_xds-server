@@ -29,6 +29,6 @@
         "inotify", "Inot", "pname", "pkill", "sdkid", "CLOUDSYNC", "xdsagent",
         "gdbserver", "golib", "eows", "mfolders", "IFOLDER", "flds", "dflt",
         "stconfig", "reflectme", "franciscocpg", "crosssdk", "urfave", "EXEPATH",
-        "conv", "Sillyf"
+        "conv", "Sillyf", "xsapiv"
     ]
 }

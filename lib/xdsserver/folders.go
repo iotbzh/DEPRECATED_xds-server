@@ -28,8 +28,8 @@ import (
 
 	"github.com/franciscocpg/reflectme"
 	common "github.com/iotbzh/xds-common/golib"
-	"github.com/iotbzh/xds-server/lib/xsapiv1"
 	"github.com/iotbzh/xds-server/lib/xdsconfig"
+	"github.com/iotbzh/xds-server/lib/xsapiv1"
 	"github.com/syncthing/syncthing/lib/sync"
 )
 
@@ -425,8 +425,8 @@ func (f *Folders) IsFolderInSync(id string) (bool, error) {
 // Use XML format and not json to be able to save/load all fields including
 // ones that are masked in json (IOW defined with `json:"-"`)
 type xmlFolders struct {
-	XMLName xml.Name             `xml:"folders"`
-	Version string               `xml:"version,attr"`
+	XMLName xml.Name               `xml:"folders"`
+	Version string                 `xml:"version,attr"`
 	Folders []xsapiv1.FolderConfig `xml:"folders"`
 }
 
@@ -448,6 +448,18 @@ func foldersConfigRead(file string, folders *[]xsapiv1.FolderConfig) error {
 	data := xmlFolders{}
 	err = xml.NewDecoder(fd).Decode(&data)
 	if err == nil {
+		// Decode old type encoding (number) for backward compatibility
+		for i, d := range data.Folders {
+			switch d.Type {
+			case "1":
+				data.Folders[i].Type = xsapiv1.TypePathMap
+			case "2":
+				data.Folders[i].Type = xsapiv1.TypeCloudSync
+			case "3":
+				data.Folders[i].Type = xsapiv1.TypeCifsSmb
+			}
+		}
+
 		*folders = data.Folders
 	}
 	return err
