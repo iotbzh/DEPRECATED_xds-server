@@ -126,10 +126,10 @@ fmt: tools/glide
 	go fmt $(shell $(LOCAL_TOOLSDIR)/glide novendor)
 
 run: build/xds tools/syncthing/copytobin
-	$(LOCAL_BINDIR)/$(TARGET)$(EXT) --log info -c config.json.in
+	$(LOCAL_BINDIR)/$(TARGET)$(EXT) --log info $(XDS_SERVER_RUN_ARS)
 
 debug: build/xds tools/syncthing/copytobin
-	$(LOCAL_BINDIR)/$(TARGET)$(EXT) --log debug -c config.json.in
+	$(LOCAL_BINDIR)/$(TARGET)$(EXT) --log debug $(XDS_SERVER_DEBUG_ARGS)
 
 .PHONY: clean
 clean:
@@ -149,19 +149,18 @@ webapp/install:
 
 .PHONY: scripts
 scripts:
-	@mkdir -p $(LOCAL_BINDIR) && cp -rf scripts/xds-server-st*.sh scripts/xds-utils $(LOCAL_BINDIR)
+	@mkdir -p $(LOCAL_BINDIR) && cp -rf scripts/xds-utils $(LOCAL_BINDIR)
 
 .PHONY: conffile
 conffile:
-	cat config.json.in \
-		| sed -e s,"webapp/dist","$(DESTDIR_WWW)",g \
-		| sed -e s,"\./bin","",g \
-		 > $(DESTDIR)/config.json.in
+	cat $(ROOT_SRCDIR)/conf.d/etc/xds/server/server-config.json \
+		| sed -e s,"www","$(DESTDIR_WWW)",g \
+		 > $(DESTDIR)/server-config.json.in
 
 .PHONY: install
 install:
 	@test -e $(LOCAL_BINDIR)/xds-server$(EXT) -a -d webapp/dist || { echo "Please execute first: make all\n"; exit 1; }
-	@test -e $(LOCAL_BINDIR)/xds-server-start.sh -a -d $(LOCAL_BINDIR)/xds-utils || { echo "Please execute first: make all\n"; exit 1; }
+	@test -d $(LOCAL_BINDIR)/xds-utils || { echo "Please execute first: make all\n"; exit 1; }
 	@test -e $(LOCAL_BINDIR)/syncthing$(EXT) -a -e $(LOCAL_BINDIR)/syncthing-inotify$(EXT) || { echo "Please execute first: make all\n"; exit 1; }
 	mkdir -p $(DESTDIR) \
 		&& cp -a $(LOCAL_BINDIR)/* $(DESTDIR)

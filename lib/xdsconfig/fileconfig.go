@@ -28,11 +28,12 @@ import (
 	common "github.com/iotbzh/xds-common/golib"
 )
 
+// ConfigDir Directory in user HOME directory where xds config will be saved
+var ConfigDir = path.Join(".xds", "server")
+
 const (
-	// ConfigDir Directory in user HOME directory where xds config will be saved
-	ConfigDir = ".xds-server"
 	// GlobalConfigFilename Global config filename
-	GlobalConfigFilename = "config.json"
+	GlobalConfigFilename = "server-config.json"
 	// ServerDataFilename Server data filename
 	ServerDataFilename = "server-data.xml"
 	// FoldersConfigFilename Folders config filename
@@ -48,7 +49,7 @@ type SyncThingConf struct {
 	RescanIntervalS int    `json:"rescanIntervalS"`
 }
 
-// FileConfig is the JSON structure of xds-server config file (config.json)
+// FileConfig is the JSON structure of xds-server config file (server-config.json)
 type FileConfig struct {
 	WebAppDir    string         `json:"webAppDir"`
 	ShareRootDir string         `json:"shareRootDir"`
@@ -61,9 +62,9 @@ type FileConfig struct {
 // readGlobalConfig reads configuration from a config file.
 // Order to determine which config file is used:
 //  1/ from command line option: "--config myConfig.json"
-//  2/ $HOME/.xds-server/config.json file
-//  3/ /etc/xds-server/config.json file
-//  4/ <xds-server executable dir>/config.json file
+//  2/ $HOME/.xds/server/server-config.json file
+//  3/ /etc/xds/server/server-config.json file
+//  4/ <xds-server executable dir>/server-config.json file
 func readGlobalConfig(c *Config, confFile string) error {
 
 	searchIn := make([]string, 0, 3)
@@ -71,11 +72,10 @@ func readGlobalConfig(c *Config, confFile string) error {
 		searchIn = append(searchIn, confFile)
 	}
 	if usr, err := user.Current(); err == nil {
-		searchIn = append(searchIn, path.Join(usr.HomeDir, ConfigDir,
-			GlobalConfigFilename))
+		searchIn = append(searchIn, path.Join(usr.HomeDir, ConfigDir, GlobalConfigFilename))
 	}
 
-	searchIn = append(searchIn, "/etc/xds-server/config.json")
+	searchIn = append(searchIn, "/etc/xds/server/server-config.json")
 
 	exePath := os.Args[0]
 	ee, _ := os.Executable()
@@ -88,7 +88,7 @@ func readGlobalConfig(c *Config, confFile string) error {
 			exePath = filepath.Dir(exeAbsPath)
 		}
 	}
-	searchIn = append(searchIn, path.Join(exePath, "config.json"))
+	searchIn = append(searchIn, path.Join(exePath, "server-config.json"))
 
 	var cFile *string
 	for _, p := range searchIn {
@@ -113,7 +113,7 @@ func readGlobalConfig(c *Config, confFile string) error {
 		return err
 	}
 
-	// Support environment variables (IOW ${MY_ENV_VAR} syntax) in config.json
+	// Support environment variables (IOW ${MY_ENV_VAR} syntax) in server-config.json
 	vars := []*string{
 		&fCfg.WebAppDir,
 		&fCfg.ShareRootDir,

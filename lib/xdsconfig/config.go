@@ -53,8 +53,8 @@ type Options struct {
 const (
 	DefaultAPIVersion = "1"
 	DefaultPort       = "8000"
-	DefaultShareDir   = "${HOME}/.xds-server/projects"
-	DefaultSTHomeDir  = "${HOME}/.xds-server/syncthing-config"
+	DefaultShareDir   = "${HOME}/.xds/server/projects"
+	DefaultSTHomeDir  = "${HOME}/.xds/server/syncthing-config"
 	DefaultSdkRootDir = "/xdt/sdk"
 )
 

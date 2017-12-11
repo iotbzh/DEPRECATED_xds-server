@@ -128,7 +128,7 @@ func (ctx *Context) Run() (int, error) {
 		ctx._logPrint("Logging file for HTTP requests:  %s\n", logFileHTTPReq)
 	}
 
-	// Create syncthing instance when section "syncthing" is present in config.json
+	// Create syncthing instance when section "syncthing" is present in server-config.json
 	if ctx.Config.FileConf.SThgConf != nil {
 		ctx.SThg = st.NewSyncThing(ctx.Config, ctx.Log)
 	}

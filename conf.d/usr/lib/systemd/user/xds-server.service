@@ -2,10 +2,8 @@
 Description=XDS Server
 
 [Service]
-Type=forking
 EnvironmentFile=-/etc/default/xds-server
-ExecStart=/opt/AGL/xds/server/xds-server-start.sh
-ExecStop=/opt/AGL/xds/server/xds-server-stop.sh
+ExecStart=/opt/AGL/bin/xds-server
 
 [Install]
 WantedBy=default.target

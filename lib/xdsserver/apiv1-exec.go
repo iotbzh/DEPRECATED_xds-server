@@ -143,7 +143,7 @@ func (s *APIService) execCmd(c *gin.Context) {
 	// Set command execution timeout
 	if args.CmdTimeout == 0 {
 		// 0 : default timeout
-		// TODO get default timeout from config.json file
+		// TODO get default timeout from server-config.json file
 		execWS.CmdExecTimeout = 24 * 60 * 60 // 1 day
 	} else {
 		execWS.CmdExecTimeout = args.CmdTimeout
