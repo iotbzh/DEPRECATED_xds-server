@@ -26,6 +26,8 @@ import (
 	"time"
 
 	"github.com/Sirupsen/logrus"
+	uuid "github.com/satori/go.uuid"
+	"github.com/syncthing/syncthing/lib/sync"
 )
 
 // Events .
@@ -37,6 +39,7 @@ type Events struct {
 	st    *SyncThing
 	log   *logrus.Logger
 	cbArr map[string][]cbMap
+	mutex sync.Mutex
 }
 
 type Event struct {
@@ -75,7 +78,7 @@ type STEvent struct {
 }
 
 type cbMap struct {
-	id       int
+	id       string
 	cb       EventsCB
 	filterID string
 	data     *EventsCBData
@@ -91,6 +94,7 @@ func (s *SyncThing) NewEventListener() *Events {
 		st:          s,
 		log:         s.log,
 		cbArr:       make(map[string][]cbMap),
+		mutex:       sync.NewMutex(),
 	}
 }
 
@@ -106,21 +110,24 @@ func (e *Events) Stop() {
 }
 
 // Register Add a listener on an event
-func (e *Events) Register(evName string, cb EventsCB, filterID string, data *EventsCBData) (int, error) {
+func (e *Events) Register(evName string, cb EventsCB, filterID string, data *EventsCBData) (string, error) {
 	if evName == "" || !strings.Contains(EventsAll, evName) {
-		return -1, fmt.Errorf("Unknown event name")
+		return "", fmt.Errorf("Unknown event name")
 	}
 	if data == nil {
 		data = &EventsCBData{}
 	}
+
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
 
 	cbList := []cbMap{}
 	if _, ok := e.cbArr[evName]; ok {
 		cbList = e.cbArr[evName]
 	}
 
-	id := len(cbList)
-	(*data)["id"] = strconv.Itoa(id)
+	id := uuid.NewV1().String()
+	(*data)["id"] = id
 
 	e.cbArr[evName] = append(cbList, cbMap{id: id, cb: cb, filterID: filterID, data: data})
 
@@ -128,19 +135,23 @@ func (e *Events) Register(evName string, cb EventsCB, filterID string, data *Eve
 }
 
 // UnRegister Remove a listener event
-func (e *Events) UnRegister(evName string, id int) error {
-	cbKey, ok := e.cbArr[evName]
-	if !ok {
-		return fmt.Errorf("No event registered to such name")
-	}
+func (e *Events) UnRegister(id string) error {
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
 
-	// FIXME - NOT TESTED
-	if id >= len(cbKey) {
-		return fmt.Errorf("Invalid id")
-	} else if id == len(cbKey) {
-		e.cbArr[evName] = cbKey[:id-1]
-	} else {
-		e.cbArr[evName] = cbKey[id : id+1]
+	for evName, cbKey := range e.cbArr {
+		newCbList := []cbMap{}
+		change := false
+		for _, k := range cbKey {
+			if k.id != id {
+				newCbList = append(newCbList, k)
+			} else {
+				change = true
+			}
+		}
+		if change {
+			e.cbArr[evName] = newCbList
+		}
 	}
 
 	return nil
@@ -207,8 +218,10 @@ func (e *Events) monitorLoop() {
 					e.log.Warnf("ST EVENT: %d %s\n  %v", stEv.GlobalID, stEv.Type, stEv)
 				}
 
+				e.mutex.Lock()
 				cbKey, ok := e.cbArr[stEv.Type]
 				if !ok {
+					e.mutex.Unlock()
 					continue
 				}
 
@@ -264,6 +277,8 @@ func (e *Events) monitorLoop() {
 						c.cb(evData, c.data)
 					}
 				}
+
+				e.mutex.Unlock()
 			}
 		}
 	}

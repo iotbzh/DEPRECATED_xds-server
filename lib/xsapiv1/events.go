@@ -17,6 +17,11 @@
 
 package xsapiv1
 
+import (
+	"encoding/json"
+	"fmt"
+)
+
 // EventRegisterArgs Parameters (json format) of /events/register command
 type EventRegisterArgs struct {
 	Name      string `json:"name"`
@@ -31,9 +36,10 @@ type EventUnRegisterArgs struct {
 
 // EventMsg Message send
 type EventMsg struct {
-	Time   string       `json:"time"`
-	Type   string       `json:"type"`
-	Folder FolderConfig `json:"folder"`
+	Time          string      `json:"time"`
+	FromSessionID string      `json:"sessionID"` // Session ID of client who produce this event
+	Type          string      `json:"type"`
+	Data          interface{} `json:"data"` // Data
 }
 
 // EventEvent Event send in WS when an internal event (eg. Syncthing event is received)
@@ -46,3 +52,26 @@ const (
 	EVTFolderChange      = EventTypePrefix + "folder-change"       // type EventMsg with Data type xsapiv1.???
 	EVTFolderStateChange = EventTypePrefix + "folder-state-change" // type EventMsg with Data type xsapiv1.???
 )
+
+// EVTAllList List of all supported events
+var EVTAllList = []string{
+	EVTFolderChange,
+	EVTFolderStateChange,
+}
+
+// DecodeFolderConfig Helper to decode Data field type FolderConfig
+func (e *EventMsg) DecodeFolderConfig() (FolderConfig, error) {
+	var err error
+	f := FolderConfig{}
+	switch e.Type {
+	case EVTFolderChange, EVTFolderStateChange:
+		d := []byte{}
+		d, err = json.Marshal(e.Data)
+		if err == nil {
+			err = json.Unmarshal(d, &f)
+		}
+	default:
+		err = fmt.Errorf("Invalid type")
+	}
+	return f, err
+}

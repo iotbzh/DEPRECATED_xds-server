@@ -13,7 +13,7 @@
                 "GOPATH": "${workspaceRoot}/../../../..:${env:GOPATH}",
                 "ROOT_DIR": "${workspaceRoot}/../../../.."
             },
-            "args": ["-log", "debug", "-c", "config.json.in"],
+            "args": ["-log", "debug"],
             "showLog": false
         },
         {
@@ -27,7 +27,8 @@
             "program": "${workspaceRoot}",
             "env": {
                 "GOPATH": "${workspaceRoot}/../../../..:${env:GOPATH}",
-                "ROOT_DIR": "${workspaceRoot}/../../../.."
+                "ROOT_DIR": "${workspaceRoot}/../../../..",
+                "XDS_LOG_SILLY": "0"
             },
             "args": ["-log", "debug", "-c", "__config_local_dev.json"],
             "showLog": false

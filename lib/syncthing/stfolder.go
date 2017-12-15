@@ -70,6 +70,12 @@ func (s *SyncThing) FolderLoadFromStConfig(f *[]xsapiv1.FolderConfig) error {
 
 // FolderChange is called when configuration has changed
 func (s *SyncThing) FolderChange(f xsapiv1.FolderConfig) (string, error) {
+	var label, id string
+
+	if id = f.ID; id == "" {
+		s.log.Errorln("Try to create Syncthing folder with null ID: %v", f)
+		return "", fmt.Errorf("Cannot create Syncthing folder (ID must be set")
+	}
 
 	// Get current config
 	stCfg, err := s.ConfigGet()
@@ -104,12 +110,8 @@ func (s *SyncThing) FolderChange(f xsapiv1.FolderConfig) (string, error) {
 	}
 
 	// Add or update Folder settings
-	var label, id string
 	if label = f.Label; label == "" {
 		label = strings.Split(id, "/")[0]
-	}
-	if id = f.ID; id == "" {
-		id = stClientID[0:15] + "_" + label
 	}
 
 	folder := stconfig.FolderConfiguration{

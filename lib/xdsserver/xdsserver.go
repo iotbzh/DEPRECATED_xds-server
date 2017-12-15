@@ -51,6 +51,7 @@ type Context struct {
 	sdks          *SDKs
 	WWWServer     *WebServer
 	sessions      *Sessions
+	events        *Events
 	Exit          chan os.Signal
 }
 
@@ -127,6 +128,9 @@ func (ctx *Context) Run() (int, error) {
 
 		ctx._logPrint("Logging file for HTTP requests:  %s\n", logFileHTTPReq)
 	}
+
+	// Create events management
+	ctx.events = NewEvents(ctx)
 
 	// Create syncthing instance when section "syncthing" is present in server-config.json
 	if ctx.Config.FileConf.SThgConf != nil {

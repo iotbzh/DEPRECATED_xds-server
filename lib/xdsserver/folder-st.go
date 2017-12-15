@@ -23,8 +23,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/iotbzh/xds-server/lib/xsapiv1"
 	st "github.com/iotbzh/xds-server/lib/syncthing"
+	"github.com/iotbzh/xds-server/lib/xsapiv1"
 	uuid "github.com/satori/go.uuid"
 	"github.com/syncthing/syncthing/lib/config"
 )
@@ -34,13 +34,13 @@ import (
 // STFolder .
 type STFolder struct {
 	*Context
-	st                *st.SyncThing
-	fConfig           xsapiv1.FolderConfig
-	stfConfig         config.FolderConfiguration
-	eventIDs          []int
-	eventChangeCB     *FolderEventCB
-	eventChangeCBData *FolderEventCBData
+	st        *st.SyncThing
+	fConfig   xsapiv1.FolderConfig
+	stfConfig config.FolderConfiguration
+	eventIDs  []string
 }
+
+var stEventMonitored = []string{st.EventStateChanged, st.EventFolderPaused}
 
 // NewFolderST Create a new instance of STFolder
 func NewFolderST(ctx *Context, sthg *st.SyncThing) *STFolder {
@@ -79,32 +79,41 @@ func (f *STFolder) Add(cfg xsapiv1.FolderConfig) (*xsapiv1.FolderConfig, error) 
 	f.fConfig = cfg
 
 	// Update Syncthing folder
-	// (except if status is ErrorConfig)
-	// TODO: add cache to avoid multiple requests on startup
-	if f.fConfig.Status != xsapiv1.StatusErrorConfig {
-		id, err := f.st.FolderChange(f.fConfig)
-		if err != nil {
-			return nil, err
-		}
-
-		f.stfConfig, err = f.st.FolderConfigGet(id)
-		if err != nil {
-			f.fConfig.Status = xsapiv1.StatusErrorConfig
-			return nil, err
-		}
-
-		// Register to events to update folder status
-		for _, evName := range []string{st.EventStateChanged, st.EventFolderPaused} {
-			evID, err := f.st.Events.Register(evName, f.cbEventState, id, nil)
-			if err != nil {
-				return nil, err
-			}
-			f.eventIDs = append(f.eventIDs, evID)
-		}
-
-		f.fConfig.IsInSync = false // will be updated later by events
-		f.fConfig.Status = xsapiv1.StatusEnable
+	_, err := f.st.FolderChange(f.fConfig)
+	if err != nil {
+		return nil, err
 	}
+
+	// Use Setup function to setup remains fields
+	return f.Setup(f.fConfig)
+}
+
+// Setup Setup local project config
+func (f *STFolder) Setup(fld xsapiv1.FolderConfig) (*xsapiv1.FolderConfig, error) {
+
+	var err error
+
+	// Update folder Config
+	f.fConfig = fld
+
+	// Retrieve Syncthing folder config
+	f.stfConfig, err = f.st.FolderConfigGet(f.fConfig.ID)
+	if err != nil {
+		f.fConfig.Status = xsapiv1.StatusErrorConfig
+		return nil, err
+	}
+
+	// Register to events to update folder status
+	for _, evName := range stEventMonitored {
+		evID, err := f.st.Events.Register(evName, f.cbEventState, f.fConfig.ID, nil)
+		if err != nil {
+			return nil, err
+		}
+		f.eventIDs = append(f.eventIDs, evID)
+	}
+
+	f.fConfig.IsInSync = false // will be updated later by events
+	f.fConfig.Status = xsapiv1.StatusEnable
 
 	return &f.fConfig, nil
 }
@@ -149,15 +158,27 @@ func (f *STFolder) ConvPathSvr2Cli(s string) string {
 
 // Remove a folder
 func (f *STFolder) Remove() error {
-	err := f.st.FolderDelete(f.stfConfig.ID)
+	var err1 error
+	// Un-register events
+	for _, evID := range f.eventIDs {
+		if err := f.st.Events.UnRegister(evID); err != nil && err1 == nil {
+			// only report 1st error
+			err1 = err
+		}
+	}
+
+	// Delete in Syncthing
+	err2 := f.st.FolderDelete(f.stfConfig.ID)
 
 	// Delete folder on server side
-	err2 := os.RemoveAll(f.GetFullPath(""))
+	err3 := os.RemoveAll(f.GetFullPath(""))
 
-	if err != nil {
-		return err
+	if err1 != nil {
+		return err1
+	} else if err2 != nil {
+		return err2
 	}
-	return err2
+	return err3
 }
 
 // Update update some fields of a folder
@@ -167,20 +188,6 @@ func (f *STFolder) Update(cfg xsapiv1.FolderConfig) (*xsapiv1.FolderConfig, erro
 	}
 	f.fConfig = cfg
 	return &f.fConfig, nil
-}
-
-// RegisterEventChange requests registration for folder event change
-func (f *STFolder) RegisterEventChange(cb *FolderEventCB, data *FolderEventCBData) error {
-	f.eventChangeCB = cb
-	f.eventChangeCBData = data
-	return nil
-}
-
-// UnRegisterEventChange remove registered callback
-func (f *STFolder) UnRegisterEventChange() error {
-	f.eventChangeCB = nil
-	f.eventChangeCBData = nil
-	return nil
 }
 
 // Sync Force folder files synchronization
@@ -222,9 +229,10 @@ func (f *STFolder) cbEventState(ev st.Event, data *st.EventsCBData) {
 		f.fConfig.IsInSync = false
 	}
 
-	if f.eventChangeCB != nil &&
-		(prevSync != f.fConfig.IsInSync || prevStatus != f.fConfig.Status) {
-		cpConf := f.fConfig
-		(*f.eventChangeCB)(&cpConf, f.eventChangeCBData)
+	if prevSync != f.fConfig.IsInSync || prevStatus != f.fConfig.Status {
+		// Emit Folder state change event
+		if err := f.events.Emit(xsapiv1.EVTFolderStateChange, &f.fConfig, ""); err != nil {
+			f.Log.Warningf("Cannot notify folder change: %v", err)
+		}
 	}
 }

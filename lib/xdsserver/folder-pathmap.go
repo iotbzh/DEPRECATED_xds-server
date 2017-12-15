@@ -34,14 +34,14 @@ import (
 // PathMap .
 type PathMap struct {
 	*Context
-	config xsapiv1.FolderConfig
+	fConfig xsapiv1.FolderConfig
 }
 
 // NewFolderPathMap Create a new instance of PathMap
 func NewFolderPathMap(ctx *Context) *PathMap {
 	f := PathMap{
 		Context: ctx,
-		config: xsapiv1.FolderConfig{
+		fConfig: xsapiv1.FolderConfig{
 			Status: xsapiv1.StatusDisable,
 		},
 	}
@@ -59,6 +59,12 @@ func (f *PathMap) NewUID(suffix string) string {
 
 // Add a new folder
 func (f *PathMap) Add(cfg xsapiv1.FolderConfig) (*xsapiv1.FolderConfig, error) {
+	return f.Setup(cfg)
+}
+
+// Setup Setup local project config
+func (f *PathMap) Setup(cfg xsapiv1.FolderConfig) (*xsapiv1.FolderConfig, error) {
+
 	if cfg.DataPathMap.ServerPath == "" {
 		return nil, fmt.Errorf("ServerPath must be set")
 	}
@@ -80,10 +86,10 @@ func (f *PathMap) Add(cfg xsapiv1.FolderConfig) (*xsapiv1.FolderConfig, error) {
 		return nil, fmt.Errorf("ServerPath directory is not accessible: %s", dir)
 	}
 
-	f.config = cfg
-	f.config.RootPath = dir
-	f.config.DataPathMap.ServerPath = dir
-	f.config.IsInSync = true
+	f.fConfig = cfg
+	f.fConfig.RootPath = dir
+	f.fConfig.DataPathMap.ServerPath = dir
+	f.fConfig.IsInSync = true
 
 	// Verify file created by XDS agent when needed
 	if cfg.DataPathMap.CheckFile != "" {
@@ -116,30 +122,30 @@ func (f *PathMap) Add(cfg xsapiv1.FolderConfig) (*xsapiv1.FolderConfig, error) {
 		}
 	}
 
-	f.config.Status = xsapiv1.StatusEnable
+	f.fConfig.Status = xsapiv1.StatusEnable
 
-	return &f.config, nil
+	return &f.fConfig, nil
 }
 
 // GetConfig Get public part of folder config
 func (f *PathMap) GetConfig() xsapiv1.FolderConfig {
-	return f.config
+	return f.fConfig
 }
 
 // GetFullPath returns the full path of a directory (from server POV)
 func (f *PathMap) GetFullPath(dir string) string {
 	if &dir == nil {
-		return f.config.DataPathMap.ServerPath
+		return f.fConfig.DataPathMap.ServerPath
 	}
-	return filepath.Join(f.config.DataPathMap.ServerPath, dir)
+	return filepath.Join(f.fConfig.DataPathMap.ServerPath, dir)
 }
 
 // ConvPathCli2Svr Convert path from Client to Server
 func (f *PathMap) ConvPathCli2Svr(s string) string {
-	if f.config.ClientPath != "" && f.config.DataPathMap.ServerPath != "" {
+	if f.fConfig.ClientPath != "" && f.fConfig.DataPathMap.ServerPath != "" {
 		return strings.Replace(s,
-			f.config.ClientPath,
-			f.config.DataPathMap.ServerPath,
+			f.fConfig.ClientPath,
+			f.fConfig.DataPathMap.ServerPath,
 			-1)
 	}
 	return s
@@ -147,10 +153,10 @@ func (f *PathMap) ConvPathCli2Svr(s string) string {
 
 // ConvPathSvr2Cli Convert path from Server to Client
 func (f *PathMap) ConvPathSvr2Cli(s string) string {
-	if f.config.ClientPath != "" && f.config.DataPathMap.ServerPath != "" {
+	if f.fConfig.ClientPath != "" && f.fConfig.DataPathMap.ServerPath != "" {
 		return strings.Replace(s,
-			f.config.DataPathMap.ServerPath,
-			f.config.ClientPath,
+			f.fConfig.DataPathMap.ServerPath,
+			f.fConfig.ClientPath,
 			-1)
 	}
 	return s
@@ -164,21 +170,11 @@ func (f *PathMap) Remove() error {
 
 // Update update some fields of a folder
 func (f *PathMap) Update(cfg xsapiv1.FolderConfig) (*xsapiv1.FolderConfig, error) {
-	if f.config.ID != cfg.ID {
+	if f.fConfig.ID != cfg.ID {
 		return nil, fmt.Errorf("Invalid id")
 	}
-	f.config = cfg
-	return &f.config, nil
-}
-
-// RegisterEventChange requests registration for folder change event
-func (f *PathMap) RegisterEventChange(cb *FolderEventCB, data *FolderEventCBData) error {
-	return nil
-}
-
-// UnRegisterEventChange remove registered callback
-func (f *PathMap) UnRegisterEventChange() error {
-	return nil
+	f.fConfig = cfg
+	return &f.fConfig, nil
 }
 
 // Sync Force folder files synchronization

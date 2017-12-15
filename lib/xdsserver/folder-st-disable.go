@@ -29,7 +29,7 @@ import (
 // STFolderDisable .
 type STFolderDisable struct {
 	*Context
-	config xsapiv1.FolderConfig
+	fConfig xsapiv1.FolderConfig
 }
 
 // NewFolderSTDisable Create a new instance of STFolderDisable
@@ -51,15 +51,20 @@ func (f *STFolderDisable) NewUID(suffix string) string {
 
 // Add a new folder
 func (f *STFolderDisable) Add(cfg xsapiv1.FolderConfig) (*xsapiv1.FolderConfig, error) {
-	f.config = cfg
-	f.config.Status = xsapiv1.StatusDisable
-	f.config.IsInSync = false
-	return &f.config, nil
+	return f.Setup(cfg)
+}
+
+// Setup Setup local project config
+func (f *STFolderDisable) Setup(cfg xsapiv1.FolderConfig) (*xsapiv1.FolderConfig, error) {
+	f.fConfig = cfg
+	f.fConfig.Status = xsapiv1.StatusDisable
+	f.fConfig.IsInSync = false
+	return &f.fConfig, nil
 }
 
 // GetConfig Get public part of folder config
 func (f *STFolderDisable) GetConfig() xsapiv1.FolderConfig {
-	return f.config
+	return f.fConfig
 }
 
 // GetFullPath returns the full path of a directory (from server POV)
@@ -85,16 +90,6 @@ func (f *STFolderDisable) Remove() error {
 // Update update some fields of a folder
 func (f *STFolderDisable) Update(cfg xsapiv1.FolderConfig) (*xsapiv1.FolderConfig, error) {
 	return nil, nil
-}
-
-// RegisterEventChange requests registration for folder change event
-func (f *STFolderDisable) RegisterEventChange(cb *FolderEventCB, data *FolderEventCBData) error {
-	return nil
-}
-
-// UnRegisterEventChange remove registered callback
-func (f *STFolderDisable) UnRegisterEventChange() error {
-	return nil
 }
 
 // Sync Force folder files synchronization

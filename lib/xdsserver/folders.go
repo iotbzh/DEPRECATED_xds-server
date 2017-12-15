@@ -216,6 +216,7 @@ func (f *Folders) Add(newF xsapiv1.FolderConfig) (*xsapiv1.FolderConfig, error) 
 
 // CreateUpdate creates or update a folder
 func (f *Folders) createUpdate(newF xsapiv1.FolderConfig, create bool, initial bool) (*xsapiv1.FolderConfig, error) {
+	var err error
 
 	fcMutex.Lock()
 	defer fcMutex.Unlock()
@@ -269,12 +270,21 @@ func (f *Folders) createUpdate(newF xsapiv1.FolderConfig, create bool, initial b
 	// Normalize path (needed for Windows path including bashlashes)
 	newF.ClientPath = common.PathNormalize(newF.ClientPath)
 
-	// Add new folder
-	newFolder, err := fld.Add(newF)
-	if err != nil {
-		newF.Status = xsapiv1.StatusErrorConfig
-		log.Printf("ERROR Adding folder: %v\n", err)
-		return newFolder, err
+	var newFolder *xsapiv1.FolderConfig
+	if create {
+		// Add folder
+		if newFolder, err = fld.Add(newF); err != nil {
+			newF.Status = xsapiv1.StatusErrorConfig
+			log.Printf("ERROR Adding folder: %v\n", err)
+			return newFolder, err
+		}
+	} else {
+		// Just update project config
+		if newFolder, err = fld.Setup(newF); err != nil {
+			newF.Status = xsapiv1.StatusErrorConfig
+			log.Printf("ERROR Updating folder: %v\n", err)
+			return newFolder, err
+		}
 	}
 
 	// Add to folders list
@@ -283,13 +293,6 @@ func (f *Folders) createUpdate(newF xsapiv1.FolderConfig, create bool, initial b
 	// Save config on disk
 	if !initial {
 		if err := f.SaveConfig(); err != nil {
-			return newFolder, err
-		}
-	}
-
-	// Register event change callback
-	for _, rcb := range f.registerCB {
-		if err := fld.RegisterEventChange(rcb.cb, rcb.data); err != nil {
 			return newFolder, err
 		}
 	}
@@ -377,29 +380,6 @@ func (f *Folders) Update(id string, cfg xsapiv1.FolderConfig) (*xsapiv1.FolderCo
 	// TODO emit folder change event
 
 	return fld, err
-}
-
-// RegisterEventChange requests registration for folder event change
-func (f *Folders) RegisterEventChange(id string, cb *FolderEventCB, data *FolderEventCBData) error {
-
-	flds := make(map[string]*IFOLDER)
-	if id != "" {
-		// Register to a specific folder
-		flds[id] = f.Get(id)
-	} else {
-		// Register to all folders
-		flds = f.folders
-		f.registerCB = append(f.registerCB, RegisteredCB{cb: cb, data: data})
-	}
-
-	for _, fld := range flds {
-		err := (*fld).RegisterEventChange(cb, data)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 // ForceSync Force the synchronization of a folder
