@@ -76,7 +76,7 @@ if [ "$URL" != "" ]; then
     TMPDIR=$(mktemp -d)
     SDK_FILE=${TMPDIR}/$(basename ${URL})
     echo "Downloading $(basename ${SDK_FILE}) ..."
-    wget "$URL" -O "${SDK_FILE}" || exit 1
+    wget --no-check-certificate "$URL" -O "${SDK_FILE}" || exit 1
 fi
 
 # Retreive default install dir to extract version

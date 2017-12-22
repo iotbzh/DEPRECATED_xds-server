@@ -277,7 +277,7 @@ func (s *CrossSDK) Install(file string, force bool, timeout int, sess *ClientSes
 			s.Log.Errorln("BUG: sdk ID differs: %v != %v", sdkID, s.sdk.ID)
 		}
 
-		s.Log.Debugf("Command SDK ID %s [Cmd ID %s]  exited: code %d, exitError: %v", sdkID[:16], e.CmdID, code, exitError)
+		s.Log.Infof("Command SDK ID %s [Cmd ID %s]  exited: code %d, exitError: %v", sdkID[:16], e.CmdID, code, exitError)
 
 		// IO socket can be nil when disconnected
 		so := s.sessions.IOSocketGet(e.Sid)
@@ -371,21 +371,65 @@ func (s *CrossSDK) AbortInstallRemove(timeout int) error {
 }
 
 // Remove Used to remove/uninstall a SDK
-func (s *CrossSDK) Remove() error {
+func (s *CrossSDK) Remove(timeout int, sess *ClientSession) error {
 
 	if s.sdk.Status != xsapiv1.SdkStatusInstalled {
 		return fmt.Errorf("this sdk is not installed")
 	}
 
+	// IO socket can be nil when disconnected
+	so := s.sessions.IOSocketGet(sess.ID)
+	if so == nil {
+		return fmt.Errorf("Cannot retrieve socket ")
+	}
+
 	s.sdk.Status = xsapiv1.SdkStatusUninstalling
 
-	cmdline := s.scripts[scriptRemove] + " " + s.sdk.Path
-	cmd := exec.Command(cmdline)
+	// Emit Remove event
+	if err := (*so).Emit(xsapiv1.EVTSDKStateChange, s.sdk); err != nil {
+		s.Log.Warningf("Cannot notify SDK remove: %v", err)
+	}
+
+	script := s.scripts[scriptRemove]
+	args := s.sdk.Path
+	s.Log.Infof("Uninstall SDK %s: script=%v args=%v", s.sdk.Name, script, args)
+
+	cmd := exec.Command(script, args)
 	stdout, err := cmd.CombinedOutput()
+
+	s.sdk.Status = xsapiv1.SdkStatusNotInstalled
+	s.Log.Debugf("SDK uninstall err %v, output:\n %v", err, string(stdout))
+
 	if err != nil {
+
+		// Emit Remove event
+		evData := xsapiv1.SDKManagementMsg{
+			Timestamp: time.Now().String(),
+			Sdk:       s.sdk,
+			Progress:  100,
+			Exited:    true,
+			Code:      1,
+			Error:     err.Error(),
+		}
+		if err := (*so).Emit(xsapiv1.EVTSDKRemove, evData); err != nil {
+			s.Log.Warningf("Cannot notify SDK remove end: %v", err)
+		}
+
 		return fmt.Errorf("Error while uninstalling sdk: %v", err)
 	}
-	s.Log.Debugf("SDK uninstall output:\n %v", stdout)
+
+	// Emit Remove event
+	evData := xsapiv1.SDKManagementMsg{
+		Timestamp: time.Now().String(),
+		Sdk:       s.sdk,
+		Progress:  100,
+		Exited:    true,
+		Code:      0,
+		Error:     "",
+	}
+	if err := (*so).Emit(xsapiv1.EVTSDKRemove, evData); err != nil {
+		s.Log.Warningf("Cannot notify SDK remove end: %v", err)
+	}
 
 	return nil
 }

@@ -114,9 +114,16 @@ func (s *APIService) removeSdk(c *gin.Context) {
 		return
 	}
 
+	// Retrieve session info
+	sess := s.sessions.Get(c)
+	if sess == nil {
+		common.APIError(c, "Unknown sessions")
+		return
+	}
+
 	s.Log.Debugln("Remove SDK id ", id)
 
-	delEntry, err := s.sdks.Remove(id)
+	delEntry, err := s.sdks.Remove(id, -1, sess)
 	if err != nil {
 		common.APIError(c, err.Error())
 		return

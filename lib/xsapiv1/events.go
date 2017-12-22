@@ -53,6 +53,7 @@ const (
 	EVTFolderStateChange = EventTypePrefix + "folder-state-change" // type EventMsg with Data type xsapiv1.FolderConfig
 	EVTSDKInstall        = EventTypePrefix + "sdk-install"         // type EventMsg with Data type xsapiv1.SDKManagementMsg
 	EVTSDKRemove         = EventTypePrefix + "sdk-remove"          // type EventMsg with Data type xsapiv1.SDKManagementMsg
+	EVTSDKStateChange    = EventTypePrefix + "sdk-state-change"    // type EventMsg with Data type xsapiv1.SDK
 )
 
 // EVTAllList List of all supported events
@@ -61,6 +62,7 @@ var EVTAllList = []string{
 	EVTFolderStateChange,
 	EVTSDKInstall,
 	EVTSDKRemove,
+	EVTSDKStateChange,
 }
 
 // DecodeFolderConfig Helper to decode Data field type FolderConfig
