@@ -51,11 +51,11 @@ type Options struct {
 
 // Config default values
 const (
-	DefaultAPIVersion = "1"
-	DefaultPort       = "8000"
-	DefaultShareDir   = "${HOME}/.xds/server/projects"
-	DefaultSTHomeDir  = "${HOME}/.xds/server/syncthing-config"
-	DefaultSdkScriptsDir = "${EXEPATH}/scripts/sdks"
+	DefaultAPIVersion    = "1"
+	DefaultPort          = "8000"
+	DefaultShareDir      = "${HOME}/.xds/server/projects"
+	DefaultSTHomeDir     = "${HOME}/.xds/server/syncthing-config"
+	DefaultSdkScriptsDir = "${EXEPATH}/sdks"
 )
 
 // Init loads the configuration on start-up
@@ -95,12 +95,12 @@ func Init(cliCtx *cli.Context, log *logrus.Logger) (*Config, error) {
 			NoFolderConfig: cliCtx.GlobalBool("no-folderconfig"),
 		},
 		FileConf: FileConfig{
-			WebAppDir:    "webapp/dist",
-			ShareRootDir: dfltShareDir,
+			WebAppDir:     "webapp/dist",
+			ShareRootDir:  dfltShareDir,
 			SdkScriptsDir: DefaultSdkScriptsDir,
-			HTTPPort:     DefaultPort,
-			SThgConf:     &SyncThingConf{Home: dfltSTHomeDir},
-			LogsDir:      "",
+			HTTPPort:      DefaultPort,
+			SThgConf:      &SyncThingConf{Home: dfltSTHomeDir},
+			LogsDir:       "",
 		},
 		Log: log,
 	}
