@@ -22,6 +22,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	common "github.com/iotbzh/xds-common/golib"
+	"github.com/iotbzh/xds-server/lib/xsapiv1"
 )
 
 // getSdks returns all SDKs configuration
@@ -43,4 +44,82 @@ func (s *APIService) getSdk(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, sdk)
+}
+
+// installSdk Install a new Sdk
+func (s *APIService) installSdk(c *gin.Context) {
+	var args xsapiv1.SDKInstallArgs
+
+	if err := c.BindJSON(&args); err != nil {
+		common.APIError(c, "Invalid arguments")
+		return
+	}
+	id, err := s.sdks.ResolveID(args.ID)
+	if err != nil {
+		common.APIError(c, err.Error())
+		return
+	}
+
+	// Support install from ID->URL or from local file
+	if id != "" {
+		s.Log.Debugf("Installing SDK id %s (force %v)", id, args.Force)
+	} else if args.Filename != "" {
+		s.Log.Debugf("Installing SDK filename %s (force %v)", args.Filename, args.Force)
+	}
+
+	// Retrieve session info
+	sess := s.sessions.Get(c)
+	if sess == nil {
+		common.APIError(c, "Unknown sessions")
+		return
+	}
+
+	sdk, err := s.sdks.Install(id, args.Filename, args.Force, args.Timeout, sess)
+	if err != nil {
+		common.APIError(c, err.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK, sdk)
+}
+
+// abortInstallSdk Abort a SDK installation
+func (s *APIService) abortInstallSdk(c *gin.Context) {
+	var args xsapiv1.SDKInstallArgs
+
+	if err := c.BindJSON(&args); err != nil {
+		common.APIError(c, "Invalid arguments")
+		return
+	}
+	id, err := s.sdks.ResolveID(args.ID)
+	if err != nil {
+		common.APIError(c, err.Error())
+		return
+	}
+
+	sdk, err := s.sdks.AbortInstall(id, args.Timeout)
+	if err != nil {
+		common.APIError(c, err.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK, sdk)
+}
+
+// removeSdk Uninstall a Sdk
+func (s *APIService) removeSdk(c *gin.Context) {
+	id, err := s.sdks.ResolveID(c.Param("id"))
+	if err != nil {
+		common.APIError(c, err.Error())
+		return
+	}
+
+	s.Log.Debugln("Remove SDK id ", id)
+
+	delEntry, err := s.sdks.Remove(id)
+	if err != nil {
+		common.APIError(c, err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, delEntry)
 }

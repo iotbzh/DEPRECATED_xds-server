@@ -1,0 +1,137 @@
+#! /usr/bin/env node
+
+/**************************************************************************
+ * Copyright 2017 IoT.bzh
+ *
+ * author: Sebastien Douheret <sebastien@iot.bzh>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ **************************************************************************/
+
+const fs = require('fs');
+const process = require('process');
+const execSync = require('child_process').execSync;
+const path = require('path');
+
+
+// Only used for debug purpose
+const DEBUG = false || (process.argv.length > 2 && process.argv[2] == '-debug');
+dbgPrint = function () {
+    if (DEBUG) console.log.apply(console, arguments);
+}
+// Get env vars
+var envMap = {};
+envData = execSync(path.join(__dirname, '_env-init.sh -print'));
+envData.toString().split('\n').forEach(e => envMap[e.split('=')[0]] = e.split('=')[1]);
+const opts = {
+    cwd: __dirname,
+    env: envMap
+};
+
+// Get list of available SDKs
+sdksDBFile = path.join(__dirname, "sdks_latest.json")
+try {
+    // Fetch SDK Json database file when not existing
+    if (!fs.existsSync(sdksDBFile)) {
+        var data = execSync(path.join(__dirname, 'update'), opts);
+    }
+    // Read SDK Json database file
+    var data = fs.readFileSync(sdksDBFile);
+    var sdks = JSON.parse(data);
+
+    // Force some default fields value
+    sdks.forEach(sdk => {
+        sdk.status = 'Not Installed';
+    });
+} catch (err) {
+    dbgPrint('ERROR: ', err);
+    process.exit(-1)
+}
+
+// Get list of installed SDKs
+try {
+    const cmd = 'find "${SDK_ROOT_DIR}" -maxdepth 4 -name "${SDK_ENV_SETUP_FILENAME}"';
+    var data = execSync(cmd, opts);
+    data.toString().split('\n').forEach(envFile => {
+        if (envFile == '') return;
+
+        dbgPrint('Processing ', envFile);
+        const profile = envFile.split('/')[3];
+        const version = envFile.split('/')[4];
+        const arch = envFile.split('/')[5];
+        const dir = path.dirname(envFile);
+        if (profile == '' || version == '' || arch == '' || dir == '') {
+            return;
+        }
+
+        sdkDate = ''
+        versionFile = path.join(path.dirname(envFile), 'version-*')
+        try {
+            cmdVer = "[ -f " + versionFile + " ] && grep Timestamp " + versionFile + " |cut -d' ' -f2"
+            var data = execSync(cmdVer);
+        } catch (err) {
+            dbgPrint('IGNORING SDK ', dir);
+            dbgPrint(err.toString());
+            if (DEBUG) {
+                process.exit(-1);
+            } else {
+                return;
+            }
+        }
+        d = data.toString()
+        if (d != "") {
+            sdkDate = d.substring(0, 4) + "-" + d.substring(4, 6) + "-" + d.substring(6, 8)
+            sdkDate += " " + d.substring(8, 10) + ":" + d.substring(10, 12)
+        }
+
+        var found = false;
+        sdks.forEach(sdk => {
+            // Update sdk with local info when found
+            if (profile == sdk.profile && version == sdk.version && arch == sdk.arch) {
+                found = true;
+                dbgPrint(" OK found, updating...");
+                sdk.path = dir;
+                sdk.status = 'Installed';
+                sdk.data = sdkDate;
+                sdk.setupFile = envFile;
+                return
+            }
+        });
+        if (found == false) {
+            dbgPrint(" NOT found in database, adding it...");
+            sdks.push({
+                name: profile + '-' + arch + '-' + version,
+                description: 'AGL SDK ' + arch + ' (version ' + version + ')',
+                profile: profile,
+                version: version,
+                arch: arch,
+                path: dir,
+                url: "",
+                status: "Installed",
+                date: sdkDate,
+                size: "",
+                md5sum: "",
+                setupFile: envFile
+            });
+        }
+    });
+
+} catch (err) {
+    dbgPrint('ERROR: ', err);
+    process.exit(-1)
+}
+
+// Print result
+console.log(JSON.stringify(sdks));
+
+process.exit(0)

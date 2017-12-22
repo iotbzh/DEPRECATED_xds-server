@@ -191,7 +191,7 @@ func (s *SyncThing) startProc(exeName string, args []string, env []string, eChan
 
 		cmdOut, err := cmd.StdoutPipe()
 		if err != nil {
-			return nil, fmt.Errorf("Pipe stdout error for : %s", err)
+			return nil, fmt.Errorf("Pipe stdout error for : %v", err)
 		}
 
 		go io.Copy(outfile, cmdOut)

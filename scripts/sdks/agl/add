@@ -1,0 +1,103 @@
+#!/bin/bash
+ ###########################################################################
+# Copyright 2017 IoT.bzh
+#
+# author: Sebastien Douheret <sebastien@iot.bzh>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+###########################################################################
+
+. $(dirname "$0")/_env-init.sh
+
+usage() {
+    echo "Usage: $(basename $0) [-h|--help] [-f|--file <sdk-filename>] [-u|--url <https_url>] [--force] [--no-clean]"
+	exit 1
+}
+
+TMPDIR=""
+SDK_FILE=""
+URL=""
+do_cleanup=true
+do_force=false
+while [ $# -ne 0 ]; do
+    case $1 in
+        -f|--file)
+            shift
+            SDK_FILE=$1
+            ;;
+        --force)
+            do_force=true
+            ;;
+        -u|--url)
+            shift
+            URL=$1
+            ;;
+        -no-clean)
+            do_cleanup=false
+            ;;
+        -h|--help)
+            usage
+            ;;
+        *)
+            echo "Invalid argument: $1"
+            usage
+            ;;
+    esac
+    shift
+done
+
+[ "$SDK_FILE" = "" ] && [ "$URL" = "" ] && { echo "--file or --url option must be set"; exit 1; }
+
+# Create SDK root dir if needed
+[ ! -d ${SDK_ROOT_DIR} ] && mkdir -p ${SDK_ROOT_DIR}
+cd ${SDK_ROOT_DIR} || exit 1
+
+# Cleanup
+trap "cleanExit" 0 1 2 15
+cleanExit ()
+{
+    if ($do_cleanup); then
+        [[ -d ${TMPDIR} ]] && rm -rf ${TMPDIR}
+    fi
+}
+
+# Download sdk
+if [ "$URL" != "" ]; then
+    TMPDIR=$(mktemp -d)
+    SDK_FILE=${TMPDIR}/$(basename ${URL})
+    echo "Downloading $(basename ${SDK_FILE}) ..."
+    wget "$URL" -O "${SDK_FILE}" || exit 1
+fi
+
+# Retreive default install dir to extract version
+offset=$(grep -na -m1 "^MARKER:$" "${SDK_FILE}" | cut -d':' -f1)
+eval $(head -n $offset "${SDK_FILE}" | grep ^DEFAULT_INSTALL_DIR= )
+
+PROFILE=$(basename $(dirname $DEFAULT_INSTALL_DIR))
+VERSION=$(basename $DEFAULT_INSTALL_DIR)
+ARCH=$(echo "$SDK_FILE" | sed -r 's/.*crosssdk-(.*)-toolchain.*/\1/')
+
+[ "$PROFILE" = "" ] && { echo "PROFILE is not set"; exit 1; }
+[ "$VERSION" = "" ] && { echo "VERSION is not set"; exit 1; }
+[ "$ARCH" = "" ] && { echo "ARCH is not set"; exit 1; }
+
+DESTDIR=${SDK_ROOT_DIR}/${PROFILE}/${VERSION}/${ARCH}
+
+[ -d ${DESTDIR} ] && [ "$do_force" != "true" ] && { echo "SDK already installed in $DESTDIR"; exit 1; }
+
+# Cleanup previous install
+rm -rf ${DESTDIR} && mkdir -p ${DESTDIR} || exit 1
+
+# Install sdk
+chmod +x ${SDK_FILE}
+${SDK_FILE} -y -d ${DESTDIR}

@@ -6,6 +6,7 @@ package
 debug
 cmd/*/debug
 *.zip
+scripts/sdks/**/sdks*.json
 
 webapp/dist
 webapp/node_modules

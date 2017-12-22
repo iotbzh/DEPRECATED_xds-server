@@ -48,6 +48,9 @@ func NewAPIV1(ctx *Context) *APIService {
 
 	s.apiRouter.GET("/sdks", s.getSdks)
 	s.apiRouter.GET("/sdks/:id", s.getSdk)
+	s.apiRouter.POST("/sdks", s.installSdk)
+	s.apiRouter.POST("/sdks/abortinstall", s.abortInstallSdk)
+	s.apiRouter.DELETE("/sdks/:id", s.removeSdk)
 
 	s.apiRouter.POST("/make", s.buildMake)
 	s.apiRouter.POST("/make/:id", s.buildMake)

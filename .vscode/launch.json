@@ -32,6 +32,12 @@
             },
             "args": ["-log", "debug", "-c", "__config_local_dev.json"],
             "showLog": false
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Script sdk list",
+            "program": "${workspaceFolder}/scripts/sdks/agl/list"
         }
     ]
 }

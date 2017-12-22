@@ -127,6 +127,7 @@ func (s *WebServer) Serve() error {
 	case <-s.stop:
 		// Shutting down permanently
 		s.sessions.Stop()
+		s.sdks.Stop()
 		s.Log.Infoln("shutting down (stop)")
 	case err = <-serveError:
 		// Error due to listen/serve failure

@@ -149,7 +149,7 @@ webapp/install:
 
 .PHONY: scripts
 scripts:
-	@mkdir -p $(LOCAL_BINDIR) && cp -rf scripts/xds-utils $(LOCAL_BINDIR)
+	@mkdir -p $(LOCAL_BINDIR) && cp -rf scripts/xds-utils scripts/sdks $(LOCAL_BINDIR)
 
 .PHONY: conffile
 conffile:

@@ -24,8 +24,8 @@ import (
 
 // EventRegisterArgs Parameters (json format) of /events/register command
 type EventRegisterArgs struct {
-	Name      string `json:"name"`
-	ProjectID string `json:"filterProjectID"`
+	Name   string `json:"name"`
+	Filter string `json:"filter"`
 }
 
 // EventUnRegisterArgs Parameters of /events/unregister command
@@ -49,14 +49,18 @@ const (
 
 	// Supported Events type
 	EVTAll               = EventTypePrefix + "all"
-	EVTFolderChange      = EventTypePrefix + "folder-change"       // type EventMsg with Data type xsapiv1.???
-	EVTFolderStateChange = EventTypePrefix + "folder-state-change" // type EventMsg with Data type xsapiv1.???
+	EVTFolderChange      = EventTypePrefix + "folder-change"       // type EventMsg with Data type xsapiv1.FolderConfig
+	EVTFolderStateChange = EventTypePrefix + "folder-state-change" // type EventMsg with Data type xsapiv1.FolderConfig
+	EVTSDKInstall        = EventTypePrefix + "sdk-install"         // type EventMsg with Data type xsapiv1.SDKManagementMsg
+	EVTSDKRemove         = EventTypePrefix + "sdk-remove"          // type EventMsg with Data type xsapiv1.SDKManagementMsg
 )
 
 // EVTAllList List of all supported events
 var EVTAllList = []string{
 	EVTFolderChange,
 	EVTFolderStateChange,
+	EVTSDKInstall,
+	EVTSDKRemove,
 }
 
 // DecodeFolderConfig Helper to decode Data field type FolderConfig

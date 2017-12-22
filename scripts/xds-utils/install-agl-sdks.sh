@@ -19,7 +19,7 @@
 
 . /etc/xdtrc
 
-[ -z "$SDK_BASEURL" ] && SDK_BASEURL="http://iot.bzh/download/public/2017/XDS/sdk/"
+[ -z "$SDK_BASEURL" ] && SDK_BASEURL="http://iot.bzh/download/public/XDS/sdk/"
 [ -z "$XDT_SDK" ] && XDT_SDK=/xdt/sdk
 
 # Support only poky_agl profile for now

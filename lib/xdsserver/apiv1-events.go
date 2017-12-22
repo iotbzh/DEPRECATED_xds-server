@@ -39,6 +39,8 @@ func (s *APIService) eventsRegister(c *gin.Context) {
 		return
 	}
 
+	// TODO: add args.Filter support
+
 	sess := s.sessions.Get(c)
 	if sess == nil {
 		common.APIError(c, "Unknown sessions")

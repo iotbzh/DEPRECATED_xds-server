@@ -2,7 +2,7 @@
     "webAppDir": "www",
     "httpPort": "8000",
     "shareRootDir": "${HOME}/.xds/server/projects",
-    "sdkRootDir": "/xdt/sdk",
+    "sdkScriptsDir": "${EXEPATH}/scripts/sdks",
     "syncthing": {
         "binDir": "",
         "home": "${HOME}/.xds/server/syncthing-config",

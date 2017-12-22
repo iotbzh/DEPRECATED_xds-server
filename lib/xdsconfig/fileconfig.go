@@ -51,12 +51,12 @@ type SyncThingConf struct {
 
 // FileConfig is the JSON structure of xds-server config file (server-config.json)
 type FileConfig struct {
-	WebAppDir    string         `json:"webAppDir"`
-	ShareRootDir string         `json:"shareRootDir"`
-	SdkRootDir   string         `json:"sdkRootDir"`
-	HTTPPort     string         `json:"httpPort"`
-	SThgConf     *SyncThingConf `json:"syncthing"`
-	LogsDir      string         `json:"logsDir"`
+	WebAppDir     string         `json:"webAppDir"`
+	ShareRootDir  string         `json:"shareRootDir"`
+	SdkScriptsDir string         `json:"sdkScriptsDir"`
+	HTTPPort      string         `json:"httpPort"`
+	SThgConf      *SyncThingConf `json:"syncthing"`
+	LogsDir       string         `json:"logsDir"`
 }
 
 // readGlobalConfig reads configuration from a config file.
@@ -117,7 +117,7 @@ func readGlobalConfig(c *Config, confFile string) error {
 	vars := []*string{
 		&fCfg.WebAppDir,
 		&fCfg.ShareRootDir,
-		&fCfg.SdkRootDir,
+		&fCfg.SdkScriptsDir,
 		&fCfg.LogsDir}
 	if fCfg.SThgConf != nil {
 		vars = append(vars, &fCfg.SThgConf.Home, &fCfg.SThgConf.BinDir)
@@ -136,8 +136,8 @@ func readGlobalConfig(c *Config, confFile string) error {
 	if fCfg.ShareRootDir == "" {
 		fCfg.ShareRootDir = c.FileConf.ShareRootDir
 	}
-	if fCfg.SdkRootDir == "" {
-		fCfg.SdkRootDir = c.FileConf.SdkRootDir
+	if fCfg.SdkScriptsDir == "" {
+		fCfg.SdkScriptsDir = c.FileConf.SdkScriptsDir
 	}
 	if fCfg.HTTPPort == "" {
 		fCfg.HTTPPort = c.FileConf.HTTPPort

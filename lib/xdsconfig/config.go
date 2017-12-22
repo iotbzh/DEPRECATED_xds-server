@@ -55,7 +55,7 @@ const (
 	DefaultPort       = "8000"
 	DefaultShareDir   = "${HOME}/.xds/server/projects"
 	DefaultSTHomeDir  = "${HOME}/.xds/server/syncthing-config"
-	DefaultSdkRootDir = "/xdt/sdk"
+	DefaultSdkScriptsDir = "${EXEPATH}/scripts/sdks"
 )
 
 // Init loads the configuration on start-up
@@ -97,7 +97,7 @@ func Init(cliCtx *cli.Context, log *logrus.Logger) (*Config, error) {
 		FileConf: FileConfig{
 			WebAppDir:    "webapp/dist",
 			ShareRootDir: dfltShareDir,
-			SdkRootDir:   DefaultSdkRootDir,
+			SdkScriptsDir: DefaultSdkScriptsDir,
 			HTTPPort:     DefaultPort,
 			SThgConf:     &SyncThingConf{Home: dfltSTHomeDir},
 			LogsDir:      "",
