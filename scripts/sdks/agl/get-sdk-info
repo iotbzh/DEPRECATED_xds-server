@@ -1,0 +1,146 @@
+#!/bin/bash
+ ###########################################################################
+# Copyright 2018 IoT.bzh
+#
+# author: Sebastien Douheret <sebastien@iot.bzh>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+###########################################################################
+
+. $(dirname "$0")/_env-init.sh
+
+usage() {
+    echo "Usage: $(basename $0) [-h|--help] [-f|--file <sdk-filename>] [-u|--url <https_url>] [--md5 <string>]"
+	exit 1
+}
+
+SDK_FILE=""
+MD5VAL=""
+URL=""
+
+while [ $# -ne 0 ]; do
+    case $1 in
+        -f|--file)
+            shift
+            SDK_FILE=$1
+            ;;
+        -h|--help)
+            usage
+            ;;
+        --md5)
+            shift
+            MD5VAL=$1
+            ;;
+        -u|--url)
+            shift
+            URL=$1
+            ;;
+        *)
+            echo "Invalid argument: $1"
+            usage
+            ;;
+    esac
+    shift
+done
+
+if [ "${SDK_FILE}" != "" ]; then
+
+    if [ ! -f "${SDK_FILE}" ]; then
+        echo "sdk file doesn't exist"
+        exit 1
+    fi
+
+    # Criteria to consider that SDK is a valid AGL sdk:
+    #  - shell and binary file type
+    #  - "$MARKER:$" string found
+    #  - md5sum match MD5VAL if MD5VAL is set
+
+    if ! file "${SDK_FILE}" |grep shell |grep -q binary ; then
+        echo "Not expected file type"
+        exit 2
+    fi
+
+    if ! grep -aq -m1 "^MARKER:$" "${SDK_FILE}"; then
+        echo "marker not found"
+        exit 4
+    fi
+
+    if [ "${MD5VAL}" != "" ]; then
+        if ! echo "${MD5VAL} ${SDK_FILE}" | md5sum --status -c -; then
+            echo "md5sum dit not match"
+            exit 5
+        fi
+    fi
+
+    filename=$(basename "${SDK_FILE}")
+    sdkUrl=file://${SDK_FILE}
+    sdkDate=$(stat -c %y "${SDK_FILE}")
+    sdkSize=$(/bin/ls -sh "${SDK_FILE}" |cut -d' ' -f1)
+
+elif [ "${URL}" != "" ]; then
+
+    filename=$(basename "${URL}")
+    sdkUrl=${URL}
+    sdkDate=""
+    sdkSize=""
+
+else
+    echo "--file or --url option must be set"
+    exit 1
+fi
+
+# assume that sdk name follow this format :
+#  _PROFILE_-_COMPILER_ARCH_-_TARGET_-crosssdk-_ARCH_-toolchain-_VERSION_.sh
+# for example:
+#  poky-agl-glibc-x86_64-agl-demo-platform-crosssdk-corei7-64-toolchain-4.0.1.sh
+
+
+if [[ "${filename}" != *"crosssdk"* ]]; then
+    echo "malformed sdk file name"
+    exit 6
+fi
+
+profile=$(echo "${filename}" | sed -r 's/(.*)-glibc.*/\1/')
+version=$(echo "${filename}" | sed -r 's/.*toolchain-(.*).sh/\1/')
+arch=$(echo "${filename}" | sed -r 's/.*crosssdk-(.*)-toolchain.*/\1/')
+installPath=${SDK_ROOT_DIR}/${profile}/${version}/${arch}
+
+[ "${profile}" = "" ] && { echo "profile not set"; exit 7; }
+[ "${version}" = "" ] && { echo "version not set"; exit 8; }
+[ "${arch}" = "" ] && { echo " arch not set"; exit 9; }
+
+status="Not Installed"
+if [ -d ${installPath} ]; then
+    envFile=$(find "${installPath}" -maxdepth 1 -name "${SDK_ENV_SETUP_FILENAME}")
+    [ "${envFile}" != "" ] && status="Installed"
+fi
+
+read -r -d '' res <<- EndOfMessage
+{
+    "name":         "${profile}_${arch}_${version}",
+    "description":  "AGL SDK ${arch} (version ${version})",
+    "profile":      "${profile}",
+    "version":      "${version}",
+    "arch":         "${arch}",
+    "path":         "${installPath}",
+    "url":          "${sdkUrl}",
+    "status":       "${status}",
+    "date":         "${sdkDate}",
+    "size":         "${sdkSize}",
+    "md5sum":       "${MD5VAL}",
+    "setupFile":    "${envFile}"
+}
+EndOfMessage
+
+echo "$res"
+exit 0

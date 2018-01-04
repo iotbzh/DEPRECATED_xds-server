@@ -58,10 +58,11 @@ type SDKFamilyConfig struct {
 
 // SDKInstallArgs JSON parameters of POST /sdks or /sdks/abortinstall commands
 type SDKInstallArgs struct {
-	ID       string `json:"id" binding:"required"` // install by ID (must be part of GET /sdks result)
-	Filename string `json:"filename"`              // install by using a file
-	Force    bool   `json:"force"`                 // force SDK install when already existing
-	Timeout  int    `json:"timeout"`               // 1800 == default 30 minutes
+	ID          string   `json:"id"`          // install by ID (must be part of GET /sdks result)
+	Filename    string   `json:"filename"`    // install by using a file
+	Force       bool     `json:"force"`       // force SDK install when already existing
+	Timeout     int      `json:"timeout"`     // 1800 == default 30 minutes
+	InstallArgs []string `json:"installArgs"` // args directly passed to add/install script
 }
 
 // SDKManagementMsg Message send during SDK installation or when installation is complete

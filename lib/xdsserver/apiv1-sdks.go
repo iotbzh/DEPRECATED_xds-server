@@ -74,7 +74,7 @@ func (s *APIService) installSdk(c *gin.Context) {
 		return
 	}
 
-	sdk, err := s.sdks.Install(id, args.Filename, args.Force, args.Timeout, sess)
+	sdk, err := s.sdks.Install(id, args.Filename, args.Force, args.Timeout, args.InstallArgs, sess)
 	if err != nil {
 		common.APIError(c, err.Error())
 		return

@@ -177,7 +177,7 @@ func (f *Folders) ResolveID(id string) (string, error) {
 	} else if len(match) == 0 {
 		return id, fmt.Errorf("Unknown id")
 	}
-	return id, fmt.Errorf("Multiple IDs found with provided prefix: " + id)
+	return id, fmt.Errorf("Multiple IDs found %v", match)
 }
 
 // Get returns the folder config or nil if not existing

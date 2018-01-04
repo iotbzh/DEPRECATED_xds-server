@@ -26,13 +26,13 @@ import (
 
 	common "github.com/iotbzh/xds-common/golib"
 	"github.com/iotbzh/xds-server/lib/xsapiv1"
-	uuid "github.com/satori/go.uuid"
 )
 
 // SDKs List of installed SDK
 type SDKs struct {
 	*Context
-	Sdks map[string]*CrossSDK
+	Sdks         map[string]*CrossSDK
+	SdksFamilies map[string]*xsapiv1.SDKFamilyConfig
 
 	mutex sync.Mutex
 	stop  chan struct{} // signals intentional stop
@@ -41,9 +41,10 @@ type SDKs struct {
 // NewSDKs creates a new instance of SDKs
 func NewSDKs(ctx *Context) (*SDKs, error) {
 	s := SDKs{
-		Context: ctx,
-		Sdks:    make(map[string]*CrossSDK),
-		stop:    make(chan struct{}),
+		Context:      ctx,
+		Sdks:         make(map[string]*CrossSDK),
+		SdksFamilies: make(map[string]*xsapiv1.SDKFamilyConfig),
+		stop:         make(chan struct{}),
 	}
 
 	scriptsDir := ctx.Config.FileConf.SdkScriptsDir
@@ -67,7 +68,6 @@ func NewSDKs(ctx *Context) (*SDKs, error) {
 
 	// Foreach directories in scripts/sdk
 	nbInstalled := 0
-	monSdksPath := make(map[string]*xsapiv1.SDKFamilyConfig)
 	for _, d := range dirs {
 		if !common.IsDir(d) {
 			continue
@@ -81,32 +81,70 @@ func NewSDKs(ctx *Context) (*SDKs, error) {
 		s.LogSillyf("'%s' SDKs list: %v", d, sdksList)
 
 		for _, sdk := range sdksList {
-			cSdk, err := NewCrossSDK(ctx, sdk, d)
+			cSdk, err := s._createNewCrossSDK(sdk, d, false, false)
 			if err != nil {
 				s.Log.Debugf("Error while processing SDK sdk=%v\n err=%s", sdk, err.Error())
 				continue
 			}
-			if _, exist := s.Sdks[cSdk.sdk.ID]; exist {
-				s.Log.Warningf("Duplicate SDK ID : %v", cSdk.sdk.ID)
-				cSdk.sdk.ID += "_DUPLICATE_" + uuid.NewV1().String()
-			}
-			s.Sdks[cSdk.sdk.ID] = cSdk
+
 			if cSdk.sdk.Status == xsapiv1.SdkStatusInstalled {
 				nbInstalled++
 			}
 
-			monSdksPath[cSdk.sdk.FamilyConf.RootDir] = &cSdk.sdk.FamilyConf
+			s.SdksFamilies[cSdk.sdk.FamilyConf.FamilyName] = &cSdk.sdk.FamilyConf
 		}
 	}
 
 	ctx.Log.Debugf("Cross SDKs: %d defined, %d installed", len(s.Sdks), nbInstalled)
 
 	// Start monitor thread to detect new SDKs
-	if len(monSdksPath) == 0 {
+	sdksDirs := []string{}
+	for _, sf := range s.SdksFamilies {
+		sdksDirs = append(sdksDirs, sf.RootDir)
+	}
+
+	if len(s.SdksFamilies) == 0 {
 		s.Log.Warningf("No cross SDKs definition found")
+		/* TODO: used it or cleanup
+		} else {
+			go s.monitorSDKInstallation(sdksDirs)
+		*/
 	}
 
 	return &s, nil
+}
+
+// _createNewCrossSDK Private function to create a new Cross SDK
+func (s *SDKs) _createNewCrossSDK(sdk xsapiv1.SDK, scriptDir string, installing bool, force bool) (*CrossSDK, error) {
+
+	cSdk, err := NewCrossSDK(s.Context, sdk, scriptDir)
+	if err != nil {
+		return cSdk, err
+	}
+
+	// Allow to overwrite not installed SDK or when force is set
+	if _, exist := s.Sdks[cSdk.sdk.ID]; exist {
+		if !force && cSdk.sdk.Path != "" && common.Exists(cSdk.sdk.Path) {
+			return cSdk, fmt.Errorf("SDK ID %s already installed in %s", cSdk.sdk.ID, cSdk.sdk.Path)
+		}
+		if !force && cSdk.sdk.Status != xsapiv1.SdkStatusNotInstalled {
+			return cSdk, fmt.Errorf("Duplicate SDK ID %s (use force to overwrite)", cSdk.sdk.ID)
+		}
+	}
+
+	// Sanity check
+	errMsg := "Invalid SDK definition "
+	if installing && cSdk.sdk.Path == "" {
+		return cSdk, fmt.Errorf(errMsg + "(path not set)")
+	}
+	if installing && cSdk.sdk.URL == "" {
+		return cSdk, fmt.Errorf(errMsg + "(url not set)")
+	}
+
+	// Add to list
+	s.Sdks[cSdk.sdk.ID] = cSdk
+
+	return cSdk, err
 }
 
 // Stop SDKs management
@@ -115,8 +153,10 @@ func (s *SDKs) Stop() {
 }
 
 // monitorSDKInstallation
-/* TODO: cleanup
-func (s *SDKs) monitorSDKInstallation(monSDKs map[string]*xsapiv1.SDKFamilyConfig) {
+/* TODO: used it or cleanup
+import 	"github.com/zillode/notify"
+
+func (s *SDKs) monitorSDKInstallation(watchingDirs []string) {
 
 	// Set up a watchpoint listening for inotify-specific events
 	c := make(chan notify.EventInfo, 1)
@@ -131,7 +171,7 @@ func (s *SDKs) monitorSDKInstallation(monSDKs map[string]*xsapiv1.SDKFamilyConfi
 	}
 
 	// Add directory watchers
-	for dir := range monSDKs {
+	for _, dir := range watchingDirs {
 		if err := addWatcher(dir); err != nil {
 			s.Log.Errorln(err.Error())
 		}
@@ -162,6 +202,14 @@ func (s *SDKs) monitorSDKInstallation(monSDKs map[string]*xsapiv1.SDKFamilyConfi
 
 			switch ei.Event() {
 			case notify.Create:
+				sdkDef, err := GetSDKInfo(scriptDir, sdk.URL, "", "", s.Log)
+				if err != nil {
+					s.Log.Warningf("Cannot get sdk info: %v", err)
+					continue
+				}
+				sdk.Path = sdkDef.Path
+				sdk.Path = sdkDef.SetupFile
+
 				// Emit Folder state change event
 				if err := s.events.Emit(xsapiv1.EVTSDKInstall, sdk, ""); err != nil {
 					s.Log.Warningf("Cannot notify SDK install: %v", err)
@@ -196,7 +244,7 @@ func (s *SDKs) ResolveID(id string) (string, error) {
 	} else if len(match) == 0 {
 		return id, fmt.Errorf("Unknown sdk id")
 	}
-	return id, fmt.Errorf("Multiple sdk IDs found with provided prefix: " + id)
+	return id, fmt.Errorf("Multiple sdk IDs found: %v", match)
 }
 
 // Get returns an SDK from id
@@ -260,30 +308,73 @@ func (s *SDKs) GetEnvCmd(id string, defaultID string) []string {
 }
 
 // Install Used to install a new SDK
-func (s *SDKs) Install(id, filepath string, force bool, timeout int, sess *ClientSession) (*xsapiv1.SDK, error) {
-	var cSdk *CrossSDK
+func (s *SDKs) Install(id, filepath string, force bool, timeout int, args []string, sess *ClientSession) (*xsapiv1.SDK, error) {
+
+	var sdk *xsapiv1.SDK
+	var err error
+	scriptDir := ""
+	sdkFilename := ""
+
 	if id != "" && filepath != "" {
 		return nil, fmt.Errorf("invalid parameter, both id and filepath are set")
-	}
-	if id != "" {
-		var exist bool
-		cSdk, exist = s.Sdks[id]
-		if !exist {
-			return nil, fmt.Errorf("unknown id")
-		}
-	} else if filepath != "" {
-		// TODO check that file is accessible
-
-	} else {
-		return nil, fmt.Errorf("invalid parameter, id or filepath must be set")
 	}
 
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
+	if id != "" {
+		curSdk, exist := s.Sdks[id]
+		if !exist {
+			return nil, fmt.Errorf("unknown id")
+		}
+
+		sdk = &curSdk.sdk
+		scriptDir = sdk.FamilyConf.ScriptsDir
+
+		// Update path when not set
+		if sdk.Path == "" {
+			sdkDef, err := GetSDKInfo(scriptDir, sdk.URL, "", "", s.Log)
+			if err != nil || sdkDef.Path == "" {
+				return nil, fmt.Errorf("cannot retrieve sdk path %v", err)
+			}
+			sdk.Path = sdkDef.Path
+		}
+
+	} else if filepath != "" {
+		// FIXME support any location and also sharing either by pathmap or Syncthing
+		baseDir := "${HOME}/xds-workspace/sdks"
+		sdkFilename, _ = common.ResolveEnvVar(path.Join(baseDir, path.Base(filepath)))
+		if !common.Exists(sdkFilename) {
+			return nil, fmt.Errorf("SDK file not accessible, must be in %s", baseDir)
+		}
+
+		for _, sf := range s.SdksFamilies {
+			sdkDef, err := GetSDKInfo(sf.ScriptsDir, "", sdkFilename, "", s.Log)
+			if err == nil {
+				// OK, sdk found
+				sdk = &sdkDef
+				scriptDir = sf.ScriptsDir
+				break
+			}
+
+			s.Log.Debugf("GetSDKInfo error: family=%s, sdkFilename=%s, err=%v", sf.FamilyName, path.Base(sdkFilename), err)
+		}
+		if sdk == nil {
+			return nil, fmt.Errorf("Cannot identify SDK family for %s", path.Base(filepath))
+		}
+
+	} else {
+		return nil, fmt.Errorf("invalid parameter, id or filepath must be set")
+	}
+
+	cSdk, err := s._createNewCrossSDK(*sdk, scriptDir, true, force)
+	if err != nil {
+		return nil, err
+	}
+
 	// Launch script to install
 	// (note that add event will be generated by monitoring thread)
-	if err := cSdk.Install(filepath, force, timeout, sess); err != nil {
+	if err := cSdk.Install(sdkFilename, force, timeout, args, sess); err != nil {
 		return &cSdk.sdk, err
 	}
 

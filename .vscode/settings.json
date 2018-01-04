@@ -30,6 +30,6 @@
         "gdbserver", "golib", "eows", "mfolders", "IFOLDER", "flds", "dflt",
         "stconfig", "reflectme", "franciscocpg", "crosssdk", "urfave", "EXEPATH",
         "conv", "Sillyf", "xsapiv",
-        "EVTSDK"
+        "EVTSDK", "zillode"
     ]
 }

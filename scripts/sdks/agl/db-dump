@@ -43,8 +43,7 @@ sdksDBFile = path.join(envMap["SDK_ROOT_DIR"], "sdks_latest.json")
 try {
     // Fetch SDK Json database file when not existing
     if (!fs.existsSync(sdksDBFile)) {
-
-        var data = execSync(path.join(__dirname, 'update ' + sdksDBFile), opts);
+        var data = execSync(path.join(__dirname, 'update-db ' + sdksDBFile), opts);
     }
     // Read SDK Json database file
     var data = fs.readFileSync(sdksDBFile);

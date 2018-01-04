@@ -30,3 +30,8 @@ if [ ! -d "${1}" ]; then
 fi
 
 rm -rf "${1}" && echo "SDK successfully removed."
+
+# Potentially remove parent directory when it is the latest SDK for this version
+rmdir "$(dirname ${1})"
+
+exit 0

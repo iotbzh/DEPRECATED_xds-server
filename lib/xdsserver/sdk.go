@@ -36,19 +36,21 @@ import (
 
 // Definition of scripts used to managed SDKs
 const (
-	scriptAdd       = "add"
-	scriptGetConfig = "get-config"
-	scriptList      = "list"
-	scriptRemove    = "remove"
-	scriptUpdate    = "update"
+	scriptAdd          = "add"
+	scriptDbDump       = "db-dump"
+	scriptDbUpdate     = "db-update"
+	scriptGetFamConfig = "get-family-config"
+	scriptGetSdkInfo   = "get-sdk-info"
+	scriptRemove       = "remove"
 )
 
 var scriptsAll = []string{
 	scriptAdd,
-	scriptGetConfig,
-	scriptList,
+	scriptDbDump,
+	scriptDbUpdate,
+	scriptGetFamConfig,
+	scriptGetSdkInfo,
 	scriptRemove,
-	scriptUpdate,
 }
 
 var sdkCmdID = 0
@@ -65,26 +67,55 @@ type CrossSDK struct {
 	bufStderr string
 }
 
-// ListCrossSDK List all available and installed SDK  (call "list" script)
+// ListCrossSDK List all available and installed SDK  (call "db-dump" script)
 func ListCrossSDK(scriptDir string, log *logrus.Logger) ([]xsapiv1.SDK, error) {
 	sdksList := []xsapiv1.SDK{}
 
 	// Retrieve SDKs list and info
-	cmd := exec.Command(path.Join(scriptDir, scriptList))
+	cmd := exec.Command(path.Join(scriptDir, scriptDbDump))
 	stdout, err := cmd.CombinedOutput()
 	if err != nil {
 		return sdksList, fmt.Errorf("Cannot get sdks list: %v", err)
 	}
 
 	if err = json.Unmarshal(stdout, &sdksList); err != nil {
-		log.Errorf("SDK list script output:\n%v\n", string(stdout))
+		log.Errorf("SDK %s script output:\n%v\n", scriptDbDump, string(stdout))
 		return sdksList, fmt.Errorf("Cannot decode sdk list %v", err)
 	}
 
 	return sdksList, nil
 }
 
-// NewCrossSDK creates a new instance of Syncthing
+// GetSDKInfo Used get-sdk-info script to extract SDK get info from a SDK file/tarball
+func GetSDKInfo(scriptDir, url, filename, md5sum string, log *logrus.Logger) (xsapiv1.SDK, error) {
+	sdk := xsapiv1.SDK{}
+
+	args := []string{}
+	if url != "" {
+		args = append(args, "--url", url)
+	} else if filename != "" {
+		args = append(args, "--file", filename)
+		if md5sum != "" {
+			args = append(args, "--md5", md5sum)
+		}
+	} else {
+		return sdk, fmt.Errorf("url of filename must be set")
+	}
+
+	cmd := exec.Command(path.Join(scriptDir, scriptGetSdkInfo), args...)
+	stdout, err := cmd.CombinedOutput()
+	if err != nil {
+		return sdk, fmt.Errorf("%v %v", string(stdout), err)
+	}
+
+	if err = json.Unmarshal(stdout, &sdk); err != nil {
+		log.Errorf("SDK %s script output:\n%v\n", scriptGetSdkInfo, string(stdout))
+		return sdk, fmt.Errorf("Cannot decode sdk info %v", err)
+	}
+	return sdk, nil
+}
+
+// NewCrossSDK creates a new instance of CrossSDK
 func NewCrossSDK(ctx *Context, sdk xsapiv1.SDK, scriptDir string) (*CrossSDK, error) {
 	s := CrossSDK{
 		Context: ctx,
@@ -93,9 +124,9 @@ func NewCrossSDK(ctx *Context, sdk xsapiv1.SDK, scriptDir string) (*CrossSDK, er
 	}
 
 	// Execute get-config script to retrieve SDK configuration
-	getConfFile := path.Join(scriptDir, scriptGetConfig)
+	getConfFile := path.Join(scriptDir, scriptGetFamConfig)
 	if !common.Exists(getConfFile) {
-		return &s, fmt.Errorf("'%s' script file not found in %s", scriptGetConfig, scriptDir)
+		return &s, fmt.Errorf("'%s' script file not found in %s", scriptGetFamConfig, scriptDir)
 	}
 
 	cmd := exec.Command(getConfFile)
@@ -170,7 +201,7 @@ func NewCrossSDK(ctx *Context, sdk xsapiv1.SDK, scriptDir string) (*CrossSDK, er
 }
 
 // Install a SDK (non blocking command, IOW run in background)
-func (s *CrossSDK) Install(file string, force bool, timeout int, sess *ClientSession) error {
+func (s *CrossSDK) Install(file string, force bool, timeout int, args []string, sess *ClientSession) error {
 
 	if s.sdk.Status == xsapiv1.SdkStatusInstalled {
 		return fmt.Errorf("already installed")
@@ -188,6 +219,11 @@ func (s *CrossSDK) Install(file string, force bool, timeout int, sess *ClientSes
 	}
 	if force {
 		cmdArgs = append(cmdArgs, "--force")
+	}
+
+	// Append additional args (passthrough arguments)
+	if len(args) > 0 {
+		cmdArgs = append(cmdArgs, args...)
 	}
 
 	// Unique command id
@@ -308,6 +344,21 @@ func (s *CrossSDK) Install(file string, force bool, timeout int, sess *ClientSes
 		if code == 0 && exitError == nil {
 			s.sdk.LastError = ""
 			s.sdk.Status = xsapiv1.SdkStatusInstalled
+
+			// FIXME: better update it using monitoring install dir (inotify)
+			// (see sdks.go / monitorSDKInstallation )
+			// Update SetupFile when n
+			if s.sdk.SetupFile == "" {
+				sdkDef, err := GetSDKInfo(s.sdk.FamilyConf.ScriptsDir, s.sdk.URL, "", "", s.Log)
+				if err != nil || sdkDef.SetupFile == "" {
+					code = 1
+					s.sdk.LastError = "Installation failed (cannot init SetupFile path)"
+					s.sdk.Status = xsapiv1.SdkStatusNotInstalled
+				} else {
+					s.sdk.SetupFile = sdkDef.SetupFile
+				}
+			}
+
 		} else {
 			s.sdk.LastError = "Installation failed (code " + strconv.Itoa(code) +
 				")"
