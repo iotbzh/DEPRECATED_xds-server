@@ -1,5 +1,11 @@
 # XDS - X(cross) Development System Server
 
+
+**DEPRECATED: this repo has been moved to AGL Gerrit server**
+**[https://gerrit.automotivelinux.org/gerrit/#/admin/projects/src/xds/xds-server](https://gerrit.automotivelinux.org/gerrit/#/admin/projects/src/xds/xds-server)**
+
+
+
 `xds-server` is a web server that allows user to remotely cross build applications.
 
 The first goal is to provide a multi-platform cross development tool with
